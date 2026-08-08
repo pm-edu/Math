@@ -55,6 +55,15 @@ export default function LoginPage() {
             placeholder="••••••••"
           />
 
+          <p className="text-right">
+            <Link
+              href="/reset-password"
+              className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]"
+            >
+              비밀번호를 잊으셨나요?
+            </Link>
+          </p>
+
           {error && <p className="text-sm text-red-600">{error}</p>}
 
           <button
