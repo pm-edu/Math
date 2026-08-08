@@ -1,0 +1,26 @@
+@import "tailwindcss";
+@import "pretendard/dist/web/static/pretendard.css";
+
+:root {
+  --background: #FFF8E7;
+  --foreground: #2C2C2A;
+  --secondary: #5C5A52;
+  --pink: #F5B9CE;
+  --pink-light: #FDE7EF;
+  --pink-dark: #4B1528;
+  --mint: #E3F3EA;
+  --mint-dark: #04342C;
+  --border-c: #E8E0CC;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: "Pretendard", "Inter", -apple-system, sans-serif;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
