@@ -33,6 +33,7 @@ create table if not exists reviews (
 create table if not exists contacts (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id),
+  name text,
   email text not null,
   message text not null,
   created_at timestamptz default now()
