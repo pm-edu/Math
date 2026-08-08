@@ -6,6 +6,14 @@ export type Profile = {
   created_at: string;
 };
 
+export type Contact = {
+  id: string;
+  name: string | null;
+  email: string;
+  message: string;
+  created_at: string;
+};
+
 export type PurchasedCourse = {
   id: string;
   status: string;

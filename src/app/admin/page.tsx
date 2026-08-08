@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/client";
-import type { Profile } from "@/lib/profile";
+import type { Contact, Profile } from "@/lib/profile";
 
 type PurchaseRow = { user_id: string; status: string };
 
@@ -15,6 +15,7 @@ export default function AdminPage() {
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [students, setStudents] = useState<Profile[]>([]);
   const [purchases, setPurchases] = useState<PurchaseRow[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -38,13 +39,18 @@ export default function AdminPage() {
       }
       setAllowed(true);
 
-      const [profileResult, purchaseResult] = await Promise.all([
+      const [profileResult, purchaseResult, contactResult] = await Promise.all([
         supabase.from("profiles").select("*").order("created_at", { ascending: false }),
         supabase.from("purchases").select("user_id, status"),
+        supabase
+          .from("contacts")
+          .select("id, name, email, message, created_at")
+          .order("created_at", { ascending: false }),
       ]);
 
       setStudents((profileResult.data ?? []) as Profile[]);
       setPurchases((purchaseResult.data ?? []) as PurchaseRow[]);
+      setContacts((contactResult.data ?? []) as Contact[]);
     }
 
     load();
@@ -97,10 +103,12 @@ export default function AdminPage() {
       <main className="mx-auto max-w-5xl px-6 py-16">
         <h1 className="text-3xl font-medium text-[var(--foreground)]">학생 관리</h1>
         <p className="mt-2 text-[var(--secondary)]">
-          가입한 학생 {studentCount}명
+          가입한 학생 {studentCount}명 · 문의 {contacts.length}건
         </p>
 
-        <div className="mt-10 overflow-x-auto rounded-2xl border border-[var(--border-c)] bg-white">
+        <h2 className="mt-10 text-lg font-medium text-[var(--foreground)]">가입자</h2>
+
+        <div className="mt-4 overflow-x-auto rounded-2xl border border-[var(--border-c)] bg-white">
           <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b border-[var(--border-c)] text-left text-[var(--secondary)]">
@@ -150,6 +158,41 @@ export default function AdminPage() {
             </tbody>
           </table>
         </div>
+
+        <h2 className="mt-14 text-lg font-medium text-[var(--foreground)]">문의</h2>
+
+        {contacts.length === 0 ? (
+          <div className="mt-4 rounded-2xl border border-[var(--border-c)] bg-white p-10 text-center text-sm text-[var(--secondary)]">
+            아직 접수된 문의가 없습니다.
+          </div>
+        ) : (
+          <ul className="mt-4 space-y-3">
+            {contacts.map((contact) => (
+              <li
+                key={contact.id}
+                className="rounded-2xl border border-[var(--border-c)] bg-white p-5"
+              >
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <p className="text-sm font-medium text-[var(--foreground)]">
+                    {contact.name ?? "이름 없음"}
+                    <a
+                      href={`mailto:${contact.email}`}
+                      className="ml-2 font-normal text-[var(--secondary)] underline"
+                    >
+                      {contact.email}
+                    </a>
+                  </p>
+                  <p className="text-xs text-[var(--secondary)]">
+                    {new Date(contact.created_at).toLocaleString("ko-KR")}
+                  </p>
+                </div>
+                <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-[var(--foreground)]">
+                  {contact.message}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
       </main>
       <Footer />
     </>
