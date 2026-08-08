@@ -1,4 +1,8 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
   { label: "강좌 둘러보기", href: "/courses" },
@@ -7,6 +11,22 @@ const navItems = [
 ];
 
 export default function Header() {
+  // null = 아직 확인 중. 확인 전에는 로그인/마이페이지 중 어느 쪽도 보여주지 않아
+  // 화면이 깜빡이지 않게 한다.
+  const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    supabase.auth.getUser().then(({ data }) => setLoggedIn(!!data.user));
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setLoggedIn(!!session?.user);
+    });
+
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--border-c)] bg-[var(--background)]/90 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
@@ -27,12 +47,14 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <Link
-            href="/login"
-            className="hidden text-sm text-[var(--secondary)] hover:text-[var(--foreground)] sm:inline"
-          >
-            로그인
-          </Link>
+          {loggedIn !== null && (
+            <Link
+              href={loggedIn ? "/mypage" : "/login"}
+              className="hidden text-sm text-[var(--secondary)] hover:text-[var(--foreground)] sm:inline"
+            >
+              {loggedIn ? "마이페이지" : "로그인"}
+            </Link>
+          )}
           <Link
             href="/courses"
             className="rounded-full bg-[var(--pink)] px-5 py-2 text-sm font-medium text-[var(--pink-dark)] transition-transform hover:scale-[1.03]"
