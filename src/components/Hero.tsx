@@ -1,22 +1,28 @@
 import Link from "next/link";
+import { site } from "@/lib/site";
 
 export default function Hero() {
+  const taglineLines = site.tagline.split("\n");
+
   return (
     <section className="mx-auto max-w-6xl px-6 pt-16 pb-20 md:pt-24 md:pb-28">
       <div className="grid items-center gap-12 md:grid-cols-2">
         <div>
           <span className="inline-block rounded-full bg-[var(--mint)] px-4 py-1.5 text-xs font-medium text-[var(--mint-dark)]">
-            초 · 중 · 고 · IB 수학 전문
+            {site.badge}
           </span>
 
           <h1 className="mt-5 text-4xl font-medium leading-tight text-[var(--foreground)] md:text-5xl">
-            개념부터 실전까지,
-            <br />
-            한번에 잡는 수학
+            {taglineLines.map((line, i) => (
+              <span key={i}>
+                {i > 0 && <br />}
+                {line}
+              </span>
+            ))}
           </h1>
 
           <p className="mt-5 text-base leading-relaxed text-[var(--secondary)] md:text-lg">
-            동영상 강의와 학습자료를 함께 제공하는 온라인 수학 클래스.
+            동영상 강의와 학습자료를 함께 제공하는 온라인 {site.subject} 클래스.
             <br />
             학년과 과정에 맞춘 커리큘럼으로 시작하세요.
           </p>

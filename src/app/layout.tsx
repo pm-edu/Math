@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { site } from "@/lib/site";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "수학클래스 | 초중고 IB 수학 온라인 클래스",
-  description: "동영상 강의와 학습자료를 함께 제공하는 초중고, IB 수학 온라인 클래스",
+  title: site.title,
+  description: site.description,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -2,12 +2,14 @@
 // NEXT_PUBLIC_WHATSAPP_NUMBER 가 설정되지 않으면 아무것도 렌더링하지 않는다.
 // 번호는 국가번호를 포함한 숫자만 넣는다. 예: 821012345678
 
+import { site } from "@/lib/site";
+
 type Props = {
   message?: string;
 };
 
 export default function WhatsAppButton({
-  message = "수학클래스 상담 문의드립니다.",
+  message = `${site.name} 상담 문의드립니다.`,
 }: Props) {
   const number = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, "");
   if (!number) return null;

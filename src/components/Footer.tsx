@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { site } from "@/lib/site";
 
 export default function Footer() {
   return (
@@ -6,10 +7,8 @@ export default function Footer() {
       <div className="mx-auto max-w-6xl px-6 py-12">
         <div className="grid gap-8 md:grid-cols-3">
           <div>
-            <p className="text-lg font-medium text-[var(--foreground)]">수학클래스</p>
-            <p className="mt-2 text-sm text-[var(--secondary)]">
-              초 · 중 · 고 · IB 수학 온라인 클래스
-            </p>
+            <p className="text-lg font-medium text-[var(--foreground)]">{site.name}</p>
+            <p className="mt-2 text-sm text-[var(--secondary)]">{site.blurb}</p>
           </div>
 
           <div>
@@ -28,7 +27,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-10 border-t border-[var(--border-c)] pt-6 text-xs text-[var(--secondary)]">
-          © {new Date().getFullYear()} 수학클래스. All rights reserved.
+          © {new Date().getFullYear()} {site.name}. All rights reserved.
         </div>
       </div>
     </footer>

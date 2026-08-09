@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { site } from "@/lib/site";
 
 const navItems = [
   { label: "강좌 둘러보기", href: "/courses" },
@@ -31,7 +32,7 @@ export default function Header() {
     <header className="sticky top-0 z-50 border-b border-[var(--border-c)] bg-[var(--background)]/90 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <Link href="/" className="text-lg font-medium text-[var(--foreground)]">
-          수학클래스
+          {site.name}
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">
