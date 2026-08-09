@@ -9,14 +9,34 @@ export default function Header() {
   // null = 아직 확인 중. 확인 전에는 로그인/마이페이지 중 어느 쪽도 보여주지 않아
   // 화면이 깜빡이지 않게 한다.
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
 
-    supabase.auth.getUser().then(({ data }) => setLoggedIn(!!data.user));
+    // 관리자에게만 관리 메뉴를 보여준다.
+    // 실제 접근 차단은 화면이 아니라 DB 정책이 하므로, 여기서는 표시 여부만 정한다.
+    async function checkRole(userId: string | undefined) {
+      if (!userId) {
+        setIsAdmin(false);
+        return;
+      }
+      const { data } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", userId)
+        .maybeSingle();
+      setIsAdmin(data?.role === "admin");
+    }
+
+    supabase.auth.getUser().then(({ data }) => {
+      setLoggedIn(!!data.user);
+      checkRole(data.user?.id);
+    });
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setLoggedIn(!!session?.user);
+      checkRole(session?.user?.id);
     });
 
     return () => listener.subscription.unsubscribe();
@@ -42,6 +62,14 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center gap-3">
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className="rounded-full border border-[var(--border-c)] bg-white px-4 py-1.5 text-sm text-[var(--foreground)] transition-colors hover:bg-[var(--mint)]/40"
+            >
+              관리
+            </Link>
+          )}
           {site.partner && (
             <a
               href={site.partner.url}
