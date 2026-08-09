@@ -37,4 +37,18 @@ create policy "lessons are viewable by buyers and for free samples" on lessons
     )
   );
 
+-- 등록·수정·삭제는 관리자만. 학생은 조회만 가능하다.
+drop policy if exists "admins can insert lessons" on lessons;
+create policy "admins can insert lessons" on lessons
+  for insert with check (is_admin());
+
+drop policy if exists "admins can update lessons" on lessons;
+create policy "admins can update lessons" on lessons
+  for update using (is_admin()) with check (is_admin());
+
+drop policy if exists "admins can delete lessons" on lessons;
+create policy "admins can delete lessons" on lessons
+  for delete using (is_admin());
+
 grant select on lessons to anon, authenticated;
+grant insert, update, delete on lessons to authenticated;
