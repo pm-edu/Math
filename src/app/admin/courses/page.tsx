@@ -27,6 +27,11 @@ type CourseRow = {
   price_inr: number | null;
 };
 
+// 등록·삭제 직후 미리 만들어 둔 페이지를 즉시 갱신한다.
+function refreshSite() {
+  fetch("/api/revalidate", { method: "POST" }).catch(() => {});
+}
+
 const EMPTY_FORM = {
   title: "",
   slug: "",
@@ -119,7 +124,8 @@ export default function AdminCoursesPage() {
     }
 
     setForm(EMPTY_FORM);
-    setMessage("강좌를 만들었습니다. 사이트에는 1분 안에 나타납니다.");
+    setMessage("강좌를 만들었습니다. 사이트에 바로 반영됩니다.");
+    refreshSite();
     loadCourses();
   }
 
@@ -141,6 +147,7 @@ export default function AdminCoursesPage() {
       return;
     }
     setMessage("강좌를 삭제했습니다.");
+    refreshSite();
     loadCourses();
   }
 

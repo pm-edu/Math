@@ -10,6 +10,11 @@ import { LESSON_COLUMNS, type Lesson } from "@/lib/lessons";
 
 type CourseOption = { id: string; slug: string; title: string };
 
+// 등록·삭제 직후 미리 만들어 둔 페이지(무료샘플 등)를 즉시 갱신한다.
+function refreshSite() {
+  fetch("/api/revalidate", { method: "POST" }).catch(() => {});
+}
+
 const EMPTY_FORM = {
   title: "",
   description: "",
@@ -109,6 +114,7 @@ export default function AdminLessonsPage() {
 
     setForm(EMPTY_FORM);
     setMessage("강의를 등록했습니다.");
+    refreshSite();
     loadLessons(courseId);
   }
 
@@ -121,6 +127,7 @@ export default function AdminLessonsPage() {
       return;
     }
     setMessage("강의를 삭제했습니다.");
+    refreshSite();
     loadLessons(courseId);
   }
 
