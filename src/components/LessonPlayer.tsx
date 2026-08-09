@@ -1,9 +1,19 @@
 "use client";
 
-import { toEmbedUrl, type Lesson } from "@/lib/lessons";
+import { useEffect, useState } from "react";
+import { parseVideo, type Lesson } from "@/lib/lessons";
 
 export default function LessonPlayer({ lesson }: { lesson: Lesson }) {
-  const embed = lesson.video_url ? toEmbedUrl(lesson.video_url) : null;
+  const video = lesson.video_url ? parseVideo(lesson.video_url) : null;
+
+  // 재생 버튼을 누르기 전에는 영상을 얹지 않는다.
+  // 그래야 페이지를 벗어나거나 다른 강의로 옮기면 소리가 즉시 멈춘다.
+  const [playing, setPlaying] = useState(false);
+
+  // 다른 강의로 바뀌면 다시 처음 상태로 돌아간다.
+  useEffect(() => {
+    setPlaying(false);
+  }, [lesson.id]);
 
   return (
     <div className="rounded-2xl border border-[var(--border-c)] bg-white p-6">
@@ -22,15 +32,43 @@ export default function LessonPlayer({ lesson }: { lesson: Lesson }) {
         </p>
       )}
 
-      {embed ? (
+      {video ? (
         <div className="mt-5 aspect-video w-full overflow-hidden rounded-xl bg-black">
-          <iframe
-            src={embed}
-            title={lesson.title}
-            className="h-full w-full"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
+          {playing ? (
+            <>
+              <iframe
+                src={`${video.embedUrl}?autoplay=1`}
+                title={lesson.title}
+                className="h-full w-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setPlaying(true)}
+              aria-label={`${lesson.title} 재생`}
+              className="group relative h-full w-full"
+            >
+              {video.thumbnailUrl && (
+                // 유튜브 썸네일. next/image 를 쓰면 도메인 설정이 필요해 기본 img 를 쓴다.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={video.thumbnailUrl}
+                  alt=""
+                  className="h-full w-full object-cover opacity-80 transition-opacity group-hover:opacity-60"
+                />
+              )}
+              <span className="absolute inset-0 flex items-center justify-center">
+                <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/90 shadow-lg transition-transform group-hover:scale-105">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </span>
+              </span>
+            </button>
+          )}
         </div>
       ) : lesson.video_url ? (
         <a
@@ -45,12 +83,22 @@ export default function LessonPlayer({ lesson }: { lesson: Lesson }) {
         <p className="mt-5 text-sm text-[var(--secondary)]">아직 영상이 등록되지 않았습니다.</p>
       )}
 
+      {playing && (
+        <button
+          type="button"
+          onClick={() => setPlaying(false)}
+          className="mt-3 text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]"
+        >
+          영상 닫기
+        </button>
+      )}
+
       {lesson.material_url && (
         <a
           href={lesson.material_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-4 inline-block text-sm text-[var(--foreground)] underline"
+          className="mt-4 block text-sm text-[var(--foreground)] underline"
         >
           학습자료 내려받기
         </a>
