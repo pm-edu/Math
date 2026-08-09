@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { parseVideo, type Lesson } from "@/lib/lessons";
+import { useLang } from "@/lib/i18n";
 
 export default function LessonPlayer({ lesson }: { lesson: Lesson }) {
+  const { t } = useLang();
   const video = lesson.video_url ? parseVideo(lesson.video_url) : null;
 
   // 재생 버튼을 누르기 전에는 영상을 얹지 않는다.
@@ -21,7 +23,7 @@ export default function LessonPlayer({ lesson }: { lesson: Lesson }) {
         <h2 className="text-lg font-medium text-[var(--foreground)]">{lesson.title}</h2>
         {lesson.is_free && (
           <span className="rounded-full bg-[var(--mint)] px-3 py-1 text-xs font-medium text-[var(--mint-dark)]">
-            무료 샘플
+            {t("freeBadge")}
           </span>
         )}
       </div>
@@ -77,10 +79,10 @@ export default function LessonPlayer({ lesson }: { lesson: Lesson }) {
           rel="noopener noreferrer"
           className="mt-5 inline-block rounded-full bg-[var(--pink)] px-5 py-2.5 text-sm font-medium text-[var(--pink-dark)]"
         >
-          영상 보러 가기
+          {t("watchVideo")}
         </a>
       ) : (
-        <p className="mt-5 text-sm text-[var(--secondary)]">아직 영상이 등록되지 않았습니다.</p>
+        <p className="mt-5 text-sm text-[var(--secondary)]">{t("noVideo")}</p>
       )}
 
       {playing && (
@@ -89,7 +91,7 @@ export default function LessonPlayer({ lesson }: { lesson: Lesson }) {
           onClick={() => setPlaying(false)}
           className="mt-3 text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]"
         >
-          영상 닫기
+          {t("closeVideo")}
         </button>
       )}
 
@@ -100,7 +102,7 @@ export default function LessonPlayer({ lesson }: { lesson: Lesson }) {
           rel="noopener noreferrer"
           className="mt-4 block text-sm text-[var(--foreground)] underline"
         >
-          학습자료 내려받기
+          {t("downloadMaterial")}
         </a>
       )}
     </div>

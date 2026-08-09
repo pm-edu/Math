@@ -1,8 +1,11 @@
+"use client";
+
 // 왓츠앱 상담 버튼.
 // NEXT_PUBLIC_WHATSAPP_NUMBER 가 설정되지 않으면 아무것도 렌더링하지 않는다.
 // 번호는 국가번호를 포함한 숫자만 넣는다. 예: 821012345678
 
 import { site } from "@/lib/site";
+import { useLang } from "@/lib/i18n";
 
 type Props = {
   message?: string;
@@ -11,6 +14,7 @@ type Props = {
 export default function WhatsAppButton({
   message = `${site.name} 상담 문의드립니다.`,
 }: Props) {
+  const { t } = useLang();
   const number = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, "");
   if (!number) return null;
 
@@ -24,7 +28,7 @@ export default function WhatsAppButton({
       className="inline-flex items-center gap-2 rounded-full bg-[#25D366] px-5 py-3 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
     >
       <WhatsAppIcon />
-      왓츠앱으로 상담하기
+      {t("whatsapp")}
     </a>
   );
 }

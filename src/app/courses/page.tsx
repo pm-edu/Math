@@ -2,6 +2,7 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Price from "@/components/Price";
+import { T, CategoryLabel } from "@/components/T";
 import { getCourses } from "@/lib/courses";
 
 // DB에서 강좌를 수정하면 최대 1분 뒤 사이트에 반영된다.
@@ -14,9 +15,11 @@ export default async function CoursesPage() {
     <>
       <Header />
       <main className="mx-auto max-w-6xl px-6 py-16">
-        <h1 className="text-3xl font-medium text-[var(--foreground)]">강좌 · 자료</h1>
+        <h1 className="text-3xl font-medium text-[var(--foreground)]">
+          <T k="coursesTitle" />
+        </h1>
         <p className="mt-2 text-[var(--secondary)]">
-          초 · 중 · 고 · IB 과정별 동영상 강의와 학습자료 패키지
+          <T k="coursesSubtitle" />
         </p>
 
         <div className="mt-10 grid gap-6 md:grid-cols-3">
@@ -27,7 +30,7 @@ export default async function CoursesPage() {
               className="rounded-2xl border border-[var(--border-c)] bg-white p-6 transition-shadow hover:shadow-md"
             >
               <span className="inline-block rounded-full bg-[var(--mint)] px-3 py-1 text-xs font-medium text-[var(--mint-dark)]">
-                {course.category}
+                <CategoryLabel value={course.category} />
               </span>
               <h2 className="mt-4 text-lg font-medium text-[var(--foreground)]">
                 {course.title}

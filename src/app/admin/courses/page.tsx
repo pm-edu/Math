@@ -9,6 +9,14 @@ import { createClient } from "@/lib/supabase/client";
 
 const CATEGORIES = ["초등", "중등", "고등", "IB"] as const;
 
+// 주소 이름 자동 생성용 분류 접두어
+const CATEGORY_SLUG: Record<string, string> = {
+  초등: "elementary",
+  중등: "middle",
+  고등: "high",
+  IB: "ib",
+};
+
 type CourseRow = {
   id: string;
   slug: string;
@@ -78,8 +86,11 @@ export default function AdminCoursesPage() {
     setError(null);
     setMessage(null);
 
-    const slug = form.slug.trim().toLowerCase();
-    if (!/^[a-z0-9-]+$/.test(slug)) {
+    // 비워두면 분류 + 시간으로 자동 생성한다. 예: high-m3k9q1
+    let slug = form.slug.trim().toLowerCase();
+    if (!slug) {
+      slug = `${CATEGORY_SLUG[form.category] ?? "course"}-${Date.now().toString(36).slice(-6)}`;
+    } else if (!/^[a-z0-9-]+$/.test(slug)) {
       setError("주소 이름은 영문 소문자, 숫자, 하이픈(-)만 쓸 수 있습니다. 예: high-basic");
       return;
     }
@@ -206,17 +217,16 @@ export default function AdminCoursesPage() {
               </select>
             </div>
             <div>
-              <label className="text-sm text-[var(--foreground)]">주소 이름 (영문)</label>
+              <label className="text-sm text-[var(--foreground)]">주소 이름 (선택)</label>
               <input
                 type="text"
-                required
                 value={form.slug}
                 onChange={(e) => setForm({ ...form, slug: e.target.value })}
-                placeholder="high-basic"
+                placeholder="비워두면 자동으로 만들어집니다"
                 className={inputClass}
               />
               <p className="mt-1 text-xs text-[var(--secondary)]">
-                강좌 주소가 됩니다: /courses/high-basic
+                강좌 주소가 됩니다. 직접 정하려면 영문 소문자로: high-basic
               </p>
             </div>
           </div>

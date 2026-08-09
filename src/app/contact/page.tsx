@@ -5,8 +5,10 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { createClient } from "@/lib/supabase/client";
+import { useLang } from "@/lib/i18n";
 
 export default function ContactPage() {
+  const { t } = useLang();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
@@ -42,10 +44,10 @@ export default function ContactPage() {
     <>
       <Header />
       <main className="mx-auto max-w-2xl px-6 py-16">
-        <h1 className="text-3xl font-medium text-[var(--foreground)]">문의하기</h1>
-        <p className="mt-2 text-[var(--secondary)]">
-          궁금하신 점을 남겨주시면 빠르게 답변드리겠습니다.
-        </p>
+        <h1 className="text-3xl font-medium text-[var(--foreground)]">
+          {t("contactPageTitle")}
+        </h1>
+        <p className="mt-2 text-[var(--secondary)]">{t("contactSubtitle")}</p>
 
         <div className="mt-6">
           <WhatsAppButton />
@@ -53,17 +55,13 @@ export default function ContactPage() {
 
         {done ? (
           <div className="mt-10 rounded-2xl border border-[var(--border-c)] bg-white p-8 text-center">
-            <p className="text-lg font-medium text-[var(--foreground)]">
-              문의가 접수되었습니다
-            </p>
-            <p className="mt-2 text-sm text-[var(--secondary)]">
-              남겨주신 이메일로 답변드리겠습니다.
-            </p>
+            <p className="text-lg font-medium text-[var(--foreground)]">{t("contactDone")}</p>
+            <p className="mt-2 text-sm text-[var(--secondary)]">{t("contactDoneSub")}</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="mt-10 space-y-5">
             <div>
-              <label className="text-sm font-medium text-[var(--foreground)]">이름</label>
+              <label className="text-sm font-medium text-[var(--foreground)]">{t("name")}</label>
               <input
                 type="text"
                 required
@@ -74,7 +72,7 @@ export default function ContactPage() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-[var(--foreground)]">이메일</label>
+              <label className="text-sm font-medium text-[var(--foreground)]">{t("email")}</label>
               <input
                 type="email"
                 required
@@ -85,7 +83,7 @@ export default function ContactPage() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-[var(--foreground)]">문의 내용</label>
+              <label className="text-sm font-medium text-[var(--foreground)]">{t("message")}</label>
               <textarea
                 rows={5}
                 required
@@ -103,7 +101,7 @@ export default function ContactPage() {
               disabled={loading}
               className="rounded-full bg-[var(--pink)] px-6 py-3 text-sm font-medium text-[var(--pink-dark)] transition-transform hover:scale-[1.02] disabled:opacity-60"
             >
-              {loading ? "보내는 중..." : "문의 보내기"}
+              {loading ? t("sending") : t("send")}
             </button>
           </form>
         )}

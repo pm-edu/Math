@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { T } from "@/components/T";
 import { createPublicClient } from "@/lib/supabase/server";
 
 export const revalidate = 60;
@@ -30,22 +31,26 @@ export default async function ReviewsPage() {
     <>
       <Header />
       <main className="mx-auto max-w-4xl px-6 py-16">
-        <h1 className="text-3xl font-medium text-[var(--foreground)]">수강 후기</h1>
+        <h1 className="text-3xl font-medium text-[var(--foreground)]">
+          <T k="reviewsTitle" />
+        </h1>
         <p className="mt-2 text-[var(--secondary)]">
-          실제 수강생과 학부모님들이 남겨주신 후기입니다.
+          <T k="reviewsSubtitle" />
         </p>
 
         {reviews.length === 0 ? (
           <div className="mt-10 rounded-2xl border border-[var(--border-c)] bg-white p-12 text-center">
-            <p className="text-[var(--foreground)]">아직 등록된 후기가 없습니다.</p>
+            <p className="text-[var(--foreground)]">
+              <T k="noReviews" />
+            </p>
             <p className="mt-2 text-sm text-[var(--secondary)]">
-              첫 수강 후기를 기다리고 있습니다.
+              <T k="noReviewsSub" />
             </p>
             <Link
               href="/courses"
               className="mt-6 inline-block rounded-full bg-[var(--pink)] px-5 py-2.5 text-sm font-medium text-[var(--pink-dark)]"
             >
-              강좌 둘러보기
+              <T k="browse" />
             </Link>
           </div>
         ) : (
@@ -67,7 +72,7 @@ export default async function ReviewsPage() {
                   &ldquo;{review.content}&rdquo;
                 </p>
                 <p className="mt-4 text-xs text-[var(--secondary)]">
-                  수강생
+                  <T k="student" />
                   {review.course ? ` · ${review.course.title}` : ""}
                 </p>
               </div>

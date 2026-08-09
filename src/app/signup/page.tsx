@@ -7,8 +7,10 @@ import Footer from "@/components/Footer";
 import PasswordField from "@/components/PasswordField";
 import { createClient } from "@/lib/supabase/client";
 import { authErrorMessage } from "@/lib/auth-errors";
+import { useLang } from "@/lib/i18n";
 
 export default function SignupPage() {
+  const { t } = useLang();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -42,16 +44,14 @@ export default function SignupPage() {
         <Header />
         <main className="mx-auto max-w-md px-6 py-24 text-center">
           <h1 className="text-2xl font-medium text-[var(--foreground)]">
-            가입 확인 이메일을 보냈어요
+            {t("signupDone")}
           </h1>
-          <p className="mt-3 text-sm text-[var(--secondary)]">
-            메일함에서 인증 링크를 확인한 뒤 로그인해주세요.
-          </p>
+          <p className="mt-3 text-sm text-[var(--secondary)]">{t("signupDoneSub")}</p>
           <Link
             href="/login"
             className="mt-8 inline-block rounded-full bg-[var(--pink)] px-6 py-3 text-sm font-medium text-[var(--pink-dark)]"
           >
-            로그인하러 가기
+            {t("goLogin")}
           </Link>
         </main>
         <Footer />
@@ -63,11 +63,11 @@ export default function SignupPage() {
     <>
       <Header />
       <main className="mx-auto max-w-md px-6 py-16">
-        <h1 className="text-2xl font-medium text-[var(--foreground)]">회원가입</h1>
+        <h1 className="text-2xl font-medium text-[var(--foreground)]">{t("signup")}</h1>
 
         <form onSubmit={handleSignup} className="mt-8 space-y-4">
           <div>
-            <label className="text-sm font-medium text-[var(--foreground)]">이름</label>
+            <label className="text-sm font-medium text-[var(--foreground)]">{t("name")}</label>
             <input
               type="text"
               required
@@ -78,7 +78,7 @@ export default function SignupPage() {
             />
           </div>
           <div>
-            <label className="text-sm font-medium text-[var(--foreground)]">이메일</label>
+            <label className="text-sm font-medium text-[var(--foreground)]">{t("email")}</label>
             <input
               type="email"
               required
@@ -89,10 +89,10 @@ export default function SignupPage() {
             />
           </div>
           <PasswordField
-            label="비밀번호"
+            label={t("password")}
             value={password}
             onChange={setPassword}
-            placeholder="6자 이상 입력해주세요"
+            placeholder={t("pwPlaceholder")}
             minLength={6}
           />
 
@@ -103,14 +103,14 @@ export default function SignupPage() {
             disabled={loading}
             className="w-full rounded-full bg-[var(--pink)] py-3 text-sm font-medium text-[var(--pink-dark)] transition-transform hover:scale-[1.01] disabled:opacity-60"
           >
-            {loading ? "가입 중..." : "회원가입"}
+            {loading ? t("signingUp") : t("signup")}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-[var(--secondary)]">
-          이미 계정이 있으신가요?{" "}
+          {t("haveAccount")}{" "}
           <Link href="/login" className="text-[var(--foreground)] underline">
-            로그인
+            {t("login")}
           </Link>
         </p>
       </main>

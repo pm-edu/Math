@@ -7,8 +7,10 @@ import Footer from "@/components/Footer";
 import PasswordField from "@/components/PasswordField";
 import { createClient } from "@/lib/supabase/client";
 import { authErrorMessage } from "@/lib/auth-errors";
+import { useLang } from "@/lib/i18n";
 
 export default function LoginPage() {
+  const { t } = useLang();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -34,11 +36,11 @@ export default function LoginPage() {
     <>
       <Header />
       <main className="mx-auto max-w-md px-6 py-16">
-        <h1 className="text-2xl font-medium text-[var(--foreground)]">로그인</h1>
+        <h1 className="text-2xl font-medium text-[var(--foreground)]">{t("login")}</h1>
 
         <form onSubmit={handleLogin} className="mt-8 space-y-4">
           <div>
-            <label className="text-sm font-medium text-[var(--foreground)]">이메일</label>
+            <label className="text-sm font-medium text-[var(--foreground)]">{t("email")}</label>
             <input
               type="email"
               required
@@ -49,7 +51,7 @@ export default function LoginPage() {
             />
           </div>
           <PasswordField
-            label="비밀번호"
+            label={t("password")}
             value={password}
             onChange={setPassword}
             placeholder="••••••••"
@@ -60,7 +62,7 @@ export default function LoginPage() {
               href="/reset-password"
               className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]"
             >
-              비밀번호를 잊으셨나요?
+              {t("forgotPassword")}
             </Link>
           </p>
 
@@ -71,14 +73,14 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full rounded-full bg-[var(--pink)] py-3 text-sm font-medium text-[var(--pink-dark)] transition-transform hover:scale-[1.01] disabled:opacity-60"
           >
-            {loading ? "로그인 중..." : "로그인"}
+            {loading ? t("loggingIn") : t("login")}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-[var(--secondary)]">
-          계정이 없으신가요?{" "}
+          {t("noAccount")}{" "}
           <Link href="/signup" className="text-[var(--foreground)] underline">
-            회원가입
+            {t("signup")}
           </Link>
         </p>
       </main>

@@ -7,9 +7,11 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile, PurchasedCourse } from "@/lib/profile";
+import { useLang, categoryLabel } from "@/lib/i18n";
 
 export default function MyPage() {
   const router = useRouter();
+  const { lang, t } = useLang();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [purchases, setPurchases] = useState<PurchasedCourse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,32 +60,32 @@ export default function MyPage() {
       <Header />
       <main className="mx-auto max-w-4xl px-6 py-16">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-medium text-[var(--foreground)]">마이페이지</h1>
+          <h1 className="text-3xl font-medium text-[var(--foreground)]">{t("mypage")}</h1>
           {!loading && (
             <button
               onClick={handleLogout}
               className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]"
             >
-              로그아웃
+              {t("logout")}
             </button>
           )}
         </div>
 
         {loading ? (
-          <p className="mt-10 text-sm text-[var(--secondary)]">불러오는 중...</p>
+          <p className="mt-10 text-sm text-[var(--secondary)]">{t("loading")}</p>
         ) : error ? (
           <p className="mt-10 text-sm text-red-600">{error}</p>
         ) : (
           <>
             <section className="mt-8 rounded-2xl border border-[var(--border-c)] bg-white p-6">
-              <p className="text-sm font-medium text-[var(--foreground)]">내 정보</p>
+              <p className="text-sm font-medium text-[var(--foreground)]">{t("myInfo")}</p>
               <dl className="mt-4 space-y-2 text-sm">
                 <div className="flex gap-3">
-                  <dt className="w-20 text-[var(--secondary)]">이름</dt>
+                  <dt className="w-20 text-[var(--secondary)]">{t("name")}</dt>
                   <dd className="text-[var(--foreground)]">{profile?.name ?? "-"}</dd>
                 </div>
                 <div className="flex gap-3">
-                  <dt className="w-20 text-[var(--secondary)]">이메일</dt>
+                  <dt className="w-20 text-[var(--secondary)]">{t("email")}</dt>
                   <dd className="text-[var(--foreground)]">{profile?.email ?? "-"}</dd>
                 </div>
               </dl>
@@ -93,24 +95,22 @@ export default function MyPage() {
                   href="/admin"
                   className="mt-6 inline-block rounded-full bg-[var(--mint)] px-5 py-2.5 text-sm font-medium text-[var(--mint-dark)]"
                 >
-                  학생 관리 화면으로
+                  {t("adminPanel")}
                 </Link>
               )}
             </section>
 
             <section className="mt-10">
-              <h2 className="text-lg font-medium text-[var(--foreground)]">내 강좌</h2>
+              <h2 className="text-lg font-medium text-[var(--foreground)]">{t("myCourses")}</h2>
 
               {purchases.length === 0 ? (
                 <div className="mt-4 rounded-2xl border border-[var(--border-c)] bg-white p-8 text-center">
-                  <p className="text-sm text-[var(--secondary)]">
-                    아직 수강 중인 강좌가 없습니다.
-                  </p>
+                  <p className="text-sm text-[var(--secondary)]">{t("noCourses")}</p>
                   <Link
                     href="/courses"
                     className="mt-5 inline-block rounded-full bg-[var(--pink)] px-5 py-2.5 text-sm font-medium text-[var(--pink-dark)]"
                   >
-                    강좌 둘러보기
+                    {t("browse")}
                   </Link>
                 </div>
               ) : (
@@ -122,7 +122,7 @@ export default function MyPage() {
                     >
                       <div>
                         <span className="inline-block rounded-full bg-[var(--mint)] px-3 py-1 text-xs font-medium text-[var(--mint-dark)]">
-                          {item.course?.category ?? "-"}
+                          {item.course ? categoryLabel(item.course.category, lang) : "-"}
                         </span>
                         <p className="mt-2 text-sm font-medium text-[var(--foreground)]">
                           {item.course?.title ?? "삭제된 강좌"}
@@ -133,7 +133,7 @@ export default function MyPage() {
                           href={`/courses/${item.course.slug}`}
                           className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]"
                         >
-                          보러 가기
+                          {t("goWatch")}
                         </Link>
                       )}
                     </li>
