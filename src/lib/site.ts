@@ -17,7 +17,38 @@ const tagline = (
   `개념부터 실전까지,\n한번에 잡는 ${subject}`
 ).replace(/\\n/g, "\n");
 
+export type NavItem = { label: string; href: string };
+
+// 사이트마다 메뉴가 다르다. 과목을 추가하면 여기에 목록을 하나 더 만든다.
+const NAV: Record<string, NavItem[]> = {
+  수학: [
+    { label: "강좌 둘러보기", href: "/courses" },
+    { label: "후기", href: "/reviews" },
+    { label: "문의", href: "/contact" },
+  ],
+  영어: [
+    { label: "강좌 둘러보기", href: "/courses" },
+    { label: "후기", href: "/reviews" },
+    { label: "문의", href: "/contact" },
+  ],
+};
+
+/** 다른 과목 사이트로 보내는 링크. 주소를 넣으면 헤더에 나타난다. */
+const partner =
+  process.env.NEXT_PUBLIC_PARTNER_SITE_URL?.trim() && process.env.NEXT_PUBLIC_PARTNER_SITE_LABEL?.trim()
+    ? {
+        url: process.env.NEXT_PUBLIC_PARTNER_SITE_URL.trim(),
+        label: process.env.NEXT_PUBLIC_PARTNER_SITE_LABEL.trim(),
+      }
+    : null;
+
 export const site = {
+  /** 이 사이트가 영어 사이트인지. 과목 전용 기능을 가릴 때 쓴다. */
+  isEnglish: subject === "영어",
+  /** 헤더·푸터 메뉴 */
+  nav: NAV[subject] ?? NAV["수학"],
+  /** 다른 과목 사이트 링크 (없으면 null) */
+  partner,
   /** 사이트 이름. 헤더, 푸터, 브라우저 탭에 쓰인다. */
   name,
   /** 과목 이름. 문구 안에 끼워 넣는 용도. */

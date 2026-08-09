@@ -5,12 +5,6 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { site } from "@/lib/site";
 
-const navItems = [
-  { label: "강좌 둘러보기", href: "/courses" },
-  { label: "후기", href: "/reviews" },
-  { label: "문의", href: "/contact" },
-];
-
 export default function Header() {
   // null = 아직 확인 중. 확인 전에는 로그인/마이페이지 중 어느 쪽도 보여주지 않아
   // 화면이 깜빡이지 않게 한다.
@@ -36,7 +30,7 @@ export default function Header() {
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">
-          {navItems.map((item) => (
+          {site.nav.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -48,6 +42,14 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center gap-3">
+          {site.partner && (
+            <a
+              href={site.partner.url}
+              className="hidden text-sm text-[var(--secondary)] transition-colors hover:text-[var(--foreground)] sm:inline"
+            >
+              {site.partner.label} →
+            </a>
+          )}
           {loggedIn !== null && (
             <Link
               href={loggedIn ? "/mypage" : "/login"}

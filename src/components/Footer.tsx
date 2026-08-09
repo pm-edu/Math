@@ -14,9 +14,20 @@ export default function Footer() {
           <div>
             <p className="text-sm font-medium text-[var(--foreground)]">바로가기</p>
             <ul className="mt-3 space-y-2 text-sm text-[var(--secondary)]">
-              <li><Link href="/courses" className="hover:text-[var(--foreground)]">강좌/자료</Link></li>
-              <li><Link href="/reviews" className="hover:text-[var(--foreground)]">후기</Link></li>
-              <li><Link href="/contact" className="hover:text-[var(--foreground)]">문의</Link></li>
+              {site.nav.map((item) => (
+                <li key={item.href}>
+                  <Link href={item.href} className="hover:text-[var(--foreground)]">
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+              {site.partner && (
+                <li>
+                  <a href={site.partner.url} className="hover:text-[var(--foreground)]">
+                    {site.partner.label}
+                  </a>
+                </li>
+              )}
             </ul>
           </div>
 
