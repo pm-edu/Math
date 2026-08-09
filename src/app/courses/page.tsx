@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import Price from "@/components/Price";
 import { getCourses } from "@/lib/courses";
 
 // DB에서 강좌를 수정하면 최대 1분 뒤 사이트에 반영된다.
@@ -35,7 +36,7 @@ export default async function CoursesPage() {
                 {course.description}
               </p>
               <p className="mt-4 text-base font-medium text-[var(--foreground)]">
-                {course.price.toLocaleString()}원
+                <Price krw={course.price} inr={course.price_inr} />
               </p>
             </Link>
           ))}

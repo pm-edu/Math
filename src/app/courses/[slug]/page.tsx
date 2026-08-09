@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import Price from "@/components/Price";
 import { getCourse, getCourses } from "@/lib/courses";
 
 // DB에서 강좌를 수정하면 최대 1분 뒤 사이트에 반영된다.
@@ -42,7 +43,7 @@ export default async function CourseDetailPage({
             ))}
           </ul>
           <p className="mt-6 text-xl font-medium text-[var(--foreground)]">
-            {course.price.toLocaleString()}원
+            <Price krw={course.price} inr={course.price_inr} />
           </p>
           <button className="mt-4 w-full rounded-full bg-[var(--pink)] py-3 text-sm font-medium text-[var(--pink-dark)] transition-transform hover:scale-[1.01]">
             장바구니에 담기

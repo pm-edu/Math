@@ -103,12 +103,20 @@ export default function AdminPage() {
       <main className="mx-auto max-w-5xl px-6 py-16">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-3xl font-medium text-[var(--foreground)]">학생 관리</h1>
-          <Link
-            href="/admin/lessons"
-            className="rounded-full bg-[var(--mint)] px-5 py-2.5 text-sm font-medium text-[var(--mint-dark)]"
-          >
-            강의 등록
-          </Link>
+          <div className="flex gap-2">
+            <Link
+              href="/admin/courses"
+              className="rounded-full bg-[var(--pink)] px-5 py-2.5 text-sm font-medium text-[var(--pink-dark)]"
+            >
+              강좌 관리
+            </Link>
+            <Link
+              href="/admin/lessons"
+              className="rounded-full bg-[var(--mint)] px-5 py-2.5 text-sm font-medium text-[var(--mint-dark)]"
+            >
+              강의 등록
+            </Link>
+          </div>
         </div>
         <p className="mt-2 text-[var(--secondary)]">
           가입한 학생 {studentCount}명 · 문의 {contacts.length}건

@@ -7,6 +7,7 @@ create table if not exists courses (
   title text not null,
   category text not null, -- '초등' | '중등' | '고등' | 'IB'
   price integer not null,
+  price_inr integer, -- 영어 화면용 루피 가격 (없으면 원화 표시)
   description text,
   lessons integer not null default 0,
   includes text[] not null default '{}',

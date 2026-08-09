@@ -6,11 +6,13 @@ export type Course = {
   title: string;
   description: string;
   price: number;
+  /** 루피 가격. 없으면 영어 화면에서도 원화로 표시한다. */
+  price_inr: number | null;
   lessons: number;
   includes: string[];
 };
 
-const COLUMNS = "slug, category, title, description, price, lessons, includes";
+const COLUMNS = "slug, category, title, description, price, price_inr, lessons, includes";
 
 type CourseRow = Omit<Course, "description"> & { description: string | null };
 

@@ -1,15 +1,26 @@
+"use client";
+
 import Link from "next/link";
 import { site } from "@/lib/site";
+import { useLang } from "@/lib/i18n";
 
 export default function Hero() {
-  const taglineLines = site.tagline.split("\n");
+  const { lang, t } = useLang();
+
+  const tagline = lang === "en" ? site.taglineEn : site.tagline;
+  const taglineLines = tagline.split("\n");
+  const subLines = (
+    lang === "en"
+      ? site.heroSubEn
+      : `동영상 강의와 학습자료를 함께 제공하는 온라인 ${site.subject} 클래스.\n학년과 과정에 맞춘 커리큘럼으로 시작하세요.`
+  ).split("\n");
 
   return (
     <section className="mx-auto max-w-6xl px-6 pt-16 pb-20 md:pt-24 md:pb-28">
       <div className="grid items-center gap-12 md:grid-cols-2">
         <div>
           <span className="inline-block rounded-full bg-[var(--mint)] px-4 py-1.5 text-xs font-medium text-[var(--mint-dark)]">
-            {site.badge}
+            {lang === "en" ? site.badgeEn : site.badge}
           </span>
 
           <h1 className="mt-5 text-4xl font-medium leading-tight text-[var(--foreground)] md:text-5xl">
@@ -22,9 +33,12 @@ export default function Hero() {
           </h1>
 
           <p className="mt-5 text-base leading-relaxed text-[var(--secondary)] md:text-lg">
-            동영상 강의와 학습자료를 함께 제공하는 온라인 {site.subject} 클래스.
-            <br />
-            학년과 과정에 맞춘 커리큘럼으로 시작하세요.
+            {subLines.map((line, i) => (
+              <span key={i}>
+                {i > 0 && <br />}
+                {line}
+              </span>
+            ))}
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
@@ -32,13 +46,13 @@ export default function Hero() {
               href="/courses"
               className="rounded-full bg-[var(--pink)] px-6 py-3 text-sm font-medium text-[var(--pink-dark)] transition-transform hover:scale-[1.03]"
             >
-              강좌 둘러보기
+              {t("browse")}
             </Link>
             <Link
               href="/sample"
               className="rounded-full border border-[var(--border-c)] bg-white px-6 py-3 text-sm font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--mint)]/40"
             >
-              무료 샘플 보기
+              {t("freeSample")}
             </Link>
           </div>
         </div>
@@ -46,7 +60,9 @@ export default function Hero() {
         <div className="relative">
           <div className="rounded-3xl bg-[var(--pink-light)] p-8 md:p-10">
             <div className="rounded-2xl bg-white p-6 shadow-sm">
-              <p className="text-xs font-medium text-[var(--secondary)]">이번 주 인기 강좌</p>
+              <p className="text-xs font-medium text-[var(--secondary)]">
+                {t("popularCourse")}
+              </p>
               <p className="mt-2 text-lg font-medium text-[var(--foreground)]">
                 IB Math AA/AI 대비 종합반
               </p>

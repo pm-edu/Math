@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { site } from "@/lib/site";
+import { useLang } from "@/lib/i18n";
 
 export default function Header() {
+  const { lang, setLang, t } = useLang();
   // null = 아직 확인 중. 확인 전에는 로그인/마이페이지 중 어느 쪽도 보여주지 않아
   // 화면이 깜빡이지 않게 한다.
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
@@ -56,18 +58,26 @@ export default function Header() {
               href={item.href}
               className="text-sm text-[var(--secondary)] transition-colors hover:text-[var(--foreground)]"
             >
-              {item.label}
+              {t(item.key)}
             </Link>
           ))}
         </nav>
 
         <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setLang(lang === "ko" ? "en" : "ko")}
+            aria-label={lang === "ko" ? "Switch to English" : "한국어로 전환"}
+            className="rounded-full border border-[var(--border-c)] bg-white px-3 py-1.5 text-xs font-medium text-[var(--secondary)] transition-colors hover:text-[var(--foreground)]"
+          >
+            {lang === "ko" ? "EN" : "한국어"}
+          </button>
           {isAdmin && (
             <Link
               href="/admin"
               className="rounded-full border border-[var(--border-c)] bg-white px-4 py-1.5 text-sm text-[var(--foreground)] transition-colors hover:bg-[var(--mint)]/40"
             >
-              관리
+              {t("admin")}
             </Link>
           )}
           {site.partner && (
@@ -83,14 +93,14 @@ export default function Header() {
               href={loggedIn ? "/mypage" : "/login"}
               className="hidden text-sm text-[var(--secondary)] hover:text-[var(--foreground)] sm:inline"
             >
-              {loggedIn ? "마이페이지" : "로그인"}
+              {loggedIn ? t("mypage") : t("login")}
             </Link>
           )}
           <Link
             href="/courses"
             className="rounded-full bg-[var(--pink)] px-5 py-2 text-sm font-medium text-[var(--pink-dark)] transition-transform hover:scale-[1.03]"
           >
-            강좌 보기
+            {t("viewCourses")}
           </Link>
         </div>
       </div>

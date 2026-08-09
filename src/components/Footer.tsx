@@ -1,23 +1,30 @@
+"use client";
+
 import Link from "next/link";
 import { site } from "@/lib/site";
+import { useLang } from "@/lib/i18n";
 
 export default function Footer() {
+  const { lang, t } = useLang();
+
   return (
     <footer className="border-t border-[var(--border-c)] bg-[var(--background)]">
       <div className="mx-auto max-w-6xl px-6 py-12">
         <div className="grid gap-8 md:grid-cols-3">
           <div>
             <p className="text-lg font-medium text-[var(--foreground)]">{site.name}</p>
-            <p className="mt-2 text-sm text-[var(--secondary)]">{site.blurb}</p>
+            <p className="mt-2 text-sm text-[var(--secondary)]">
+              {lang === "en" ? site.blurbEn : site.blurb}
+            </p>
           </div>
 
           <div>
-            <p className="text-sm font-medium text-[var(--foreground)]">바로가기</p>
+            <p className="text-sm font-medium text-[var(--foreground)]">{t("quickLinks")}</p>
             <ul className="mt-3 space-y-2 text-sm text-[var(--secondary)]">
               {site.nav.map((item) => (
                 <li key={item.href}>
                   <Link href={item.href} className="hover:text-[var(--foreground)]">
-                    {item.label}
+                    {t(item.key)}
                   </Link>
                 </li>
               ))}
@@ -32,7 +39,7 @@ export default function Footer() {
           </div>
 
           <div>
-            <p className="text-sm font-medium text-[var(--foreground)]">문의</p>
+            <p className="text-sm font-medium text-[var(--foreground)]">{t("contactTitle")}</p>
             <p className="mt-3 text-sm text-[var(--secondary)]">support@mathclass.example</p>
           </div>
         </div>

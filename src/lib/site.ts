@@ -17,21 +17,26 @@ const tagline = (
   `개념부터 실전까지,\n한번에 잡는 ${subject}`
 ).replace(/\\n/g, "\n");
 
-export type NavItem = { label: string; href: string };
+// 메뉴 문구는 한/영 전환을 위해 글자 대신 키로 적는다.
+// 실제 문구는 src/lib/i18n.tsx 의 사전에 있다.
+export type NavItem = { key: "browse" | "reviews" | "contact"; href: string };
 
 // 사이트마다 메뉴가 다르다. 과목을 추가하면 여기에 목록을 하나 더 만든다.
 const NAV: Record<string, NavItem[]> = {
   수학: [
-    { label: "강좌 둘러보기", href: "/courses" },
-    { label: "후기", href: "/reviews" },
-    { label: "문의", href: "/contact" },
+    { key: "browse", href: "/courses" },
+    { key: "reviews", href: "/reviews" },
+    { key: "contact", href: "/contact" },
   ],
   영어: [
-    { label: "강좌 둘러보기", href: "/courses" },
-    { label: "후기", href: "/reviews" },
-    { label: "문의", href: "/contact" },
+    { key: "browse", href: "/courses" },
+    { key: "reviews", href: "/reviews" },
+    { key: "contact", href: "/contact" },
   ],
 };
+
+// 영어 화면용 과목 이름
+const SUBJECT_EN: Record<string, string> = { 수학: "Math", 영어: "English" };
 
 /** 다른 과목 사이트로 보내는 링크. 주소를 넣으면 헤더에 나타난다. */
 const partner =
@@ -63,4 +68,14 @@ export const site = {
   blurb: `초 · 중 · 고 · IB ${subject} 온라인 클래스`,
   /** 히어로 상단 배지 */
   badge: `초 · 중 · 고 · IB ${subject} 전문`,
+
+  // ----- 영어 화면용 문구 -----
+  subjectEn: SUBJECT_EN[subject] ?? subject,
+  taglineEn: (
+    process.env.NEXT_PUBLIC_SITE_TAGLINE_EN?.trim() ||
+    `From concepts to real exams,\nmaster ${SUBJECT_EN[subject] ?? subject} in one place`
+  ).replace(/\\n/g, "\n"),
+  blurbEn: `Online ${SUBJECT_EN[subject] ?? subject} classes · Elementary to IB`,
+  badgeEn: `Elementary · Middle · High · IB ${SUBJECT_EN[subject] ?? subject}`,
+  heroSubEn: `Video lessons and study materials in one online ${SUBJECT_EN[subject] ?? subject} class.\nStart with a curriculum built for your grade and course.`,
 } as const;
