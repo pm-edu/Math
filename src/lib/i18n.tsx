@@ -19,7 +19,7 @@ const DICT = {
   quickLinks: { ko: "바로가기", en: "Links" },
   contactTitle: { ko: "문의", en: "Contact" },
   freeSample: { ko: "무료 샘플 보기", en: "Free Samples" },
-  popularCourse: { ko: "이번 주 인기 강좌", en: "Popular this week" },
+  popularCourse: { ko: "새로 열린 강좌", en: "New course" },
 } as const;
 
 export type DictKey = keyof typeof DICT;

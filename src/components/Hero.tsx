@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { site } from "@/lib/site";
 import { useLang } from "@/lib/i18n";
+import type { Course } from "@/lib/courses";
 
-export default function Hero() {
+export default function Hero({ featured }: { featured?: Course | null }) {
   const { lang, t } = useLang();
 
   const tagline = lang === "en" ? site.taglineEn : site.tagline;
@@ -57,24 +58,33 @@ export default function Hero() {
           </div>
         </div>
 
-        <div className="relative">
-          <div className="rounded-3xl bg-[var(--pink-light)] p-8 md:p-10">
-            <div className="rounded-2xl bg-white p-6 shadow-sm">
-              <p className="text-xs font-medium text-[var(--secondary)]">
-                {t("popularCourse")}
-              </p>
-              <p className="mt-2 text-lg font-medium text-[var(--foreground)]">
-                IB Math AA/AI 대비 종합반
-              </p>
-              <p className="mt-1 text-sm text-[var(--secondary)]">
-                동영상 30강 + IA 작성 가이드
-              </p>
-              <div className="mt-4 h-2 w-full rounded-full bg-[var(--mint)]">
-                <div className="h-2 w-2/3 rounded-full bg-[var(--pink)]" />
-              </div>
+        {featured && (
+          <div className="relative">
+            <div className="rounded-3xl bg-[var(--pink-light)] p-8 md:p-10">
+              <Link
+                href={`/courses/${featured.slug}`}
+                className="block rounded-2xl bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
+              >
+                <p className="text-xs font-medium text-[var(--secondary)]">
+                  {t("popularCourse")}
+                </p>
+                <p className="mt-2 text-lg font-medium text-[var(--foreground)]">
+                  {featured.title}
+                </p>
+                <p className="mt-1 text-sm text-[var(--secondary)]">
+                  {featured.lessons > 0
+                    ? lang === "en"
+                      ? `${featured.lessons} video lessons`
+                      : `동영상 ${featured.lessons}강`
+                    : featured.description}
+                </p>
+                <div className="mt-4 h-2 w-full rounded-full bg-[var(--mint)]">
+                  <div className="h-2 w-2/3 rounded-full bg-[var(--pink)]" />
+                </div>
+              </Link>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </section>
   );

@@ -31,6 +31,19 @@ export async function getCourses(): Promise<Course[]> {
   return (data ?? []).map(toCourse);
 }
 
+/** 홈 화면 카드용 — 가장 최근에 만든 강좌 하나 */
+export async function getLatestCourse(): Promise<Course | null> {
+  const { data, error } = await createPublicClient()
+    .from("courses")
+    .select(COLUMNS)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return toCourse(data);
+}
+
 export async function getCourse(slug: string): Promise<Course | null> {
   const { data, error } = await createPublicClient()
     .from("courses")
