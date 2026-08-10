@@ -69,7 +69,7 @@ export default function Hero({ featured }: { featured?: Course | null }) {
                   {t("popularCourse")}
                 </p>
                 <p className="mt-2 text-lg font-medium text-[var(--foreground)]">
-                  {featured.title}
+                  {lang === "en" && featured.title_en ? featured.title_en : featured.title}
                 </p>
                 <p className="mt-1 text-sm text-[var(--secondary)]">
                   {featured.lessons > 0

@@ -34,12 +34,15 @@ function refreshSite() {
 
 const EMPTY_FORM = {
   title: "",
+  title_en: "",
   slug: "",
   category: "초등" as string,
   price: "",
   price_inr: "",
   description: "",
+  description_en: "",
   includes: "",
+  includes_en: "",
 };
 
 export default function AdminCoursesPage() {
@@ -103,14 +106,19 @@ export default function AdminCoursesPage() {
     setSaving(true);
     const { error } = await createClient().from("courses").insert({
       title: form.title.trim(),
+      title_en: form.title_en.trim() || null,
       slug,
       category: form.category,
       price: Number(form.price),
       price_inr: form.price_inr.trim() ? Number(form.price_inr) : null,
       description: form.description.trim() || null,
+      description_en: form.description_en.trim() || null,
       includes: form.includes.trim()
         ? form.includes.split(",").map((s) => s.trim()).filter(Boolean)
         : [],
+      includes_en: form.includes_en.trim()
+        ? form.includes_en.split(",").map((s) => s.trim()).filter(Boolean)
+        : null,
     });
     setSaving(false);
 
@@ -238,16 +246,31 @@ export default function AdminCoursesPage() {
             </div>
           </div>
 
-          <div>
-            <label className="text-sm text-[var(--foreground)]">강좌 이름</label>
-            <input
-              type="text"
-              required
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder="고등 수학 내신 완성"
-              className={inputClass}
-            />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="text-sm text-[var(--foreground)]">강좌 이름</label>
+              <input
+                type="text"
+                required
+                value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                placeholder="고등 수학 내신 완성"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className="text-sm text-[var(--foreground)]">강좌 이름 (영어, 선택)</label>
+              <input
+                type="text"
+                value={form.title_en}
+                onChange={(e) => setForm({ ...form, title_en: e.target.value })}
+                placeholder="High School Math Complete"
+                className={inputClass}
+              />
+              <p className="mt-1 text-xs text-[var(--secondary)]">
+                비우면 영어 화면에서도 한국어 이름이 나옵니다.
+              </p>
+            </div>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -279,28 +302,54 @@ export default function AdminCoursesPage() {
             </div>
           </div>
 
-          <div>
-            <label className="text-sm text-[var(--foreground)]">소개 (선택)</label>
-            <textarea
-              rows={2}
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              placeholder="고1~고2 내신 대비 핵심 개념 정리"
-              className={inputClass}
-            />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="text-sm text-[var(--foreground)]">소개 (선택)</label>
+              <textarea
+                rows={2}
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                placeholder="고1~고2 내신 대비 핵심 개념 정리"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className="text-sm text-[var(--foreground)]">소개 (영어, 선택)</label>
+              <textarea
+                rows={2}
+                value={form.description_en}
+                onChange={(e) => setForm({ ...form, description_en: e.target.value })}
+                placeholder="Core concepts for grades 10-11"
+                className={inputClass}
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="text-sm text-[var(--foreground)]">
-              구성 (쉼표로 구분, 선택)
-            </label>
-            <input
-              type="text"
-              value={form.includes}
-              onChange={(e) => setForm({ ...form, includes: e.target.value })}
-              placeholder="동영상 24강, 요약노트 PDF, 기출문제 PDF"
-              className={inputClass}
-            />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="text-sm text-[var(--foreground)]">
+                구성 (쉼표로 구분, 선택)
+              </label>
+              <input
+                type="text"
+                value={form.includes}
+                onChange={(e) => setForm({ ...form, includes: e.target.value })}
+                placeholder="동영상 24강, 요약노트 PDF, 기출문제 PDF"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className="text-sm text-[var(--foreground)]">
+                구성 (영어, 쉼표로 구분, 선택)
+              </label>
+              <input
+                type="text"
+                value={form.includes_en}
+                onChange={(e) => setForm({ ...form, includes_en: e.target.value })}
+                placeholder="24 video lessons, Summary notes PDF"
+                className={inputClass}
+              />
+            </div>
           </div>
 
           {error && <p className="text-sm text-red-600">{error}</p>}

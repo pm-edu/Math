@@ -10,9 +10,14 @@ export type Course = {
   price_inr: number | null;
   lessons: number;
   includes: string[];
+  /** 영어 화면용. 비어 있으면 한국어를 그대로 보여준다. */
+  title_en: string | null;
+  description_en: string | null;
+  includes_en: string[] | null;
 };
 
-const COLUMNS = "slug, category, title, description, price, price_inr, lessons, includes";
+const COLUMNS =
+  "slug, category, title, description, price, price_inr, lessons, includes, title_en, description_en, includes_en";
 
 type CourseRow = Omit<Course, "description"> & { description: string | null };
 

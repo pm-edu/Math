@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Price from "@/components/Price";
-import { T, CategoryLabel } from "@/components/T";
+import { T, CategoryLabel, L, LocalizedList } from "@/components/T";
 import { getCourse, getCourses } from "@/lib/courses";
 
 // DB에서 강좌를 수정하면 최대 1분 뒤 사이트에 반영된다.
@@ -32,19 +32,21 @@ export default async function CourseDetailPage({
           <CategoryLabel value={course.category} />
         </span>
         <h1 className="mt-4 text-3xl font-medium text-[var(--foreground)]">
-          {course.title}
+          <L ko={course.title} en={course.title_en} />
         </h1>
-        <p className="mt-3 text-[var(--secondary)]">{course.description}</p>
+        <p className="mt-3 text-[var(--secondary)]">
+          <L ko={course.description} en={course.description_en} />
+        </p>
 
         <div className="mt-8 rounded-2xl border border-[var(--border-c)] bg-white p-6">
           <p className="text-sm font-medium text-[var(--foreground)]">
             <T k="includes" />
           </p>
-          <ul className="mt-3 space-y-2 text-sm text-[var(--secondary)]">
-            {course.includes.map((item) => (
-              <li key={item}>· {item}</li>
-            ))}
-          </ul>
+          <LocalizedList
+            ko={course.includes}
+            en={course.includes_en}
+            className="mt-3 space-y-2 text-sm text-[var(--secondary)]"
+          />
           <p className="mt-6 text-xl font-medium text-[var(--foreground)]">
             <Price krw={course.price} inr={course.price_inr} />
           </p>
