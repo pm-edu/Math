@@ -16,6 +16,8 @@ export default function AdminMailPage() {
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [courses, setCourses] = useState<CourseOption[]>([]);
   const [students, setStudents] = useState<Profile[]>([]);
+  const [myId, setMyId] = useState<string | null>(null);
+  const [myEmail, setMyEmail] = useState<string | null>(null);
 
   const [target, setTarget] = useState<Target>("all");
   const [courseId, setCourseId] = useState("");
@@ -45,6 +47,8 @@ export default function AdminMailPage() {
         return;
       }
       setAllowed(true);
+      setMyId(auth.user.id);
+      setMyEmail(auth.user.email ?? null);
 
       const [courseRes, studentRes] = await Promise.all([
         supabase.from("courses").select("id, title").order("created_at"),
@@ -122,6 +126,37 @@ export default function AdminMailPage() {
     setSubject("");
     setMessage("");
     setSelectedIds([]);
+  }
+
+  // 관리자 본인에게 테스트 메일을 보낸다 (실제 도착 확인용).
+  async function handleTestToMe() {
+    if (!myId) return;
+    setError(null);
+    setResult(null);
+    setSending(true);
+
+    const supabase = createClient();
+    const { data: session } = await supabase.auth.getSession();
+    const token = session.session?.access_token;
+
+    const res = await fetch("/api/send-mail", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        subject: "[테스트] 메일 발송 확인",
+        html: "이 메일이 보이면 발송 설정이 정상입니다. — 수학클래스",
+        target: "selected",
+        userIds: [myId],
+      }),
+    });
+    const data = await res.json();
+    setSending(false);
+
+    if (!res.ok || !data.ok) {
+      setError(data.message ?? "테스트 발송에 실패했습니다.");
+      return;
+    }
+    setResult(`${myEmail ?? "내 계정"} 으로 테스트 메일을 보냈습니다. 받은편지함(스팸함 포함)을 확인하세요.`);
   }
 
   if (allowed === null) {
@@ -265,13 +300,26 @@ export default function AdminMailPage() {
           {error && <p className="text-sm text-red-600">{error}</p>}
           {result && <p className="text-sm text-[var(--mint-dark)]">{result}</p>}
 
-          <button
-            onClick={handleSend}
-            disabled={sending}
-            className="rounded-full bg-[var(--pink)] px-6 py-3 text-sm font-medium text-[var(--pink-dark)] disabled:opacity-60"
-          >
-            {sending ? "보내는 중..." : "보내기"}
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={handleSend}
+              disabled={sending}
+              className="rounded-full bg-[var(--pink)] px-6 py-3 text-sm font-medium text-[var(--pink-dark)] disabled:opacity-60"
+            >
+              {sending ? "보내는 중..." : "보내기"}
+            </button>
+            <button
+              onClick={handleTestToMe}
+              disabled={sending}
+              className="rounded-full border border-[var(--border-c)] bg-white px-6 py-3 text-sm font-medium text-[var(--foreground)] disabled:opacity-60"
+            >
+              나에게 테스트 보내기
+            </button>
+          </div>
+          <p className="text-xs text-[var(--secondary)]">
+            &ldquo;나에게 테스트 보내기&rdquo;는 제목·내용과 상관없이 관리자 본인 이메일
+            {myEmail ? ` (${myEmail})` : ""}로 확인용 메일을 보냅니다.
+          </p>
         </div>
       </main>
       <Footer />
