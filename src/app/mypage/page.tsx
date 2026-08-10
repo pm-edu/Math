@@ -90,14 +90,22 @@ export default function MyPage() {
                 </div>
               </dl>
 
-              {profile?.role === "admin" && (
+              <div className="mt-6 flex flex-wrap gap-2">
                 <Link
-                  href="/admin"
-                  className="mt-6 inline-block rounded-full bg-[var(--mint)] px-5 py-2.5 text-sm font-medium text-[var(--mint-dark)]"
+                  href="/worksheets"
+                  className="inline-block rounded-full bg-[var(--pink)] px-5 py-2.5 text-sm font-medium text-[var(--pink-dark)]"
                 >
-                  {t("adminPanel")}
+                  {t("myWorksheets")}
                 </Link>
-              )}
+                {profile?.role === "admin" && (
+                  <Link
+                    href="/admin"
+                    className="inline-block rounded-full bg-[var(--mint)] px-5 py-2.5 text-sm font-medium text-[var(--mint-dark)]"
+                  >
+                    {t("adminPanel")}
+                  </Link>
+                )}
+              </div>
             </section>
 
             <section className="mt-10">

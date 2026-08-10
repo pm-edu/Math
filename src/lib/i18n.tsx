@@ -139,6 +139,7 @@ const DICT = {
   },
   goWatch: { ko: "보러 가기", en: "Watch" },
   adminPanel: { ko: "학생 관리 화면으로", en: "Go to admin panel" },
+  myWorksheets: { ko: "내 학습지", en: "My Worksheets" },
 } as const;
 
 // 강좌 분류는 값이 4개로 정해져 있어서 화면에서 번역할 수 있다.
