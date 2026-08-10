@@ -123,6 +123,12 @@ export default function AdminPage() {
               강의 등록
             </Link>
             <Link
+              href="/admin/mail"
+              className="rounded-full bg-[var(--mint)] px-5 py-2.5 text-sm font-medium text-[var(--mint-dark)]"
+            >
+              메일 보내기
+            </Link>
+            <Link
               href="/admin/settings"
               className="rounded-full border border-[var(--border-c)] bg-white px-5 py-2.5 text-sm font-medium text-[var(--foreground)]"
             >
