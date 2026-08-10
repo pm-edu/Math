@@ -103,10 +103,16 @@ export default function AdminPage() {
       <main className="mx-auto max-w-5xl px-6 py-16">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-3xl font-medium text-[var(--foreground)]">학생 관리</h1>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/admin/enrollments"
+              className="rounded-full bg-[var(--pink)] px-5 py-2.5 text-sm font-medium text-[var(--pink-dark)]"
+            >
+              수강 신청
+            </Link>
             <Link
               href="/admin/courses"
-              className="rounded-full bg-[var(--pink)] px-5 py-2.5 text-sm font-medium text-[var(--pink-dark)]"
+              className="rounded-full bg-[var(--mint)] px-5 py-2.5 text-sm font-medium text-[var(--mint-dark)]"
             >
               강좌 관리
             </Link>
@@ -115,6 +121,12 @@ export default function AdminPage() {
               className="rounded-full bg-[var(--mint)] px-5 py-2.5 text-sm font-medium text-[var(--mint-dark)]"
             >
               강의 등록
+            </Link>
+            <Link
+              href="/admin/settings"
+              className="rounded-full border border-[var(--border-c)] bg-white px-5 py-2.5 text-sm font-medium text-[var(--foreground)]"
+            >
+              사이트 설정
             </Link>
           </div>
         </div>

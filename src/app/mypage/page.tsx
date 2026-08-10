@@ -121,16 +121,27 @@ export default function MyPage() {
                       className="flex items-center justify-between rounded-2xl border border-[var(--border-c)] bg-white p-5"
                     >
                       <div>
-                        <span className="inline-block rounded-full bg-[var(--mint)] px-3 py-1 text-xs font-medium text-[var(--mint-dark)]">
-                          {item.course ? categoryLabel(item.course.category, lang) : "-"}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="inline-block rounded-full bg-[var(--mint)] px-3 py-1 text-xs font-medium text-[var(--mint-dark)]">
+                            {item.course ? categoryLabel(item.course.category, lang) : "-"}
+                          </span>
+                          <span
+                            className={`rounded-full px-3 py-1 text-xs font-medium ${
+                              item.status === "paid"
+                                ? "bg-[var(--pink)] text-[var(--pink-dark)]"
+                                : "bg-[var(--border-c)] text-[var(--secondary)]"
+                            }`}
+                          >
+                            {item.status === "paid" ? t("enrolled") : t("enrollPending")}
+                          </span>
+                        </div>
                         <p className="mt-2 text-sm font-medium text-[var(--foreground)]">
                           {item.course?.title ?? "삭제된 강좌"}
                         </p>
                       </div>
-                      {item.course && (
+                      {item.course && item.status === "paid" && (
                         <Link
-                          href={`/courses/${item.course.slug}`}
+                          href={`/courses/${item.course.slug}/learn`}
                           className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]"
                         >
                           {t("goWatch")}

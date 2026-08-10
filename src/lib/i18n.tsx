@@ -32,6 +32,32 @@ const DICT = {
   addToCart: { ko: "장바구니에 담기", en: "Add to cart" },
   enterClassroom: { ko: "강의실 들어가기", en: "Enter classroom" },
 
+  // 수강신청
+  enroll: { ko: "수강 신청하기", en: "Enroll" },
+  enrolling: { ko: "신청 중...", en: "Enrolling..." },
+  loginToEnroll: { ko: "로그인하고 신청하기", en: "Log in to enroll" },
+  enrollPending: { ko: "입금 확인 중", en: "Awaiting payment" },
+  enrolled: { ko: "수강 중", en: "Enrolled" },
+  enrollDoneTitle: { ko: "수강 신청이 접수되었습니다", en: "Enrollment requested" },
+  enrollDoneSub: {
+    ko: "아래 계좌로 입금해 주시면, 확인 후 강의가 열립니다.",
+    en: "Transfer to the account below. Your lessons open after we confirm payment.",
+  },
+  bankInfoTitle: { ko: "입금 계좌", en: "Payment details" },
+  bankInfoPreparing: {
+    ko: "입금 안내는 곧 등록됩니다. 문의로 연락 주세요.",
+    en: "Payment details coming soon. Please reach us via Contact.",
+  },
+  alreadyPending: {
+    ko: "이미 신청하셨습니다. 입금 확인을 기다리고 있습니다.",
+    en: "Already requested. Awaiting payment confirmation.",
+  },
+  alreadyEnrolled: { ko: "이미 수강 중인 강좌입니다.", en: "You're already enrolled." },
+  enrollFailed: {
+    ko: "신청에 실패했습니다. 잠시 후 다시 시도해주세요.",
+    en: "Request failed. Please try again shortly.",
+  },
+
   // 무료 샘플 · 강의실 · 재생
   sampleTitle: { ko: "무료 샘플 강의", en: "Free Sample Lessons" },
   sampleSubtitle: {

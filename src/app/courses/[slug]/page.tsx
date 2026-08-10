@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Price from "@/components/Price";
+import EnrollButton from "@/components/EnrollButton";
 import { T, CategoryLabel, L, LocalizedList } from "@/components/T";
 import { getCourse, getCourses } from "@/lib/courses";
 
@@ -50,9 +51,7 @@ export default async function CourseDetailPage({
           <p className="mt-6 text-xl font-medium text-[var(--foreground)]">
             <Price krw={course.price} inr={course.price_inr} />
           </p>
-          <button className="mt-4 w-full rounded-full bg-[var(--pink)] py-3 text-sm font-medium text-[var(--pink-dark)] transition-transform hover:scale-[1.01]">
-            <T k="addToCart" />
-          </button>
+          <EnrollButton courseId={course.id} />
           <Link
             href={`/courses/${slug}/learn`}
             className="mt-3 block w-full rounded-full border border-[var(--border-c)] bg-white py-3 text-center text-sm font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--mint)]/40"

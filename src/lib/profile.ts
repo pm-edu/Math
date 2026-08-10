@@ -14,6 +14,18 @@ export type Contact = {
   created_at: string;
 };
 
+export type EnrollmentRequest = {
+  id: string;
+  status: string;
+  purchased_at: string;
+  user_id: string;
+  course_id: string;
+  student_name: string | null;
+  student_email: string | null;
+  course_title: string | null;
+  course_price: number | null;
+};
+
 export type PurchasedCourse = {
   id: string;
   status: string;

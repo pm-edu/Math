@@ -1,6 +1,7 @@
 import { createPublicClient } from "@/lib/supabase/server";
 
 export type Course = {
+  id: string;
   slug: string;
   category: "초등" | "중등" | "고등" | "IB";
   title: string;
@@ -17,7 +18,7 @@ export type Course = {
 };
 
 const COLUMNS =
-  "slug, category, title, description, price, price_inr, lessons, includes, title_en, description_en, includes_en";
+  "id, slug, category, title, description, price, price_inr, lessons, includes, title_en, description_en, includes_en";
 
 type CourseRow = Omit<Course, "description"> & { description: string | null };
 
