@@ -11,7 +11,9 @@
 // 환경변수에는 줄바꿈을 직접 넣을 수 없으므로 \n 두 글자로 적는다.
 
 const subject = process.env.NEXT_PUBLIC_SITE_SUBJECT?.trim() || "수학";
-const name = process.env.NEXT_PUBLIC_SITE_NAME?.trim() || `${subject}클래스`;
+// 화면에 보이는 브랜드명. 회사 브랜드 'PM EDU'로 통일한다.
+// 나중에 다른 이름을 쓰려면 NEXT_PUBLIC_SITE_NAME 으로 덮어쓴다.
+const name = process.env.NEXT_PUBLIC_SITE_NAME?.trim() || "PM EDU";
 const tagline = (
   process.env.NEXT_PUBLIC_SITE_TAGLINE?.trim() ||
   `개념부터 실전까지,\n한번에 잡는 ${subject}`
