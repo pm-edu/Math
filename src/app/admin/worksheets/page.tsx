@@ -143,7 +143,10 @@ export default function AdminWorksheetsPage() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={p.image_url} alt="문제" className="w-full rounded-lg" />
                   <div className="mt-1.5 flex flex-wrap gap-1 text-[10px] text-[var(--secondary)]">
-                    <span>{p.category}</span>{p.unit && <span>· {p.unit}</span>}<span>· {p.difficulty}</span>
+                    <span>{p.category}</span>
+                    {p.course_level && <span>· {p.course_level}</span>}
+                    {p.unit && <span>· {p.unit}</span>}
+                    <span>· {p.difficulty}</span>
                   </div>
                 </button>
               );
