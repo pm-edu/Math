@@ -24,3 +24,8 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
 }
+
+/* 영어 화면일 때는 영문 전용 폰트(Inter)를 앞세운다. */
+html[lang="en"] body {
+  font-family: var(--font-en), "Pretendard", "Inter", -apple-system, sans-serif;
+}

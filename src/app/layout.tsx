@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
+import { Inter } from "next/font/google";
 import { site } from "@/lib/site";
 import { LanguageProvider, type Lang } from "@/lib/i18n";
 import "./globals.css";
+
+// 영어 화면용 영문 폰트. CSS 변수로 노출해 lang=en 일 때만 쓴다.
+const inter = Inter({ subsets: ["latin"], variable: "--font-en", display: "swap" });
 
 export const metadata: Metadata = {
   title: site.title,
@@ -17,7 +21,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const initialLang: Lang = saved === "en" ? "en" : "ko";
 
   return (
-    <html lang={initialLang} className="h-full antialiased">
+    <html lang={initialLang} className={`h-full antialiased ${inter.variable}`}>
       <body className="min-h-full flex flex-col">
         <LanguageProvider initialLang={initialLang}>{children}</LanguageProvider>
       </body>

@@ -194,6 +194,8 @@ export function LanguageProvider({
 
   function setLang(next: Lang) {
     setLangState(next);
+    // <html lang> 을 즉시 바꿔 영문/한글 폰트 전환이 바로 반영되게 한다.
+    document.documentElement.lang = next;
     // 쿠키(서버가 읽음) + localStorage(안전망) 둘 다 저장
     document.cookie = `lang=${next}; path=/; max-age=31536000; samesite=lax`;
     window.localStorage.setItem("lang", next);
