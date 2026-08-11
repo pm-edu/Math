@@ -49,6 +49,8 @@ export default function AdminCoursesPage() {
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [courses, setCourses] = useState<CourseRow[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  // "__new__" = 새 분류 직접 입력 모드
+  const [newCategory, setNewCategory] = useState("");
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -104,13 +106,34 @@ export default function AdminCoursesPage() {
     setError(null);
     setMessage(null);
 
-    // 비워두면 분류 + 시간으로 자동 생성한다. 예: high-m3k9q1
     let slug = form.slug.trim().toLowerCase();
-    if (!slug) {
-      slug = `${CATEGORY_SLUG[form.category] ?? "course"}-${Date.now().toString(36).slice(-6)}`;
-    } else if (!/^[a-z0-9-]+$/.test(slug)) {
+    if (slug && !/^[a-z0-9-]+$/.test(slug)) {
       setError("주소 이름은 영문 소문자, 숫자, 하이픈(-)만 쓸 수 있습니다. 예: high-basic");
       return;
+    }
+
+    // 분류를 결정한다. "직접 입력" 모드면 새 분류를 categories 에 먼저 등록한다.
+    let category = form.category;
+    if (form.category === "__new__") {
+      const typed = newCategory.trim();
+      if (!typed) {
+        setError("새 분류 이름을 입력해주세요.");
+        return;
+      }
+      const supabase = createClient();
+      const nextPos =
+        categories.length > 0 ? Math.max(...categories.map((c) => c.position)) + 1 : 1;
+      // 이미 있으면 무시(중복 방지), 없으면 추가
+      await supabase
+        .from("categories")
+        .insert({ name: typed, position: nextPos })
+        .then(() => {});
+      category = typed;
+    }
+
+    // 비워두면 분류 + 시간으로 자동 생성한다. 예: high-m3k9q1
+    if (!slug) {
+      slug = `${CATEGORY_SLUG[category] ?? "course"}-${Date.now().toString(36).slice(-6)}`;
     }
 
     setSaving(true);
@@ -118,7 +141,7 @@ export default function AdminCoursesPage() {
       title: form.title.trim(),
       title_en: form.title_en.trim() || null,
       slug,
-      category: form.category,
+      category,
       price: Number(form.price),
       price_inr: form.price_inr.trim() ? Number(form.price_inr) : null,
       description: form.description.trim() || null,
@@ -141,10 +164,17 @@ export default function AdminCoursesPage() {
       return;
     }
 
-    setForm(EMPTY_FORM);
+    setForm({ ...EMPTY_FORM, category });
+    setNewCategory("");
     setMessage("강좌를 만들었습니다. 사이트에 바로 반영됩니다.");
     refreshSite();
     loadCourses();
+    // 새 분류를 추가했을 수 있으니 목록을 다시 읽는다.
+    const { data: cats } = await createClient()
+      .from("categories")
+      .select("id, name, name_en, position")
+      .order("position");
+    setCategories((cats ?? []) as Category[]);
   }
 
   async function handleDelete(course: CourseRow) {
@@ -239,16 +269,23 @@ export default function AdminCoursesPage() {
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
                 className={inputClass}
               >
-                {categories.length === 0 ? (
-                  <option value="">분류를 먼저 등록하세요</option>
-                ) : (
-                  categories.map((c) => (
-                    <option key={c.id} value={c.name}>
-                      {c.name}
-                    </option>
-                  ))
-                )}
+                {categories.map((c) => (
+                  <option key={c.id} value={c.name}>
+                    {c.name}
+                  </option>
+                ))}
+                <option value="__new__">+ 새 분류 직접 입력</option>
               </select>
+              {form.category === "__new__" && (
+                <input
+                  type="text"
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  placeholder="새 분류 이름 (예: 성인, 재수)"
+                  className={inputClass}
+                  autoFocus
+                />
+              )}
             </div>
             <div>
               <label className="text-sm text-[var(--foreground)]">주소 이름 (선택)</label>
