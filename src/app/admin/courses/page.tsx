@@ -6,10 +6,9 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/client";
+import type { Category } from "@/lib/categories";
 
-const CATEGORIES = ["초등", "중등", "고등", "IB"] as const;
-
-// 주소 이름 자동 생성용 분류 접두어
+// 주소 이름 자동 생성용 분류 접두어 (알려진 분류만. 없으면 course 로 대체)
 const CATEGORY_SLUG: Record<string, string> = {
   초등: "elementary",
   중등: "middle",
@@ -49,6 +48,7 @@ export default function AdminCoursesPage() {
   const router = useRouter();
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [courses, setCourses] = useState<CourseRow[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -84,6 +84,16 @@ export default function AdminCoursesPage() {
       }
       setAllowed(true);
       loadCourses();
+
+      // 분류 목록을 DB에서 읽어온다.
+      const { data: cats } = await supabase
+        .from("categories")
+        .select("id, name, name_en, position")
+        .order("position");
+      const list = (cats ?? []) as Category[];
+      setCategories(list);
+      // 폼 기본 분류를 첫 번째 분류로 맞춘다.
+      if (list[0]) setForm((f) => ({ ...f, category: list[0].name }));
     }
 
     init();
@@ -218,17 +228,26 @@ export default function AdminCoursesPage() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="text-sm text-[var(--foreground)]">분류</label>
+              <div className="flex items-center justify-between">
+                <label className="text-sm text-[var(--foreground)]">분류</label>
+                <Link href="/admin/categories" className="text-xs text-[var(--secondary)] underline">
+                  분류 관리
+                </Link>
+              </div>
               <select
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
                 className={inputClass}
               >
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
+                {categories.length === 0 ? (
+                  <option value="">분류를 먼저 등록하세요</option>
+                ) : (
+                  categories.map((c) => (
+                    <option key={c.id} value={c.name}>
+                      {c.name}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
             <div>
