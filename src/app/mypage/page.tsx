@@ -55,6 +55,29 @@ export default function MyPage() {
     router.replace("/");
   }
 
+  async function handleWithdraw() {
+    if (!confirm(t("withdrawConfirm"))) return;
+
+    const supabase = createClient();
+    const { data: session } = await supabase.auth.getSession();
+    const token = session.session?.access_token;
+
+    const res = await fetch("/api/delete-user", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({}),
+    });
+    const data = await res.json();
+
+    if (!res.ok || !data.ok) {
+      setError(data.message ?? t("withdrawFailed"));
+      return;
+    }
+    await supabase.auth.signOut();
+    alert(t("withdrawDone"));
+    router.replace("/");
+  }
+
   return (
     <>
       <Header />
@@ -159,6 +182,18 @@ export default function MyPage() {
                   ))}
                 </ul>
               )}
+            </section>
+
+            <section className="mt-14 border-t border-[var(--border-c)] pt-8">
+              <h2 className="text-sm font-medium text-[var(--secondary)]">
+                {t("dangerZone")}
+              </h2>
+              <button
+                onClick={handleWithdraw}
+                className="mt-3 text-sm text-red-600 underline hover:text-red-700"
+              >
+                {t("withdraw")}
+              </button>
             </section>
           </>
         )}

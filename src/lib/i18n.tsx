@@ -140,6 +140,19 @@ const DICT = {
   goWatch: { ko: "보러 가기", en: "Watch" },
   adminPanel: { ko: "학생 관리 화면으로", en: "Go to admin panel" },
   myWorksheets: { ko: "내 학습지", en: "My Worksheets" },
+
+  // 계정
+  withdraw: { ko: "회원 탈퇴", en: "Delete account" },
+  withdrawConfirm: {
+    ko: "정말 탈퇴하시겠어요? 계정과 학습 기록이 모두 삭제되며 되돌릴 수 없습니다.",
+    en: "Delete your account? Your data and records will be permanently removed.",
+  },
+  withdrawDone: { ko: "탈퇴가 완료되었습니다.", en: "Your account has been deleted." },
+  withdrawFailed: {
+    ko: "탈퇴 처리에 실패했습니다. 잠시 후 다시 시도해주세요.",
+    en: "Failed to delete account. Please try again shortly.",
+  },
+  dangerZone: { ko: "계정 관리", en: "Account" },
 } as const;
 
 // 강좌 분류는 값이 4개로 정해져 있어서 화면에서 번역할 수 있다.
@@ -168,18 +181,21 @@ const LangContext = createContext<LangContextValue>({
   t: (key) => DICT[key].ko,
 });
 
-export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  // 첫 화면은 항상 한국어로 그려서 서버와 화면이 어긋나지 않게 하고,
-  // 저장된 선택은 그 직후에 반영한다.
-  const [lang, setLangState] = useState<Lang>("ko");
-
-  useEffect(() => {
-    const saved = window.localStorage.getItem("lang");
-    if (saved === "en" || saved === "ko") setLangState(saved);
-  }, []);
+export function LanguageProvider({
+  children,
+  initialLang = "ko",
+}: {
+  children: React.ReactNode;
+  initialLang?: Lang;
+}) {
+  // 서버가 쿠키로 판단한 언어를 그대로 첫 값으로 받는다.
+  // 서버 렌더와 클라이언트 첫 렌더가 같은 언어라 깜빡임이 없다.
+  const [lang, setLangState] = useState<Lang>(initialLang);
 
   function setLang(next: Lang) {
     setLangState(next);
+    // 쿠키(서버가 읽음) + localStorage(안전망) 둘 다 저장
+    document.cookie = `lang=${next}; path=/; max-age=31536000; samesite=lax`;
     window.localStorage.setItem("lang", next);
   }
 

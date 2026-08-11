@@ -2,6 +2,7 @@
 -- Supabase 대시보드 > SQL Editor 에 붙여넣고 Run 하세요.
 -- 여러 번 실행해도 안전합니다.
 
+-- (이 두 칸은 Supabase Table Editor 또는 짧은 alter 문으로 이미 추가함)
 alter table problems add column if not exists course_level text;   -- 과정 (예: 고2 미적분, 수능특강, IB HL)
 alter table problems add column if not exists problem_format text; -- 유형 (객관식 | 서술형 | 단답형)
 

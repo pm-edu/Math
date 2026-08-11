@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
@@ -16,11 +16,27 @@ export default function AdminPage() {
   const [students, setStudents] = useState<Profile[]>([]);
   const [purchases, setPurchases] = useState<PurchaseRow[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const loadData = useCallback(async () => {
+    const supabase = createClient();
+    const [profileResult, purchaseResult, contactResult] = await Promise.all([
+      supabase.from("profiles").select("*").order("created_at", { ascending: false }),
+      supabase.from("purchases").select("user_id, status"),
+      supabase
+        .from("contacts")
+        .select("id, name, email, message, created_at")
+        .order("created_at", { ascending: false }),
+    ]);
+    setStudents((profileResult.data ?? []) as Profile[]);
+    setPurchases((purchaseResult.data ?? []) as PurchaseRow[]);
+    setContacts((contactResult.data ?? []) as Contact[]);
+  }, []);
 
   useEffect(() => {
     const supabase = createClient();
 
-    async function load() {
+    async function init() {
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) {
         router.replace("/login");
@@ -38,23 +54,38 @@ export default function AdminPage() {
         return;
       }
       setAllowed(true);
-
-      const [profileResult, purchaseResult, contactResult] = await Promise.all([
-        supabase.from("profiles").select("*").order("created_at", { ascending: false }),
-        supabase.from("purchases").select("user_id, status"),
-        supabase
-          .from("contacts")
-          .select("id, name, email, message, created_at")
-          .order("created_at", { ascending: false }),
-      ]);
-
-      setStudents((profileResult.data ?? []) as Profile[]);
-      setPurchases((purchaseResult.data ?? []) as PurchaseRow[]);
-      setContacts((contactResult.data ?? []) as Contact[]);
+      loadData();
     }
 
-    load();
-  }, [router]);
+    init();
+  }, [router, loadData]);
+
+  async function handleRemoveStudent(student: Profile) {
+    if (
+      !confirm(
+        `"${student.name ?? student.email}" 님을 탈퇴시킬까요?\n계정과 학습 기록이 모두 삭제되며 되돌릴 수 없습니다.`
+      )
+    )
+      return;
+
+    const supabase = createClient();
+    const { data: session } = await supabase.auth.getSession();
+    const token = session.session?.access_token;
+
+    const res = await fetch("/api/delete-user", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ targetUserId: student.id }),
+    });
+    const data = await res.json();
+
+    if (!res.ok || !data.ok) {
+      setNotice(data.message ?? "탈퇴 처리에 실패했습니다.");
+      return;
+    }
+    setNotice(`${student.name ?? student.email} 님을 탈퇴 처리했습니다.`);
+    loadData();
+  }
 
   function purchaseCount(userId: string) {
     return purchases.filter((p) => p.user_id === userId && p.status === "paid").length;
@@ -145,6 +176,11 @@ export default function AdminPage() {
         <p className="mt-2 text-[var(--secondary)]">
           가입한 학생 {studentCount}명 · 문의 {contacts.length}건
         </p>
+        {notice && (
+          <p className="mt-3 rounded-lg bg-[var(--mint)]/40 px-4 py-2 text-sm text-[var(--foreground)]">
+            {notice}
+          </p>
+        )}
 
         <h2 className="mt-10 text-lg font-medium text-[var(--foreground)]">가입자</h2>
 
@@ -157,12 +193,13 @@ export default function AdminPage() {
                 <th className="px-5 py-3 font-medium">구분</th>
                 <th className="px-5 py-3 font-medium">수강 강좌</th>
                 <th className="px-5 py-3 font-medium">가입일</th>
+                <th className="px-5 py-3 font-medium">관리</th>
               </tr>
             </thead>
             <tbody>
               {students.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-5 py-10 text-center text-[var(--secondary)]">
+                  <td colSpan={6} className="px-5 py-10 text-center text-[var(--secondary)]">
                     아직 가입한 학생이 없습니다.
                   </td>
                 </tr>
@@ -191,6 +228,16 @@ export default function AdminPage() {
                     </td>
                     <td className="px-5 py-4 text-[var(--secondary)]">
                       {new Date(student.created_at).toLocaleDateString("ko-KR")}
+                    </td>
+                    <td className="px-5 py-4">
+                      {student.role !== "admin" && (
+                        <button
+                          onClick={() => handleRemoveStudent(student)}
+                          className="text-sm text-red-600 underline hover:text-red-700"
+                        >
+                          탈퇴
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))

@@ -40,7 +40,12 @@ export default function Footer() {
 
           <div>
             <p className="text-sm font-medium text-[var(--foreground)]">{t("contactTitle")}</p>
-            <p className="mt-3 text-sm text-[var(--secondary)]">support@mathclass.example</p>
+            <a
+              href={`mailto:${site.contactEmail}`}
+              className="mt-3 inline-block text-sm text-[var(--secondary)] hover:text-[var(--foreground)]"
+            >
+              {site.contactEmail}
+            </a>
           </div>
         </div>
 

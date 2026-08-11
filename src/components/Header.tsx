@@ -44,6 +44,11 @@ export default function Header() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
+  async function handleLogout() {
+    await createClient().auth.signOut();
+    window.location.href = "/";
+  }
+
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--border-c)] bg-[var(--background)]/90 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
@@ -95,6 +100,15 @@ export default function Header() {
             >
               {loggedIn ? t("mypage") : t("login")}
             </Link>
+          )}
+          {loggedIn && (
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="hidden text-sm text-[var(--secondary)] hover:text-[var(--foreground)] sm:inline"
+            >
+              {t("logout")}
+            </button>
           )}
           <Link
             href="/courses"

@@ -14,6 +14,8 @@ const subject = process.env.NEXT_PUBLIC_SITE_SUBJECT?.trim() || "수학";
 // 화면에 보이는 브랜드명. 회사 브랜드 'PM EDU'로 통일한다.
 // 나중에 다른 이름을 쓰려면 NEXT_PUBLIC_SITE_NAME 으로 덮어쓴다.
 const name = process.env.NEXT_PUBLIC_SITE_NAME?.trim() || "PM EDU";
+// 문의받을 이메일. 이 주소로 온 메일을 실제로 받으려면 수신 설정(포워딩)이 필요하다.
+const contactEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || "info@pmedu4u.com";
 const tagline = (
   process.env.NEXT_PUBLIC_SITE_TAGLINE?.trim() ||
   `개념부터 실전까지,\n한번에 잡는 ${subject}`
@@ -60,6 +62,8 @@ export const site = {
   name,
   /** 과목 이름. 문구 안에 끼워 넣는 용도. */
   subject,
+  /** 문의 이메일 */
+  contactEmail,
   /** 히어로 제목. 줄바꿈은 \n 으로 구분한다. */
   tagline,
   /** 브라우저 탭과 검색 결과에 쓰이는 제목 */
