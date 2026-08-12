@@ -133,7 +133,10 @@ export default function AdminProblemsPage() {
         <Link href="/admin" className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]">← 학생 관리로</Link>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-3xl font-medium text-[var(--foreground)]">문제은행</h1>
-          <Link href="/admin/worksheets" className="rounded-full bg-[var(--mint)] px-5 py-2.5 text-sm font-medium text-[var(--mint-dark)]">문제지 만들기 →</Link>
+          <div className="flex gap-2">
+            <Link href="/admin/extract" className="rounded-full bg-[var(--pink)] px-5 py-2.5 text-sm font-medium text-[var(--pink-dark)]">PDF에서 추출</Link>
+            <Link href="/admin/worksheets" className="rounded-full bg-[var(--mint)] px-5 py-2.5 text-sm font-medium text-[var(--mint-dark)]">문제지 만들기 →</Link>
+          </div>
         </div>
 
         {/* 등록 폼 */}
