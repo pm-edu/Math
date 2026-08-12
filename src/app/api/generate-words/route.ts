@@ -44,13 +44,14 @@ ${excludeList.length ? `Do NOT include any of these words: ${excludeList.join(",
 For each word provide:
 - word: the English word
 - meaning: its meaning in Korean (한국어 뜻), concise
+- definition_en: a concise English-English definition (learner-friendly)
 - part_of_speech: e.g. n., v., adj., adv.
 - example: a natural English example sentence using the word
 - example_ko: the Korean translation of that example sentence
 
 Return ONLY a JSON array, no other text:
 [
-  { "word": "...", "meaning": "...", "part_of_speech": "...", "example": "...", "example_ko": "..." }
+  { "word": "...", "meaning": "...", "definition_en": "...", "part_of_speech": "...", "example": "...", "example_ko": "..." }
 ]`;
 
   const geminiRes = await fetch(

@@ -4,12 +4,29 @@
 export const VOCAB_TAGS = ["general", "SAT", "TOEFL", "IELTS"] as const;
 export type VocabTag = (typeof VOCAB_TAGS)[number];
 
+// 테스트 유형 / 뜻 표시 방식
+export type TestMode = "mcq" | "typing" | "both";
+export type DefMode = "ko" | "en" | "both";
+
+export type WordDeck = {
+  deck: string;
+  tag: string;
+  test_mode: TestMode;
+  def_mode: DefMode;
+};
+
+export const DEFAULT_DECK_SETTINGS: Omit<WordDeck, "deck" | "tag"> = {
+  test_mode: "mcq",
+  def_mode: "ko",
+};
+
 export type Word = {
   id: string;
   deck: string;
   tag: string;
   word: string;
   meaning: string;
+  definition_en: string | null;
   part_of_speech: string | null;
   example: string | null;
   example_ko: string | null;
@@ -18,6 +35,15 @@ export type Word = {
   verified: boolean;
   created_at: string;
 };
+
+// 뜻 표시 방식에 따라 보여줄 텍스트를 고른다.
+export function meaningText(w: Word, mode: DefMode): string {
+  if (mode === "en") return w.definition_en?.trim() || w.meaning;
+  if (mode === "both") {
+    return [w.definition_en?.trim(), w.meaning].filter(Boolean).join(" / ");
+  }
+  return w.meaning;
+}
 
 export type WordProgress = {
   id: string;
