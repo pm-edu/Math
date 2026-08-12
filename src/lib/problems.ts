@@ -15,6 +15,9 @@ export type Problem = {
   memo: string | null;
   problem_type: string;
   content_text: string | null; // 텍스트/LaTeX로 저장한 문제 본문 (추출 문제)
+  solution_text: string | null; // 풀이/해설 (LaTeX 포함) — 관리자 검수 후 저장
+  source: string | null; // 'manual' | 'pdf' | 'ai'
+  verified: boolean | null; // 관리자 검수 여부. false면 학생에게 노출 안 됨(RLS)
   choices: string[] | null;
   created_at: string;
 };

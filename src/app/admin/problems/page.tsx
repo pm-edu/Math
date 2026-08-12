@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/client";
-import { ProblemBody } from "@/components/ProblemBody";
+import { ProblemBody, MathText } from "@/components/ProblemBody";
 import { CATEGORIES, DIFFICULTIES, FORMATS, type Problem } from "@/lib/problems";
 
 const EMPTY = {
@@ -34,6 +34,13 @@ export default function AdminProblemsPage() {
   const [filterCat, setFilterCat] = useState("");
   const [filterLevel, setFilterLevel] = useState("");
   const [filterUnit, setFilterUnit] = useState("");
+
+  // 풀이 검수 패널 (문제별)
+  const [solveOpen, setSolveOpen] = useState<string | null>(null);
+  const [solveDraft, setSolveDraft] = useState("");
+  const [solveGenLoading, setSolveGenLoading] = useState(false);
+  const [solveSaving, setSolveSaving] = useState(false);
+  const [solveMsg, setSolveMsg] = useState<string | null>(null);
 
   const loadProblems = useCallback(async () => {
     let q = createClient().from("problems").select("*").order("created_at", { ascending: false });
@@ -113,6 +120,57 @@ export default function AdminProblemsPage() {
     const { error } = await createClient().from("problems").delete().eq("id", p.id);
     if (error) { setError(`삭제 실패: ${error.message}`); return; }
     setMessage("삭제했습니다.");
+    loadProblems();
+  }
+
+  // 풀이 검수 패널 열기/닫기
+  function toggleSolve(p: Problem) {
+    setSolveMsg(null);
+    if (solveOpen === p.id) { setSolveOpen(null); return; }
+    setSolveOpen(p.id);
+    setSolveDraft(p.solution_text ?? ""); // 저장돼 있던 풀이를 편집칸에 채운다
+  }
+
+  // AI 풀이 "초안" 생성 → 편집칸에만 채운다 (아직 저장 아님)
+  async function generateSolution(p: Problem) {
+    setSolveMsg(null);
+    setSolveGenLoading(true);
+    try {
+      const supabase = createClient();
+      const { data: session } = await supabase.auth.getSession();
+      const token = session.session?.access_token;
+      const res = await fetch("/api/generate-solution", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          content_text: p.content_text,
+          image_url: p.image_url,
+          answer: p.answer,
+          problem_format: p.problem_format,
+        }),
+      });
+      const data = await res.json();
+      setSolveGenLoading(false);
+      if (!res.ok || !data.ok) { setSolveMsg(data.message ?? "생성 실패"); return; }
+      setSolveDraft(data.solution);
+      setSolveMsg("AI 초안을 만들었습니다. 반드시 검토·수정한 뒤 저장하세요.");
+    } catch {
+      setSolveGenLoading(false);
+      setSolveMsg("생성 중 오류가 발생했습니다.");
+    }
+  }
+
+  // 검수 승인 = 저장. 이때만 학생에게 보이는 solution_text 에 기록된다.
+  async function saveSolution(p: Problem) {
+    setSolveSaving(true);
+    const { error } = await createClient()
+      .from("problems")
+      .update({ solution_text: solveDraft.trim() || null })
+      .eq("id", p.id);
+    setSolveSaving(false);
+    if (error) { setSolveMsg(`저장 실패: ${error.message}`); return; }
+    setSolveMsg("풀이를 저장했습니다.");
+    setSolveOpen(null);
     loadProblems();
   }
 
@@ -244,8 +302,55 @@ export default function AdminProblemsPage() {
                 {p.problem_format && <span className="rounded-full border border-[var(--border-c)] px-2.5 py-0.5 text-[var(--secondary)]">{p.problem_format}</span>}
                 <span className="rounded-full border border-[var(--border-c)] px-2.5 py-0.5 text-[var(--secondary)]">{p.difficulty}</span>
                 {p.answer && <span className="text-[var(--secondary)]">정답 {p.answer}</span>}
+                {p.solution_text
+                  ? <span className="rounded-full bg-[var(--mint)] px-2 py-0.5 text-[var(--mint-dark)]">풀이 있음</span>
+                  : <span className="rounded-full border border-dashed border-[var(--border-c)] px-2 py-0.5 text-[var(--secondary)]">풀이 없음</span>}
               </div>
-              <button onClick={() => handleDelete(p)} className="mt-2 text-xs text-red-600 underline">삭제</button>
+              <div className="mt-2 flex gap-3">
+                <button onClick={() => toggleSolve(p)} className="text-xs text-[var(--mint-dark)] underline">
+                  {solveOpen === p.id ? "풀이 닫기" : "풀이 검수"}
+                </button>
+                <button onClick={() => handleDelete(p)} className="text-xs text-red-600 underline">삭제</button>
+              </div>
+
+              {/* 풀이 검수 패널: AI 초안 생성 → 검토·수정 → 저장(승인) */}
+              {solveOpen === p.id && (
+                <div className="mt-3 rounded-xl border border-[var(--border-c)] bg-[var(--background)] p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-medium text-[var(--foreground)]">풀이 (검수 후 저장해야 학생에게 보입니다)</p>
+                    <button
+                      onClick={() => generateSolution(p)}
+                      disabled={solveGenLoading}
+                      className="rounded-full bg-[var(--pink)] px-3 py-1 text-xs font-medium text-[var(--pink-dark)] disabled:opacity-60"
+                    >
+                      {solveGenLoading ? "생성 중..." : "AI 풀이 초안"}
+                    </button>
+                  </div>
+                  <textarea
+                    rows={5}
+                    value={solveDraft}
+                    onChange={(e) => setSolveDraft(e.target.value)}
+                    placeholder="풀이를 직접 쓰거나, AI 초안을 만든 뒤 검토·수정하세요. 수식은 $...$"
+                    className="mt-2 w-full rounded-lg border border-[var(--border-c)] bg-white px-3 py-2 text-sm outline-none focus:border-[var(--pink)]"
+                  />
+                  {solveDraft.trim() && (
+                    <div className="mt-2 rounded-lg border border-dashed border-[var(--border-c)] bg-white p-2">
+                      <p className="mb-1 text-[10px] text-[var(--secondary)]">학생 화면 미리보기</p>
+                      <MathText text={solveDraft} className="text-sm leading-relaxed text-[var(--foreground)]" />
+                    </div>
+                  )}
+                  {solveMsg && <p className="mt-2 text-xs text-[var(--mint-dark)]">{solveMsg}</p>}
+                  <div className="mt-2 flex justify-end">
+                    <button
+                      onClick={() => saveSolution(p)}
+                      disabled={solveSaving}
+                      className="rounded-full bg-[var(--mint)] px-4 py-1.5 text-xs font-medium text-[var(--mint-dark)] disabled:opacity-60"
+                    >
+                      {solveSaving ? "저장 중..." : "풀이 저장 (검수 승인)"}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
