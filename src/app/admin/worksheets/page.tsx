@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/client";
+import { ProblemBody } from "@/components/ProblemBody";
 import { CATEGORIES, type Problem, type Worksheet } from "@/lib/problems";
 import type { Profile } from "@/lib/profile";
 
@@ -140,8 +141,11 @@ export default function AdminWorksheetsPage() {
               return (
                 <button type="button" key={p.id} onClick={() => togglePick(p.id)}
                   className={`rounded-xl border-2 p-2 text-left transition-colors ${on ? "border-[var(--pink)] bg-[var(--pink-light)]/40" : "border-[var(--border-c)] bg-white"}`}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={p.image_url} alt="문제" className="w-full rounded-lg" />
+                  <ProblemBody
+                    problem={p}
+                    imgClassName="w-full rounded-lg"
+                    textClassName="rounded-lg bg-white p-2 text-xs leading-relaxed text-[var(--foreground)] max-h-40 overflow-hidden"
+                  />
                   <div className="mt-1.5 flex flex-wrap gap-1 text-[10px] text-[var(--secondary)]">
                     <span>{p.category}</span>
                     {p.course_level && <span>· {p.course_level}</span>}

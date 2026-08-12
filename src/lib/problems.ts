@@ -14,6 +14,7 @@ export type Problem = {
   solution_image_url: string | null;
   memo: string | null;
   problem_type: string;
+  content_text: string | null; // 텍스트/LaTeX로 저장한 문제 본문 (추출 문제)
   choices: string[] | null;
   created_at: string;
 };

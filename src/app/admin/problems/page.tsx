@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/client";
+import { ProblemBody } from "@/components/ProblemBody";
 import { CATEGORIES, DIFFICULTIES, FORMATS, type Problem } from "@/lib/problems";
 
 const EMPTY = {
@@ -231,8 +232,11 @@ export default function AdminProblemsPage() {
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {problems.map((p) => (
             <div key={p.id} className="rounded-2xl border border-[var(--border-c)] bg-white p-4">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={p.image_url} alt="문제" className="w-full rounded-lg border border-[var(--border-c)]" />
+              <ProblemBody
+                problem={p}
+                imgClassName="w-full rounded-lg border border-[var(--border-c)]"
+                textClassName="rounded-lg border border-[var(--border-c)] bg-[var(--pink-light)]/20 p-3 text-sm leading-relaxed text-[var(--foreground)]"
+              />
               <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs">
                 <span className="rounded-full bg-[var(--mint)] px-2.5 py-0.5 font-medium text-[var(--mint-dark)]">{p.category}</span>
                 {p.course_level && <span className="rounded-full bg-[var(--pink-light)] px-2.5 py-0.5 text-[var(--secondary)]">{p.course_level}</span>}

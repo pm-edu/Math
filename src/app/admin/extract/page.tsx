@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/client";
+import { MathText } from "@/components/ProblemBody";
 import { DIFFICULTIES, FORMATS } from "@/lib/problems";
 import type { Category } from "@/lib/categories";
 
@@ -298,6 +299,16 @@ export default function AdminExtractPage() {
                     className={inputClass}
                     placeholder="문제 본문"
                   />
+
+                  {d.content_text.trim() && (
+                    <div className="mt-2 rounded-lg border border-dashed border-[var(--border-c)] bg-[var(--pink-light)]/20 p-3">
+                      <p className="mb-1 text-xs text-[var(--secondary)]">학생 화면 미리보기</p>
+                      <MathText
+                        text={d.content_text}
+                        className="text-[15px] leading-relaxed text-[var(--foreground)]"
+                      />
+                    </div>
+                  )}
 
                   <div className="mt-3 grid gap-3 sm:grid-cols-4">
                     <input

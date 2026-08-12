@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/client";
+import { ProblemBody } from "@/components/ProblemBody";
 import type { Problem } from "@/lib/problems";
 
 export default function WorksheetDetailPage({
@@ -78,8 +79,11 @@ export default function WorksheetDetailPage({
                 {problems.map((p, i) => (
                   <li key={p.id}>
                     <p className="mb-2 text-sm font-medium text-[var(--secondary)]">{i + 1}번</p>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={p.image_url} alt={`${i + 1}번 문제`} className="w-full rounded-xl border border-[var(--border-c)]" />
+                    <ProblemBody
+                      problem={p}
+                      imgClassName="w-full rounded-xl border border-[var(--border-c)]"
+                      textClassName="rounded-xl border border-[var(--border-c)] bg-white p-5 text-[15px] leading-relaxed text-[var(--foreground)]"
+                    />
                     {showAnswers && p.answer && (
                       <p className="mt-2 rounded-lg bg-[var(--mint)]/40 px-4 py-2 text-sm text-[var(--foreground)]">
                         정답: {p.answer}
