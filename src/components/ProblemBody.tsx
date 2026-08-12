@@ -2,6 +2,7 @@
 
 import katex from "katex";
 import "katex/dist/katex.min.css";
+import "./problem-math.css";
 import type { Problem } from "@/lib/problems";
 
 // 텍스트 안에 섞인 LaTeX 수식($...$, $$...$$, \(...\), \[...\])을
@@ -45,7 +46,9 @@ export function MathText({ text, className }: { text: string; className?: string
     nodes.push(<span key={key++}>{text.slice(last)}</span>);
   }
 
-  return <div className={`whitespace-pre-wrap ${className ?? ""}`}>{nodes}</div>;
+  return (
+    <div className={`math-body whitespace-pre-wrap ${className ?? ""}`}>{nodes}</div>
+  );
 }
 
 // 문제 하나를 화면에 표시한다.

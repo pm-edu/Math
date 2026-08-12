@@ -1,0 +1,12 @@
+/* 문제 본문 안의 KaTeX 수식 표시 조정 */
+
+/* 수식 폰트를 살짝 줄인다 (KaTeX 기본값 1.21em → 1.05em) */
+.math-body .katex {
+  font-size: 1.05em;
+}
+
+/* 줄 간격을 넓혀 보기(①②③)나 분수가 위아래 줄과 겹치지 않게 한다.
+   div.math-body 로 특이도를 높여 Tailwind의 leading-* 유틸리티보다 우선한다. */
+div.math-body {
+  line-height: 2;
+}
