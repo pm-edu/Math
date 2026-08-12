@@ -1,5 +1,6 @@
 // 권한 5단계 모델.
 // 화면 표시/가드는 이 파일의 판별 함수를 쓰고, 실제 차단은 DB 보안정책(RLS)이 한다.
+// (재배포 트리거: Vercel 배포 반영)
 
 export const ROLES = ["owner", "admin", "teacher", "assistant", "student"] as const;
 export type Role = (typeof ROLES)[number];
