@@ -9,7 +9,7 @@ import { createClient } from "@supabase/supabase-js";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? "";
-const MODEL = "gemini-2.0-flash";
+const MODEL = "gemini-flash-latest";
 
 type ExtractedProblem = {
   content_text: string;
