@@ -6,12 +6,14 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/client";
+import { useSubject } from "@/lib/subject";
 import type { Worksheet } from "@/lib/problems";
 
 export default function MyWorksheetsPage() {
   const router = useRouter();
+  const { subject } = useSubject();
   const [loading, setLoading] = useState(true);
-  const [worksheets, setWorksheets] = useState<Worksheet[]>([]);
+  const [allWorksheets, setAllWorksheets] = useState<Worksheet[]>([]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -22,7 +24,7 @@ export default function MyWorksheetsPage() {
       // 나에게 배포된 문제지 (RLS가 자동으로 걸러줌)
       const { data } = await supabase
         .from("worksheet_assignments")
-        .select("worksheet:worksheets(id, title, description, created_at)")
+        .select("worksheet:worksheets(id, title, description, subject, created_at)")
         .order("assigned_at", { ascending: false });
 
       const list = (data ?? [])
@@ -30,11 +32,14 @@ export default function MyWorksheetsPage() {
           const w = (r as { worksheet: Worksheet | Worksheet[] | null }).worksheet;
           return Array.isArray(w) ? w : w ? [w] : [];
         });
-      setWorksheets(list);
+      setAllWorksheets(list);
       setLoading(false);
     }
     load();
   }, [router]);
+
+  // 헤더에서 고른 과목(수학/영어)의 학습지만 보여준다.
+  const worksheets = allWorksheets.filter((w) => w.subject === subject);
 
   return (
     <>

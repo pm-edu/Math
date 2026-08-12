@@ -8,11 +8,13 @@ import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/client";
 import { ProblemBody } from "@/components/ProblemBody";
 import { canManageMaterials } from "@/lib/roles";
+import { useSubject } from "@/lib/subject";
 import { CATEGORIES, type Problem, type Worksheet } from "@/lib/problems";
 import type { Profile } from "@/lib/profile";
 
 export default function AdminWorksheetsPage() {
   const router = useRouter();
+  const { subject } = useSubject();
   const [allowed, setAllowed] = useState<boolean | null>(null);
 
   const [problems, setProblems] = useState<Problem[]>([]);
@@ -38,17 +40,25 @@ export default function AdminWorksheetsPage() {
   const [saving, setSaving] = useState(false);
 
   const loadProblems = useCallback(async () => {
-    let q = createClient().from("problems").select("*").order("created_at", { ascending: false });
+    let q = createClient()
+      .from("problems")
+      .select("*")
+      .eq("subject", subject)
+      .order("created_at", { ascending: false });
     if (filterCat) q = q.eq("category", filterCat);
     if (filterUnit) q = q.ilike("unit", `%${filterUnit}%`);
     const { data } = await q;
     setProblems((data ?? []) as Problem[]);
-  }, [filterCat, filterUnit]);
+  }, [subject, filterCat, filterUnit]);
 
   const loadWorksheets = useCallback(async () => {
-    const { data } = await createClient().from("worksheets").select("*").order("created_at", { ascending: false });
+    const { data } = await createClient()
+      .from("worksheets")
+      .select("*")
+      .eq("subject", subject)
+      .order("created_at", { ascending: false });
     setWorksheets((data ?? []) as Worksheet[]);
-  }, []);
+  }, [subject]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -80,7 +90,7 @@ export default function AdminWorksheetsPage() {
 
     setSaving(true);
     const supabase = createClient();
-    const { data: ws, error: wErr } = await supabase.from("worksheets").insert({ title: title.trim() }).select("id").single();
+    const { data: ws, error: wErr } = await supabase.from("worksheets").insert({ title: title.trim(), subject }).select("id").single();
     if (wErr || !ws) { setSaving(false); setError(`생성 실패: ${wErr?.message}`); return; }
 
     // 선택한 순서(picked 배열 순서)대로 position 1,2,3... 을 매긴다.

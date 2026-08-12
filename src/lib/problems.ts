@@ -27,5 +27,6 @@ export type Worksheet = {
   id: string;
   title: string;
   description: string | null;
+  subject: string; // 'math' | 'english'
   created_at: string;
 };

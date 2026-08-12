@@ -8,6 +8,7 @@ import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/client";
 import { MathText } from "@/components/ProblemBody";
 import { canManageMaterials } from "@/lib/roles";
+import { useSubject } from "@/lib/subject";
 import { DIFFICULTIES, FORMATS } from "@/lib/problems";
 import type { Category } from "@/lib/categories";
 
@@ -22,6 +23,7 @@ type Draft = {
 
 export default function AdminExtractPage() {
   const router = useRouter();
+  const { subject } = useSubject();
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
 
@@ -145,6 +147,7 @@ export default function AdminExtractPage() {
     // 관리자가 방금 검토했으므로 verified=true 로 저장한다.
     // image_url 은 없이 텍스트 기반 문제로 저장.
     const rows = chosen.map((d) => ({
+      subject,
       category,
       course_level: courseLevel.trim() || null,
       unit: d.unit.trim() || null,

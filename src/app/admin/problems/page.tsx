@@ -8,6 +8,7 @@ import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/client";
 import { ProblemBody, MathText } from "@/components/ProblemBody";
 import { canManageMaterials } from "@/lib/roles";
+import { useSubject } from "@/lib/subject";
 import { CATEGORIES, DIFFICULTIES, FORMATS, type Problem } from "@/lib/problems";
 
 const EMPTY = {
@@ -22,6 +23,7 @@ const EMPTY = {
 
 export default function AdminProblemsPage() {
   const router = useRouter();
+  const { subject } = useSubject();
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [problems, setProblems] = useState<Problem[]>([]);
   const [form, setForm] = useState(EMPTY);
@@ -44,13 +46,17 @@ export default function AdminProblemsPage() {
   const [solveMsg, setSolveMsg] = useState<string | null>(null);
 
   const loadProblems = useCallback(async () => {
-    let q = createClient().from("problems").select("*").order("created_at", { ascending: false });
+    let q = createClient()
+      .from("problems")
+      .select("*")
+      .eq("subject", subject)
+      .order("created_at", { ascending: false });
     if (filterCat) q = q.eq("category", filterCat);
     if (filterLevel) q = q.ilike("course_level", `%${filterLevel}%`);
     if (filterUnit) q = q.ilike("unit", `%${filterUnit}%`);
     const { data } = await q;
     setProblems((data ?? []) as Problem[]);
-  }, [filterCat, filterLevel, filterUnit]);
+  }, [subject, filterCat, filterLevel, filterUnit]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -90,6 +96,7 @@ export default function AdminProblemsPage() {
 
       const { data: pub } = supabase.storage.from("problems").getPublicUrl(path);
       const { error: insErr } = await supabase.from("problems").insert({
+        subject,
         category: form.category,
         course_level: form.courseLevel.trim() || null,
         unit: form.unit.trim() || null,
