@@ -207,23 +207,82 @@ export default function WorksheetDetailPage({
                           textClassName="rounded-xl border border-[var(--border-c)] bg-white p-5 text-[15px] leading-relaxed text-[var(--foreground)]"
                         />
 
-                        {/* 답 입력 (제출 전) / 내가 낸 답 (제출 후) */}
-                        {!submitted ? (
-                          <div className="mt-3">
-                            <label className="text-xs text-[var(--secondary)]">내 답</label>
-                            <input
-                              type="text"
-                              value={answers[p.id] ?? ""}
-                              onChange={(e) => setAnswers((prev) => ({ ...prev, [p.id]: e.target.value }))}
-                              placeholder={p.problem_format === "객관식" ? "예: ③" : "정답 입력"}
-                              className="mt-1 w-full rounded-lg border border-[var(--border-c)] bg-white px-4 py-2.5 text-sm outline-none focus:border-[var(--pink)]"
-                            />
-                          </div>
-                        ) : (
-                          <p className="mt-3 text-sm text-[var(--secondary)]">
-                            내 답: <span className="text-[var(--foreground)]">{answers[p.id]?.trim() || "(무응답)"}</span>
-                          </p>
-                        )}
+                        {/* 답 입력. 보기(choices)가 있으면 객관식(A~D 클릭), 없으면 자유 입력 */}
+                        {(() => {
+                          const choices = (p.choices ?? []).filter((c) => (c ?? "").trim());
+                          const isMcq = choices.length > 0;
+
+                          if (isMcq) {
+                            if (!submitted) {
+                              return (
+                                <div className="mt-3 space-y-2">
+                                  {choices.map((c, ci) => {
+                                    const letter = String.fromCharCode(65 + ci);
+                                    const selected = answers[p.id] === letter;
+                                    return (
+                                      <button
+                                        key={ci}
+                                        type="button"
+                                        onClick={() => setAnswers((prev) => ({ ...prev, [p.id]: letter }))}
+                                        className={`flex w-full items-start gap-3 rounded-lg border px-4 py-2.5 text-left text-sm transition-colors ${
+                                          selected
+                                            ? "border-[var(--pink)] bg-[var(--pink-light)]/40"
+                                            : "border-[var(--border-c)] bg-white hover:bg-[var(--mint)]/20"
+                                        }`}
+                                      >
+                                        <span className="font-semibold text-[var(--secondary)]">{letter}</span>
+                                        <span className="text-[var(--foreground)]">{c}</span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              );
+                            }
+                            return (
+                              <div className="mt-3 space-y-2">
+                                {choices.map((c, ci) => {
+                                  const letter = String.fromCharCode(65 + ci);
+                                  const isCorrect = norm(letter) === norm(p.answer);
+                                  const isMine = answers[p.id] === letter;
+                                  return (
+                                    <div
+                                      key={ci}
+                                      className={`flex w-full items-start gap-3 rounded-lg border px-4 py-2.5 text-sm ${
+                                        isCorrect
+                                          ? "border-[var(--mint-dark)] bg-[var(--mint)]/40"
+                                          : isMine
+                                          ? "border-red-400 bg-red-50"
+                                          : "border-[var(--border-c)] bg-white"
+                                      }`}
+                                    >
+                                      <span className="font-semibold text-[var(--secondary)]">{letter}</span>
+                                      <span className="flex-1 text-[var(--foreground)]">{c}</span>
+                                      {isCorrect && <span className="text-xs font-medium text-[var(--mint-dark)]">정답</span>}
+                                      {isMine && !isCorrect && <span className="text-xs font-medium text-red-600">내 선택</span>}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          }
+
+                          return !submitted ? (
+                            <div className="mt-3">
+                              <label className="text-xs text-[var(--secondary)]">내 답</label>
+                              <input
+                                type="text"
+                                value={answers[p.id] ?? ""}
+                                onChange={(e) => setAnswers((prev) => ({ ...prev, [p.id]: e.target.value }))}
+                                placeholder="정답 입력"
+                                className="mt-1 w-full rounded-lg border border-[var(--border-c)] bg-white px-4 py-2.5 text-sm outline-none focus:border-[var(--pink)]"
+                              />
+                            </div>
+                          ) : (
+                            <p className="mt-3 text-sm text-[var(--secondary)]">
+                              내 답: <span className="text-[var(--foreground)]">{answers[p.id]?.trim() || "(무응답)"}</span>
+                            </p>
+                          );
+                        })()}
 
                         {/* 답지 (제출 후에만 공개): 정답 + 풀이 */}
                         {submitted && (

@@ -195,6 +195,7 @@ export default function AdminProblemsPage() {
           <h1 className="text-3xl font-medium text-[var(--foreground)]">문제은행</h1>
           <div className="flex gap-2">
             <Link href="/admin/extract" className="rounded-full bg-[var(--pink)] px-5 py-2.5 text-sm font-medium text-[var(--pink-dark)]">PDF에서 추출</Link>
+            <Link href="/admin/sat" className="rounded-full bg-[var(--pink)] px-5 py-2.5 text-sm font-medium text-[var(--pink-dark)]">영어 SAT 생성</Link>
             <Link href="/admin/worksheets" className="rounded-full bg-[var(--mint)] px-5 py-2.5 text-sm font-medium text-[var(--mint-dark)]">문제지 만들기 →</Link>
           </div>
         </div>
@@ -297,6 +298,9 @@ export default function AdminProblemsPage() {
                 textClassName="rounded-lg border border-[var(--border-c)] bg-[var(--pink-light)]/20 p-3 text-sm leading-relaxed text-[var(--foreground)]"
               />
               <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs">
+                {p.subject === "english" && (
+                  <span className="rounded-full bg-[var(--pink)] px-2.5 py-0.5 font-medium text-[var(--pink-dark)]">영어</span>
+                )}
                 <span className="rounded-full bg-[var(--mint)] px-2.5 py-0.5 font-medium text-[var(--mint-dark)]">{p.category}</span>
                 {p.course_level && <span className="rounded-full bg-[var(--pink-light)] px-2.5 py-0.5 text-[var(--secondary)]">{p.course_level}</span>}
                 {p.unit && <span className="rounded-full bg-[var(--pink-light)] px-2.5 py-0.5 text-[var(--secondary)]">{p.unit}</span>}

@@ -183,6 +183,12 @@ export default function AdminPage() {
             >
               문제지 · 배포
             </Link>
+            <Link
+              href="/admin/sat"
+              className="rounded-full bg-[var(--pink)] px-5 py-2.5 text-sm font-medium text-[var(--pink-dark)]"
+            >
+              영어 SAT 생성
+            </Link>
             {canManageSite(myRole) && (
               <>
                 <Link
