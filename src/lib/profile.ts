@@ -1,8 +1,10 @@
+import type { Role } from "@/lib/roles";
+
 export type Profile = {
   id: string;
   name: string | null;
   email: string | null;
-  role: "student" | "admin";
+  role: Role;
   created_at: string;
 };
 

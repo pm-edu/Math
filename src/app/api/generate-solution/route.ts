@@ -25,7 +25,8 @@ export async function POST(req: Request) {
     .select("role")
     .eq("id", auth.user.id)
     .maybeSingle();
-  if (me?.role !== "admin") return json(403, "관리자만 사용할 수 있습니다.");
+  if (!["owner", "admin", "teacher", "assistant"].includes(me?.role ?? ""))
+    return json(403, "권한이 없습니다.");
 
   if (!GEMINI_API_KEY) return json(500, "아직 설정되지 않았습니다. (GEMINI_API_KEY 없음)");
 

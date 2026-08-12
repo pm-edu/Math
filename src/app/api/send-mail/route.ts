@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     .select("role")
     .eq("id", auth.user.id)
     .maybeSingle();
-  if (me?.role !== "admin") return json(403, "관리자만 보낼 수 있습니다.");
+  if (me?.role !== "owner" && me?.role !== "admin") return json(403, "관리자만 보낼 수 있습니다.");
 
   if (!RESEND_API_KEY) return json(500, "메일 발송이 아직 설정되지 않았습니다. (RESEND_API_KEY 없음)");
 

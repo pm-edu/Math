@@ -7,6 +7,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/client";
 import { ProblemBody, MathText } from "@/components/ProblemBody";
+import { canManageMaterials } from "@/lib/roles";
 import { CATEGORIES, DIFFICULTIES, FORMATS, type Problem } from "@/lib/problems";
 
 const EMPTY = {
@@ -57,7 +58,7 @@ export default function AdminProblemsPage() {
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) { router.replace("/login"); return; }
       const { data: me } = await supabase.from("profiles").select("role").eq("id", auth.user.id).maybeSingle();
-      if (me?.role !== "admin") { setAllowed(false); return; }
+      if (!canManageMaterials(me?.role)) { setAllowed(false); return; }
       setAllowed(true);
     }
     init();

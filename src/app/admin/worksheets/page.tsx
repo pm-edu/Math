@@ -7,6 +7,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/client";
 import { ProblemBody } from "@/components/ProblemBody";
+import { canManageMaterials } from "@/lib/roles";
 import { CATEGORIES, type Problem, type Worksheet } from "@/lib/problems";
 import type { Profile } from "@/lib/profile";
 
@@ -55,7 +56,7 @@ export default function AdminWorksheetsPage() {
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) { router.replace("/login"); return; }
       const { data: me } = await supabase.from("profiles").select("role").eq("id", auth.user.id).maybeSingle();
-      if (me?.role !== "admin") { setAllowed(false); return; }
+      if (!canManageMaterials(me?.role)) { setAllowed(false); return; }
       setAllowed(true);
       const { data: studs } = await supabase.from("profiles").select("*").eq("role", "student").order("created_at", { ascending: false });
       setStudents((studs ?? []) as Profile[]);

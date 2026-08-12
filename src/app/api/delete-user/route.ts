@@ -35,7 +35,7 @@ export async function POST(req: Request) {
       .select("role")
       .eq("id", auth.user.id)
       .maybeSingle();
-    if (me?.role !== "admin") return json(403, "권한이 없습니다.");
+    if (me?.role !== "owner" && me?.role !== "admin") return json(403, "권한이 없습니다.");
     deleteId = target;
   }
 

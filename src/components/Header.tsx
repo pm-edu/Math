@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { site } from "@/lib/site";
 import { useLang } from "@/lib/i18n";
+import { isStaff } from "@/lib/roles";
 
 export default function Header() {
   const { lang, setLang, t } = useLang();
@@ -28,7 +29,7 @@ export default function Header() {
         .select("role")
         .eq("id", userId)
         .maybeSingle();
-      setIsAdmin(data?.role === "admin");
+      setIsAdmin(isStaff(data?.role));
     }
 
     supabase.auth.getUser().then(({ data }) => {

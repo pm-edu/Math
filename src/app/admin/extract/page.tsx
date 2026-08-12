@@ -7,6 +7,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/client";
 import { MathText } from "@/components/ProblemBody";
+import { canManageMaterials } from "@/lib/roles";
 import { DIFFICULTIES, FORMATS } from "@/lib/problems";
 import type { Category } from "@/lib/categories";
 
@@ -47,7 +48,7 @@ export default function AdminExtractPage() {
         .select("role")
         .eq("id", auth.user.id)
         .maybeSingle();
-      if (me?.role !== "admin") {
+      if (!canManageMaterials(me?.role)) {
         setAllowed(false);
         return;
       }

@@ -63,7 +63,7 @@ export default function AdminLessonsPage() {
         .eq("id", auth.user.id)
         .maybeSingle();
 
-      if (me?.role !== "admin") {
+      if (me?.role !== "owner" && me?.role !== "admin") {
         setAllowed(false);
         return;
       }
