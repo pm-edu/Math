@@ -67,42 +67,8 @@ export function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-// forcedItemType을 주면(유닛 종합평가에서 같은 단어를 서로 다른 유형으로 두 번 내고
-// 싶을 때) 레벨 기반 선택 대신 그 유형으로 만든다. 콘텐츠가 부족하면(예문 없음 등)
-// 안전하게 대체 유형으로 내려간다.
-export function buildItem(entry: RunningEntry, pool: RunningEntry[], forcedItemType?: ItemType): CurrentItem {
+function buildEnKoMc(entry: RunningEntry, pool: RunningEntry[]): CurrentItem {
   const primarySense = entry.content.senses[0];
-  const primaryExample = entry.content.examples[0];
-  const hasUsableConfusion = !!entry.confusionPartner && !!primaryExample;
-
-  const itemType: ItemType =
-    forcedItemType ??
-    pickItemTypeForLevel(entry.mastery.level, { hasConfusionPartner: hasUsableConfusion, rng: Math.random });
-
-  if (itemType === "CONTRAST" && entry.confusionPartner && primaryExample) {
-    const item = generateContrast({
-      target: { lemma: entry.content.lemma, exampleEn: primaryExample.textEn },
-      confusedWith: { lemma: entry.confusionPartner.lemma },
-    });
-    // 정답(target)이 항상 첫 보기로 나오지 않도록 화면에 보여줄 순서를 섞는다.
-    return {
-      itemType: "CONTRAST",
-      item: { ...item, options: shuffle(item.options) },
-      confusionPartnerWordId: entry.confusionPartner.wordId,
-    };
-  }
-
-  if (itemType === "CLOZE" && primaryExample) {
-    const item = generateCloze({ lemma: entry.content.lemma, exampleEn: primaryExample.textEn });
-    return { itemType: "CLOZE", item };
-  }
-
-  if (itemType === "KO_EN_TYPE" || itemType === "CLOZE" /* 예문 없어서 CLOZE 대체 */) {
-    const item = generateKoEnTyping({ lemma: entry.content.lemma, meaning: primarySense?.meaningKo ?? "" });
-    return { itemType: "KO_EN_TYPE", item };
-  }
-
-  // EN_KO_MC (기본값 — 대조/빈칸 조건을 못 채웠을 때도 여기로 온다)
   const candidatePool = pool
     .filter((p) => p.content.id !== entry.content.id && p.content.senses[0])
     .map((p) => ({ id: p.content.id, meaning: p.content.senses[0].meaningKo }));
@@ -116,4 +82,55 @@ export function buildItem(entry: RunningEntry, pool: RunningEntry[], forcedItemT
   );
   // 정답이 항상 첫 보기로 나오지 않도록 화면에 보여줄 순서를 섞는다.
   return { itemType: "EN_KO_MC", item: { ...item, options: shuffle(item.options) }, pool: candidatePool };
+}
+
+function buildKoEnType(entry: RunningEntry): CurrentItem {
+  const item = generateKoEnTyping({
+    lemma: entry.content.lemma,
+    meaning: entry.content.senses[0]?.meaningKo ?? "",
+  });
+  return { itemType: "KO_EN_TYPE", item };
+}
+
+// forcedItemType을 주면(유닛 종합평가에서 같은 단어를 서로 다른 유형으로 두 번 내고
+// 싶을 때) 레벨 기반 선택 대신 그 유형으로 만든다.
+//
+// 콘텐츠가 부족하면(예문 없음, 또는 예문이 불규칙 활용이라 빈칸을 못 만듦 등)
+// CONTRAST → CLOZE → KO_EN_TYPE → EN_KO_MC 순으로 안전하게 내려간다.
+export function buildItem(entry: RunningEntry, pool: RunningEntry[], forcedItemType?: ItemType): CurrentItem {
+  const primaryExample = entry.content.examples[0];
+  const hasUsableConfusion = !!entry.confusionPartner && !!primaryExample;
+
+  const itemType: ItemType =
+    forcedItemType ??
+    pickItemTypeForLevel(entry.mastery.level, { hasConfusionPartner: hasUsableConfusion, rng: Math.random });
+
+  if (itemType === "CONTRAST" && entry.confusionPartner && primaryExample) {
+    const item = generateContrast({
+      target: { lemma: entry.content.lemma, exampleEn: primaryExample.textEn },
+      confusedWith: { lemma: entry.confusionPartner.lemma },
+    });
+    if (item) {
+      // 정답(target)이 항상 첫 보기로 나오지 않도록 화면에 보여줄 순서를 섞는다.
+      return {
+        itemType: "CONTRAST",
+        item: { ...item, options: shuffle(item.options) },
+        confusionPartnerWordId: entry.confusionPartner.wordId,
+      };
+    }
+    // 예문에서 단어를 못 찾았으면(불규칙 활용 등) 아래(CLOZE)로 내려간다.
+  }
+
+  if ((itemType === "CLOZE" || itemType === "CONTRAST") && primaryExample) {
+    const item = generateCloze({ lemma: entry.content.lemma, exampleEn: primaryExample.textEn });
+    if (item) return { itemType: "CLOZE", item };
+    // 여기서도 못 찾았으면 아래(KO_EN_TYPE)로 내려간다.
+  }
+
+  if (itemType === "KO_EN_TYPE" || itemType === "CLOZE" || itemType === "CONTRAST") {
+    return buildKoEnType(entry);
+  }
+
+  // EN_KO_MC (기본값)
+  return buildEnKoMc(entry, pool);
 }

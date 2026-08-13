@@ -11,8 +11,11 @@ export type ClozeItem = {
   correctAnswer: string;
 };
 
-export function generateCloze(target: { lemma: string; exampleEn: string }): ClozeItem {
-  return { itemType: "CLOZE", prompt: blankOut(target.exampleEn, target.lemma), correctAnswer: target.lemma };
+// 예문에서 단어를 못 찾으면(불규칙 활용 등) null — 호출자가 다른 문항 유형으로 대체한다.
+export function generateCloze(target: { lemma: string; exampleEn: string }): ClozeItem | null {
+  const prompt = blankOut(target.exampleEn, target.lemma);
+  if (prompt === null) return null;
+  return { itemType: "CLOZE", prompt, correctAnswer: target.lemma };
 }
 
 export function gradeCloze(item: ClozeItem, response: { typed: string; responseMs?: number }): GradeResult {

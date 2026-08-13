@@ -13,11 +13,13 @@ export type ContrastItem = {
   correctKey: string;
 };
 
+// 예문에서 단어를 못 찾으면(불규칙 활용 등) null — 호출자가 다른 문항 유형으로 대체한다.
 export function generateContrast(params: {
   target: { lemma: string; exampleEn: string };
   confusedWith: { lemma: string };
-}): ContrastItem {
+}): ContrastItem | null {
   const prompt = blankOut(params.target.exampleEn, params.target.lemma);
+  if (prompt === null) return null;
   const options: McOption[] = [
     { key: params.target.lemma, label: params.target.lemma },
     { key: params.confusedWith.lemma, label: params.confusedWith.lemma },

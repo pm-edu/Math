@@ -7,9 +7,25 @@ describe("generateContrast — 혼동쌍 대조 문항 생성", () => {
       target: { lemma: "affect", exampleEn: "The weather can affect your mood." },
       confusedWith: { lemma: "effect" },
     });
-    expect(item.prompt).toBe("The weather can _____ your mood.");
-    expect(item.options.map((o) => o.key).sort()).toEqual(["affect", "effect"]);
-    expect(item.correctKey).toBe("affect");
+    expect(item?.prompt).toBe("The weather can _____ your mood.");
+    expect(item?.options.map((o) => o.key).sort()).toEqual(["affect", "effect"]);
+    expect(item?.correctKey).toBe("affect");
+  });
+
+  it("예문이 활용형(accepted)이어도 빈칸을 만든다 — 실제로 발견된 버그 재발 방지", () => {
+    const item = generateContrast({
+      target: { lemma: "accept", exampleEn: "She accepted the job offer." },
+      confusedWith: { lemma: "except" },
+    });
+    expect(item?.prompt).toBe("She _____ the job offer.");
+  });
+
+  it("예문에서 단어를 못 찾으면(불규칙 활용 등) null을 반환한다", () => {
+    const item = generateContrast({
+      target: { lemma: "deny", exampleEn: "He denied breaking the window." },
+      confusedWith: { lemma: "deny" },
+    });
+    expect(item).toBeNull();
   });
 });
 
@@ -19,7 +35,7 @@ describe("gradeContrast — 채점", () => {
       target: { lemma: "affect", exampleEn: "The weather can affect your mood." },
       confusedWith: { lemma: "effect" },
     });
-    const r = gradeContrast(item, { chosenKey: "affect", responseMs: 1000 });
+    const r = gradeContrast(item!, { chosenKey: "affect", responseMs: 1000 });
     expect(r.isCorrect).toBe(true);
   });
 
@@ -28,7 +44,7 @@ describe("gradeContrast — 채점", () => {
       target: { lemma: "affect", exampleEn: "The weather can affect your mood." },
       confusedWith: { lemma: "effect" },
     });
-    const r = gradeContrast(item, { chosenKey: "effect", responseMs: 1000 });
+    const r = gradeContrast(item!, { chosenKey: "effect", responseMs: 1000 });
     expect(r.isCorrect).toBe(false);
   });
 });
