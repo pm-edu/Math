@@ -35,6 +35,7 @@ export default function TestPlayer({
 }) {
   const router = useRouter();
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionError, setSessionError] = useState<string | null>(null);
   const [queue] = useState<RunningEntry[]>(() =>
     words.map((q) => ({ ...q, mastery: toMasteryState(q.progress), fsrs: toFsrsState(q.progress) }))
   );
@@ -51,7 +52,9 @@ export default function TestPlayer({
   const [gateResult, setGateResult] = useState<{ passed: boolean; testScore: number; masteryRatio: number } | null>(null);
 
   useEffect(() => {
-    createSession(userId, "test", unitId).then(setSessionId).catch(() => setSessionId(null));
+    createSession(userId, "test", unitId)
+      .then(setSessionId)
+      .catch((e: unknown) => setSessionError(e instanceof Error ? e.message : "세션을 시작하지 못했습니다."));
   }, [userId, unitId]);
 
   async function submitAnswer(result: GradeResult, chosenKey: string | null) {
@@ -169,16 +172,34 @@ export default function TestPlayer({
     );
   }
 
+  if (sessionError) {
+    return (
+      <div className="mx-auto max-w-md px-6 py-24 text-center">
+        <h1 className="text-2xl font-medium text-[var(--foreground)]">시작하지 못했어요</h1>
+        <p className="mt-3 text-sm text-[var(--secondary)]">{sessionError} 새로고침 후 다시 시도해주세요.</p>
+        <Link href="/english" className="mt-8 inline-block rounded-full bg-[var(--pink)] px-6 py-3 text-sm font-medium text-[var(--pink-dark)]">
+          ← 영어 학습으로
+        </Link>
+      </div>
+    );
+  }
+
+  if (!sessionId) {
+    return <div className="mx-auto max-w-md px-6 py-24 text-center"><p className="text-sm text-[var(--secondary)]">준비하는 중...</p></div>;
+  }
+
   if (gateResult) {
     return (
       <div className="mx-auto max-w-md px-6 py-24 text-center">
         <h1 className="text-2xl font-medium text-[var(--foreground)]">{gateResult.passed ? "통과했어요! 🎉" : "아직이에요"}</h1>
         <p className="mt-3 text-[var(--foreground)]">
-          점수 <span className="font-bold text-[var(--mint-dark)]">{gateResult.testScore}점</span> · 마스터리{" "}
+          이번 시험 점수 <span className="font-bold text-[var(--mint-dark)]">{gateResult.testScore}점</span> · 완전히 익힌 단어{" "}
           <span className="font-bold text-[var(--mint-dark)]">{Math.round(gateResult.masteryRatio * 100)}%</span>
         </p>
         <p className="mt-2 text-sm text-[var(--secondary)]">
-          {gateResult.passed ? "90% 게이트를 통과해 다음 유닛이 열렸어요." : "90% 게이트(마스터리·점수 둘 다 90% 이상)를 아직 못 넘었어요. 교정학습으로 약한 단어만 다시 다져봐요."}
+          {gateResult.passed
+            ? "90% 게이트를 통과해 다음 유닛이 열렸어요."
+            : "시험 점수와 별개로, 단어를 \"완전히 익혔다\"고 인정받으려면 며칠에 걸쳐 여러 번 다른 날 맞혀야 해요(벼락치기 방지). 오늘 점수가 높아도 이제 막 배운 단어라 아직 0%인 게 정상이에요 — 교정학습과 복습을 꾸준히 반복하면 서서히 올라갑니다."}
         </p>
         <div className="mt-8 flex justify-center gap-2">
           {gateResult.passed ? (

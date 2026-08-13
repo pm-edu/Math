@@ -44,6 +44,7 @@ export default function SessionPlayer({
   extraFinishedAction?: { href: string; label: string };
 }) {
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionError, setSessionError] = useState<string | null>(null);
   const [queue, setQueue] = useState<RunningEntry[]>(() =>
     initialQueue.map((q) => ({ ...q, mastery: toMasteryState(q.progress), fsrs: toFsrsState(q.progress) }))
   );
@@ -65,7 +66,9 @@ export default function SessionPlayer({
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    createSession(userId, mode, unitId).then(setSessionId).catch(() => setSessionId(null));
+    createSession(userId, mode, unitId)
+      .then(setSessionId)
+      .catch((e: unknown) => setSessionError(e instanceof Error ? e.message : "세션을 시작하지 못했습니다."));
   }, [userId, mode, unitId]);
 
   async function submitAnswer(result: GradeResult, chosenWordId: string | null, chosenKey: string | null) {
@@ -192,6 +195,22 @@ export default function SessionPlayer({
         </Link>
       </div>
     );
+  }
+
+  if (sessionError) {
+    return (
+      <div className="mx-auto max-w-md px-6 py-24 text-center">
+        <h1 className="text-2xl font-medium text-[var(--foreground)]">시작하지 못했어요</h1>
+        <p className="mt-3 text-sm text-[var(--secondary)]">{sessionError} 새로고침 후 다시 시도해주세요.</p>
+        <Link href={backHref} className="mt-8 inline-block rounded-full bg-[var(--pink)] px-6 py-3 text-sm font-medium text-[var(--pink-dark)]">
+          {backLabel}
+        </Link>
+      </div>
+    );
+  }
+
+  if (!sessionId) {
+    return <div className="mx-auto max-w-md px-6 py-24 text-center"><p className="text-sm text-[var(--secondary)]">준비하는 중...</p></div>;
   }
 
   if (finished) {
