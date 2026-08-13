@@ -18,7 +18,8 @@ import {
   type ItemType,
 } from "@/lib/engine";
 import { createSession, endSession, saveAnswer } from "@/lib/english/session-data";
-import { buildItem, toMasteryState, toFsrsState, type CurrentItem, type RunningEntry } from "@/lib/english/build-item";
+import { buildItem, toMasteryState, toFsrsState, toWordProgress, type CurrentItem, type RunningEntry } from "@/lib/english/build-item";
+import TestPlayer from "./TestPlayer";
 import type { QueueItem, SessionMode } from "@/lib/english/types";
 
 export default function SessionPlayer({
@@ -64,6 +65,7 @@ export default function SessionPlayer({
     null
   );
   const [saving, setSaving] = useState(false);
+  const [showQuickCheck, setShowQuickCheck] = useState(false);
 
   useEffect(() => {
     createSession(userId, mode, unitId)
@@ -214,6 +216,27 @@ export default function SessionPlayer({
   }
 
   if (finished) {
+    if (showQuickCheck) {
+      // 이번 세션에서 실제로 마주친 단어만(중복 제거, 마지막 상태 기준) 미니 점검.
+      // 게이트/unit_progress와는 무관 — 학생이 원할 때 "내가 잘 아나" 확인용.
+      const distinctById = new Map<string, RunningEntry>();
+      queue.forEach((e) => distinctById.set(e.content.id, e)); // 뒤에 나온 게 최신 상태
+      const quickWords: QueueItem[] = Array.from(distinctById.values()).map((e) => ({
+        content: e.content,
+        progress: toWordProgress(e),
+        confusionPartner: e.confusionPartner,
+      }));
+      return (
+        <TestPlayer
+          unitId={unitId}
+          userId={userId}
+          words={quickWords}
+          checkMode="quick"
+          onDone={() => setShowQuickCheck(false)}
+        />
+      );
+    }
+
     return (
       <div className="mx-auto max-w-md px-6 py-24 text-center">
         <h1 className="text-2xl font-medium text-[var(--foreground)]">학습 완료 🎉</h1>
@@ -221,7 +244,13 @@ export default function SessionPlayer({
           이번 세션 <span className="font-bold text-[var(--mint-dark)]">{stats.correct} / {stats.total} 정답</span>
         </p>
         <p className="mt-2 text-sm text-[var(--secondary)]">틀린 단어는 다시 나왔고, 진도는 저장됐어요.</p>
-        <div className="mt-8 flex justify-center gap-2">
+        <div className="mt-8 flex flex-wrap justify-center gap-2">
+          <button
+            onClick={() => setShowQuickCheck(true)}
+            className="inline-block rounded-full border border-[var(--border-c)] bg-white px-6 py-3 text-sm font-medium text-[var(--foreground)]"
+          >
+            방금 배운 단어 점검하기
+          </button>
           <Link
             href={backHref}
             onClick={() => finishSession()}

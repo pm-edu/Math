@@ -1,9 +1,13 @@
 "use client";
 
-// 유닛 종합평가(90% 게이트). SessionPlayer와 달리 오답을 다시 내지 않는
-// 고정 1회 통과 방식이다 — 그래야 "몇 점"이라는 점수가 의미가 있다.
-// 끝나면 마스터리 비율+점수로 게이트를 판정해 unit_progress에 저장하고,
-// 불통과면 교정학습(다음 단계)으로 안내한다.
+// 종합평가 재생기. SessionPlayer와 달리 오답을 다시 내지 않는 고정 1회 통과
+// 방식이다 — 그래야 "몇 점"이라는 점수가 의미가 있다.
+//
+// 두 가지 모드로 쓴다:
+// - "gate"(유닛 종합평가): 마스터리 비율+점수로 90% 게이트를 판정해
+//   unit_progress에 저장. 통과=다음 유닛 열림, 불통과=교정학습 안내.
+// - "quick"(세션 미니 점검): 방금 학습 세션에서 다룬 단어만 가볍게 확인.
+//   게이트/unit_progress와 무관 — 그냥 "내가 잘 아나" 점검용.
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -28,10 +32,14 @@ export default function TestPlayer({
   unitId,
   userId,
   words,
+  checkMode = "gate",
+  onDone,
 }: {
-  unitId: string;
+  unitId: string | null;
   userId: string;
   words: QueueItem[];
+  checkMode?: "gate" | "quick";
+  onDone?: () => void; // "quick" 모드에서 "닫기" 눌렀을 때 (예: 원래 화면으로 복귀)
 }) {
   const router = useRouter();
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -116,12 +124,15 @@ export default function TestPlayer({
     const testScore = Math.round((correctCount / queue.length) * 100);
     const passed = passesGate({ masteryRatio, testScore });
 
-    await saveUnitProgress(userId, unitId, {
-      masteryRatio,
-      testScore,
-      status: passed ? "passed" : "in_progress",
-      cycleCount: 0, // 실패해도 여기선 0 유지 — 실제 사이클 증가는 교정학습 완료 후 재평가에서
-    });
+    // "quick"(세션 미니 점검)은 게이트/unit_progress와 무관 — 저장하지 않는다.
+    if (checkMode === "gate" && unitId) {
+      await saveUnitProgress(userId, unitId, {
+        masteryRatio,
+        testScore,
+        status: passed ? "passed" : "in_progress",
+        cycleCount: 0, // 실패해도 여기선 0 유지 — 실제 사이클 증가는 교정학습 완료 후 재평가에서
+      });
+    }
 
     setGateResult({ passed, testScore, masteryRatio });
   }
@@ -186,6 +197,30 @@ export default function TestPlayer({
 
   if (!sessionId) {
     return <div className="mx-auto max-w-md px-6 py-24 text-center"><p className="text-sm text-[var(--secondary)]">준비하는 중...</p></div>;
+  }
+
+  if (gateResult && checkMode === "quick") {
+    return (
+      <div className="mx-auto max-w-md px-6 py-24 text-center">
+        <h1 className="text-2xl font-medium text-[var(--foreground)]">점검 완료 ✅</h1>
+        <p className="mt-3 text-[var(--foreground)]">
+          방금 배운 단어 <span className="font-bold text-[var(--mint-dark)]">{correctCount} / {queue.length}</span> 개 정답
+        </p>
+        <p className="mt-2 text-sm text-[var(--secondary)]">
+          {wrongWordIds.length > 0
+            ? "틀린 단어는 곧 복습으로 다시 만나게 돼요. 오늘도 수고했어요!"
+            : "오늘 배운 건 다 기억하고 있네요! 완전히 내 것이 되려면 며칠 더 복습이 필요해요."}
+        </p>
+        <div className="mt-8 flex justify-center gap-2">
+          <button
+            onClick={() => onDone?.()}
+            className="rounded-full bg-[var(--pink)] px-6 py-3 text-sm font-medium text-[var(--pink-dark)]"
+          >
+            확인
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (gateResult) {

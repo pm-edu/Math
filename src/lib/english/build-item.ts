@@ -16,7 +16,7 @@ import {
   type ClozeItem,
   type ContrastItem,
 } from "@/lib/engine";
-import type { QueueItem } from "./types";
+import type { QueueItem, WordProgress } from "./types";
 
 export type CurrentItem =
   | { itemType: "EN_KO_MC"; item: EnKoMcItem; pool: Array<{ id: string; meaning: string }> }
@@ -42,6 +42,20 @@ export function toMasteryState(progress: QueueItem["progress"]): MasteryState {
 export function toFsrsState(progress: QueueItem["progress"]): FsrsState | null {
   if (!progress || progress.stability === null || progress.difficulty === null) return null;
   return { stability: progress.stability, difficulty: progress.difficulty, dueAt: new Date().toISOString() };
+}
+
+// toMasteryState/toFsrsState의 역변환. 세션 도중 갱신된 RunningEntry를
+// (DB를 다시 조회하지 않고) 그대로 다음 화면(예: 미니 점검)에 넘길 때 쓴다.
+export function toWordProgress(entry: RunningEntry): WordProgress {
+  return {
+    level: entry.mastery.level,
+    stability: entry.fsrs?.stability ?? null,
+    difficulty: entry.fsrs?.difficulty ?? null,
+    consecutiveWrong: entry.mastery.consecutiveWrong,
+    consecutiveCorrect: entry.mastery.consecutiveCorrect,
+    lastSessionId: entry.mastery.lastSessionId,
+    lastItemType: null, // 교정학습 전용 필드라 세션 내 핸드오프에선 안 씀
+  };
 }
 
 export function shuffle<T>(arr: T[]): T[] {
