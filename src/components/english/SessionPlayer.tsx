@@ -58,6 +58,15 @@ function toFsrsState(progress: QueueItem["progress"]): FsrsState | null {
   return { stability: progress.stability, difficulty: progress.difficulty, dueAt: new Date().toISOString() };
 }
 
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 // 문항 생성. entry+pool만으로 결과가 정해지는 순수 함수라 컴포넌트 밖에 둔다
 // (훅으로 감쌀 이유가 없다 — useCallback/useMemo/ref 없이도 안전하게 쓸 수 있다).
 function buildItem(entry: RunningEntry, pool: RunningEntry[]): CurrentItem {
@@ -75,7 +84,12 @@ function buildItem(entry: RunningEntry, pool: RunningEntry[]): CurrentItem {
       target: { lemma: entry.content.lemma, exampleEn: primaryExample.textEn },
       confusedWith: { lemma: entry.confusionPartner.lemma },
     });
-    return { itemType: "CONTRAST", item, confusionPartnerWordId: entry.confusionPartner.wordId };
+    // 정답(target)이 항상 첫 보기로 나오지 않도록 화면에 보여줄 순서를 섞는다.
+    return {
+      itemType: "CONTRAST",
+      item: { ...item, options: shuffle(item.options) },
+      confusionPartnerWordId: entry.confusionPartner.wordId,
+    };
   }
 
   if (itemType === "CLOZE" && primaryExample) {
@@ -100,7 +114,8 @@ function buildItem(entry: RunningEntry, pool: RunningEntry[]): CurrentItem {
       isConfusion: c.id === entry.confusionPartner?.wordId,
     }))
   );
-  return { itemType: "EN_KO_MC", item, pool: candidatePool };
+  // 정답이 항상 첫 보기로 나오지 않도록 화면에 보여줄 순서를 섞는다.
+  return { itemType: "EN_KO_MC", item: { ...item, options: shuffle(item.options) }, pool: candidatePool };
 }
 
 export default function SessionPlayer({
