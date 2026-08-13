@@ -37,7 +37,12 @@ export default function EnglishHubPage() {
     <>
       <Header />
       <main className="mx-auto max-w-2xl px-6 py-16">
-        <h1 className="text-3xl font-medium text-[var(--foreground)]">영어 학습</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-3xl font-medium text-[var(--foreground)]">영어 학습</h1>
+          <Link href="/analytics" className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]">
+            내 학습 통계 →
+          </Link>
+        </div>
         <p className="mt-2 text-[var(--secondary)]">
           채점 기반 완전학습입니다. 스스로 &quot;안다&quot;고 표시하는 게 아니라, 맞혀야만 다음 단계로 올라갑니다.
         </p>

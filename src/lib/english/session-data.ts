@@ -359,3 +359,109 @@ async function recordConfusion(userId: string, wordId: string, confusedWithWordI
       .insert({ user_id: userId, word_id: wordId, confused_with_word_id: confusedWithWordId, count: 1 });
   }
 }
+
+// ===== /analytics(학생 개인 대시보드)용 =====
+
+export type MasteryOverview = {
+  totalLearned: number; // level>=1 (한 번이라도 접한 단어)
+  mastered: number; // level>=MASTERY_LEVEL_THRESHOLD(3)
+  byLevel: number[]; // index=level(0~5)
+};
+
+export async function loadMasteryOverview(userId: string): Promise<MasteryOverview> {
+  const supabase = createClient();
+  const { data } = await supabase.from("user_word_states").select("level").eq("user_id", userId);
+  const byLevel = [0, 0, 0, 0, 0, 0];
+  (data ?? []).forEach((r) => {
+    const lv = r.level as number;
+    if (lv >= 0 && lv <= 5) byLevel[lv] += 1;
+  });
+  const totalLearned = byLevel.slice(1).reduce((a, b) => a + b, 0);
+  const mastered = byLevel.slice(3).reduce((a, b) => a + b, 0);
+  return { totalLearned, mastered, byLevel };
+}
+
+export type ReviewLoadDay = { date: string; count: number };
+
+// 앞으로 days일간(오늘 포함) 날짜별 복습 예정 단어 수 + 이미 밀린(overdue) 단어 수.
+// 간격반복 스케줄이 특정 날짜에 몰리는지 미리 보여주는 용도(망각곡선 대응 계획표).
+export async function loadUpcomingReviewLoad(
+  userId: string,
+  days = 14
+): Promise<{ overdue: number; days: ReviewLoadDay[] }> {
+  const supabase = createClient();
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const rangeEnd = new Date(startOfToday);
+  rangeEnd.setDate(rangeEnd.getDate() + days);
+
+  const { data } = await supabase
+    .from("user_word_states")
+    .select("due_at")
+    .eq("user_id", userId)
+    .not("due_at", "is", null);
+
+  let overdue = 0;
+  const countByDate = new Map<string, number>();
+  (data ?? []).forEach((r) => {
+    const dueAt = new Date(r.due_at as string);
+    if (dueAt < startOfToday) {
+      overdue += 1;
+      return;
+    }
+    if (dueAt >= rangeEnd) return;
+    const key = dueAt.toISOString().slice(0, 10);
+    countByDate.set(key, (countByDate.get(key) ?? 0) + 1);
+  });
+
+  const result: ReviewLoadDay[] = [];
+  for (let i = 0; i < days; i++) {
+    const d = new Date(startOfToday);
+    d.setDate(d.getDate() + i);
+    const key = d.toISOString().slice(0, 10);
+    result.push({ date: key, count: countByDate.get(key) ?? 0 });
+  }
+  return { overdue, days: result };
+}
+
+export type WeakWord = {
+  wordId: string;
+  lemma: string;
+  meaningKo: string | null;
+  level: number;
+  consecutiveWrong: number;
+};
+
+// 약점 단어: 접해본 적 있는(level>=1) 단어 중 최근 연속오답이 많고 레벨이 낮은 순.
+export async function loadWeakWords(userId: string, limit = 10): Promise<WeakWord[]> {
+  const supabase = createClient();
+  const { data: states } = await supabase
+    .from("user_word_states")
+    .select("word_id, level, consecutive_wrong")
+    .eq("user_id", userId)
+    .gt("level", 0)
+    .order("consecutive_wrong", { ascending: false })
+    .order("level", { ascending: true })
+    .limit(limit);
+
+  const wordIds = (states ?? []).map((s) => s.word_id);
+  if (wordIds.length === 0) return [];
+
+  const [{ data: words }, { data: senses }] = await Promise.all([
+    supabase.from("words").select("id, lemma").in("id", wordIds),
+    supabase.from("word_senses").select("word_id, meaning_ko").in("word_id", wordIds).order("position"),
+  ]);
+  const lemmaById = new Map((words ?? []).map((w) => [w.id, w.lemma]));
+  const meaningByWord = new Map<string, string>();
+  (senses ?? []).forEach((s) => {
+    if (!meaningByWord.has(s.word_id)) meaningByWord.set(s.word_id, s.meaning_ko);
+  });
+
+  return (states ?? []).map((s) => ({
+    wordId: s.word_id,
+    lemma: lemmaById.get(s.word_id) ?? "?",
+    meaningKo: meaningByWord.get(s.word_id) ?? null,
+    level: s.level,
+    consecutiveWrong: s.consecutive_wrong,
+  }));
+}

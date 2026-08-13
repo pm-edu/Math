@@ -135,6 +135,45 @@ export default function ClassesPage() {
           <p className="mt-4 rounded-lg bg-[var(--mint)]/40 px-4 py-2 text-sm text-[var(--foreground)]">{notice}</p>
         )}
 
+        {manage && students.length > 0 && (
+          <>
+            <h2 className="mt-8 text-lg font-medium text-[var(--foreground)]">사이트 전체 현황</h2>
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-4">
+              <div className="rounded-2xl border border-[var(--border-c)] bg-white p-5">
+                <p className="text-xs text-[var(--secondary)]">전체 학생</p>
+                <p className="mt-1 text-2xl font-semibold text-[var(--foreground)]">{students.length}명</p>
+              </div>
+              <div className="rounded-2xl border border-[var(--border-c)] bg-white p-5">
+                <p className="text-xs text-[var(--secondary)]">최근 7일 활동 학생</p>
+                <p className="mt-1 text-2xl font-semibold text-[var(--mint-dark)]">
+                  {students.filter((s) => (reports.get(s.id)?.activityLast7d ?? 0) > 0).length}명
+                </p>
+              </div>
+              <div className="rounded-2xl border border-[var(--border-c)] bg-white p-5">
+                <p className="text-xs text-[var(--secondary)]">평균 단어 마스터리</p>
+                <p className="mt-1 text-2xl font-semibold text-[var(--foreground)]">
+                  {Math.round(
+                    (students.reduce((sum, s) => sum + (reports.get(s.id)?.wordAvgMastery ?? 0), 0) /
+                      students.length) *
+                      100
+                  )}
+                  %
+                </p>
+              </div>
+              <div className="rounded-2xl border border-[var(--border-c)] bg-white p-5">
+                <p className="text-xs text-[var(--secondary)]">문제지 제출률</p>
+                <p className="mt-1 text-2xl font-semibold text-[var(--foreground)]">
+                  {(() => {
+                    const assigned = students.reduce((sum, s) => sum + (reports.get(s.id)?.worksheetsAssigned ?? 0), 0);
+                    const submitted = students.reduce((sum, s) => sum + (reports.get(s.id)?.worksheetsSubmitted ?? 0), 0);
+                    return assigned > 0 ? `${Math.round((submitted / assigned) * 100)}%` : "-";
+                  })()}
+                </p>
+              </div>
+            </div>
+          </>
+        )}
+
         {manage && (
           <div className="mt-8 flex gap-2">
             <input
