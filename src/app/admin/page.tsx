@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/client";
-import type { Contact, Profile } from "@/lib/profile";
+import type { Contact, Profile, ClassRow } from "@/lib/profile";
 import {
   isStaff,
   canManageSite,
@@ -16,6 +16,7 @@ import {
   ROLE_LABELS,
   type Role,
 } from "@/lib/roles";
+import { loadClasses, setStudentClass } from "@/lib/classes";
 
 type PurchaseRow = { user_id: string; status: string };
 
@@ -26,21 +27,24 @@ export default function AdminPage() {
   const [students, setStudents] = useState<Profile[]>([]);
   const [purchases, setPurchases] = useState<PurchaseRow[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [classes, setClasses] = useState<ClassRow[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     const supabase = createClient();
-    const [profileResult, purchaseResult, contactResult] = await Promise.all([
+    const [profileResult, purchaseResult, contactResult, classList] = await Promise.all([
       supabase.from("profiles").select("*").order("created_at", { ascending: false }),
       supabase.from("purchases").select("user_id, status"),
       supabase
         .from("contacts")
         .select("id, name, email, message, created_at")
         .order("created_at", { ascending: false }),
+      loadClasses(),
     ]);
     setStudents((profileResult.data ?? []) as Profile[]);
     setPurchases((purchaseResult.data ?? []) as PurchaseRow[]);
     setContacts((contactResult.data ?? []) as Contact[]);
+    setClasses(classList);
   }, []);
 
   useEffect(() => {
@@ -115,6 +119,15 @@ export default function AdminPage() {
       return;
     }
     setNotice(`${target.name ?? target.email} 님을 ${ROLE_LABELS[newRole as Role]}(으)로 변경했습니다.`);
+    loadData();
+  }
+
+  async function handleSetClass(student: Profile, classId: string) {
+    const { error } = await setStudentClass(student.id, classId || null);
+    if (error) {
+      setNotice(`반 배정 실패: ${error}`);
+      return;
+    }
     loadData();
   }
 
@@ -195,6 +208,14 @@ export default function AdminPage() {
             >
               영어 단어
             </Link>
+            {canManageStudents(myRole) && (
+              <Link
+                href="/admin/classes"
+                className="rounded-full bg-[var(--mint)] px-5 py-2.5 text-sm font-medium text-[var(--mint-dark)]"
+              >
+                반 관리 · 리포트
+              </Link>
+            )}
             {canManageSite(myRole) && (
               <>
                 <Link
@@ -259,6 +280,7 @@ export default function AdminPage() {
                     <th className="px-5 py-3 font-medium">이름</th>
                     <th className="px-5 py-3 font-medium">이메일</th>
                     <th className="px-5 py-3 font-medium">권한</th>
+                    <th className="px-5 py-3 font-medium">반</th>
                     <th className="px-5 py-3 font-medium">수강 강좌</th>
                     <th className="px-5 py-3 font-medium">가입일</th>
                     <th className="px-5 py-3 font-medium">관리</th>
@@ -267,7 +289,7 @@ export default function AdminPage() {
                 <tbody>
                   {students.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-5 py-10 text-center text-[var(--secondary)]">
+                      <td colSpan={7} className="px-5 py-10 text-center text-[var(--secondary)]">
                         아직 가입자가 없습니다.
                       </td>
                     </tr>
@@ -298,6 +320,26 @@ export default function AdminPage() {
                             ) : (
                               <span className="rounded-full bg-[var(--pink-light)] px-3 py-1 text-xs font-medium text-[var(--secondary)]">
                                 {ROLE_LABELS[student.role]}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-5 py-4">
+                            {canManageSite(myRole) && student.role === "student" ? (
+                              <select
+                                value={student.class_id ?? ""}
+                                onChange={(e) => handleSetClass(student, e.target.value)}
+                                className="rounded-lg border border-[var(--border-c)] bg-white px-2 py-1 text-xs"
+                              >
+                                <option value="">미배정</option>
+                                {classes.map((c) => (
+                                  <option key={c.id} value={c.id}>
+                                    {c.name}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <span className="text-xs text-[var(--secondary)]">
+                                {classes.find((c) => c.id === student.class_id)?.name ?? "-"}
                               </span>
                             )}
                           </td>

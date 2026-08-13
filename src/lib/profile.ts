@@ -6,6 +6,14 @@ export type Profile = {
   email: string | null;
   role: Role;
   created_at: string;
+  class_id: string | null;
+};
+
+export type ClassRow = {
+  id: string;
+  name: string;
+  teacher_id: string | null;
+  created_at: string;
 };
 
 export type Contact = {
