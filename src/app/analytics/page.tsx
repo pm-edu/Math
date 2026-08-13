@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import SentenceWritePractice from "@/components/english/SentenceWritePractice";
 import { createClient } from "@/lib/supabase/client";
 import {
   loadMasteryOverview,
@@ -130,29 +131,23 @@ export default function AnalyticsPage() {
                 아직 어려워하는 단어가 없습니다.
               </div>
             ) : (
-              <div className="mt-4 overflow-x-auto rounded-2xl border border-[var(--border-c)] bg-white">
-                <table className="w-full min-w-[480px] text-sm">
-                  <thead>
-                    <tr className="border-b border-[var(--border-c)] text-left text-[var(--secondary)]">
-                      <th className="px-5 py-3 font-medium">단어</th>
-                      <th className="px-5 py-3 font-medium">뜻</th>
-                      <th className="px-5 py-3 font-medium">숙련도</th>
-                      <th className="px-5 py-3 font-medium">최근 연속오답</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {weakWords.map((w) => (
-                      <tr key={w.wordId} className="border-b border-[var(--border-c)] last:border-0">
-                        <td className="px-5 py-3 font-medium text-[var(--foreground)]">{w.lemma}</td>
-                        <td className="px-5 py-3 text-[var(--secondary)]">{w.meaningKo ?? "-"}</td>
-                        <td className="px-5 py-3 text-[var(--foreground)]">
-                          Lv{w.level} {LEVEL_LABELS[w.level]}
-                        </td>
-                        <td className="px-5 py-3 text-[var(--foreground)]">{w.consecutiveWrong}회</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="mt-4 space-y-3">
+                {weakWords.map((w) => (
+                  <div key={w.wordId} className="rounded-2xl border border-[var(--border-c)] bg-white p-4">
+                    <div>
+                      <p className="font-medium text-[var(--foreground)]">
+                        {w.lemma}
+                        {w.meaningKo && <span className="ml-2 font-normal text-[var(--secondary)]">{w.meaningKo}</span>}
+                      </p>
+                      <p className="mt-0.5 text-xs text-[var(--secondary)]">
+                        Lv{w.level} {LEVEL_LABELS[w.level]} · 최근 연속오답 {w.consecutiveWrong}회
+                      </p>
+                    </div>
+                    <div className="mt-2">
+                      <SentenceWritePractice lemma={w.lemma} meaningKo={w.meaningKo} />
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </>
