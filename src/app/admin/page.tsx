@@ -11,6 +11,7 @@ import {
   isStaff,
   canManageSite,
   canManageStudents,
+  canViewGrades,
   canAssignRoles,
   assignableRoles,
   ROLE_LABELS,
@@ -23,6 +24,7 @@ type PurchaseRow = { user_id: string; status: string };
 export default function AdminPage() {
   const router = useRouter();
   const [allowed, setAllowed] = useState<boolean | null>(null);
+  const [myId, setMyId] = useState<string | null>(null);
   const [myRole, setMyRole] = useState<Role | null>(null);
   const [students, setStudents] = useState<Profile[]>([]);
   const [purchases, setPurchases] = useState<PurchaseRow[]>([]);
@@ -67,6 +69,7 @@ export default function AdminPage() {
         setAllowed(false);
         return;
       }
+      setMyId(auth.user.id);
       setMyRole((me?.role ?? null) as Role | null);
       setAllowed(true);
       loadData();
@@ -169,6 +172,13 @@ export default function AdminPage() {
   const studentCount = students.filter((s) => s.role === "student").length;
   const canAssign = canAssignRoles(myRole);
   const assignChoices = assignableRoles(myRole);
+  // 교사 담당 반(들). 3단계: 교사는 owner/admin이 아니어도 담당 반 학생은 탈퇴시킬 수 있다.
+  const myTeacherClassIds = classes.filter((c) => c.teacher_id === myId).map((c) => c.id);
+  function canRemove(student: Profile): boolean {
+    if (student.role !== "student") return false;
+    if (canManageSite(myRole)) return true;
+    return myRole === "teacher" && !!student.class_id && myTeacherClassIds.includes(student.class_id);
+  }
 
   return (
     <>
@@ -208,7 +218,7 @@ export default function AdminPage() {
             >
               영어 단어
             </Link>
-            {canManageStudents(myRole) && (
+            {canViewGrades(myRole) && (
               <Link
                 href="/admin/classes"
                 className="rounded-full bg-[var(--mint)] px-5 py-2.5 text-sm font-medium text-[var(--mint-dark)]"
@@ -324,7 +334,7 @@ export default function AdminPage() {
                             )}
                           </td>
                           <td className="px-5 py-4">
-                            {canManageSite(myRole) && student.role === "student" ? (
+                            {canManageSite(myRole) && (student.role === "student" || student.role === "assistant") ? (
                               <select
                                 value={student.class_id ?? ""}
                                 onChange={(e) => handleSetClass(student, e.target.value)}
@@ -348,7 +358,7 @@ export default function AdminPage() {
                             {new Date(student.created_at).toLocaleDateString("ko-KR")}
                           </td>
                           <td className="px-5 py-4">
-                            {student.role === "student" && canManageSite(myRole) && (
+                            {canRemove(student) && (
                               <button
                                 onClick={() => handleRemoveStudent(student)}
                                 className="text-sm text-red-600 underline hover:text-red-700"

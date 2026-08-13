@@ -7,7 +7,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile, ClassRow } from "@/lib/profile";
-import { isStaff, canManageSite, canManageStudents } from "@/lib/roles";
+import { isStaff, canManageSite, canViewGrades, type Role } from "@/lib/roles";
 import { loadClasses, createClass, deleteClass, setClassTeacher, setStudentClass, loadStudentReports } from "@/lib/classes";
 import type { StudentReport } from "@/lib/classes";
 
@@ -15,6 +15,8 @@ export default function ClassesPage() {
   const router = useRouter();
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [myId, setMyId] = useState<string | null>(null);
+  const [myRole, setMyRole] = useState<Role | null>(null);
+  const [myClassId, setMyClassId] = useState<string | null>(null);
   const [manage, setManage] = useState(false);
   const [classes, setClasses] = useState<ClassRow[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -41,9 +43,11 @@ export default function ClassesPage() {
     async function init() {
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) { router.replace("/login"); return; }
-      const { data: me } = await supabase.from("profiles").select("role").eq("id", auth.user.id).maybeSingle();
-      if (!isStaff(me?.role) || !canManageStudents(me?.role)) { setAllowed(false); return; }
+      const { data: me } = await supabase.from("profiles").select("role, class_id").eq("id", auth.user.id).maybeSingle();
+      if (!isStaff(me?.role) || !canViewGrades(me?.role)) { setAllowed(false); return; }
       setMyId(auth.user.id);
+      setMyRole((me?.role ?? null) as Role | null);
+      setMyClassId(me?.class_id ?? null);
       setManage(canManageSite(me?.role));
       setAllowed(true);
       loadAll();
@@ -118,7 +122,11 @@ export default function ClassesPage() {
   const teacherOptions = profiles.filter((p) => isStaff(p.role));
   const students = profiles.filter((p) => p.role === "student");
   const unassignedStudents = students.filter((s) => !s.class_id);
-  const visibleClasses = manage ? classes : classes.filter((c) => c.teacher_id === myId);
+  const visibleClasses = manage
+    ? classes
+    : myRole === "teacher"
+    ? classes.filter((c) => c.teacher_id === myId)
+    : classes.filter((c) => c.id === myClassId);
 
   return (
     <>

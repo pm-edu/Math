@@ -29,13 +29,34 @@ export async function POST(req: Request) {
   // 삭제 권한을 정한다.
   let deleteId = auth.user.id; // 기본: 본인 탈퇴
   if (target && target !== auth.user.id) {
-    // 남을 지우려면 관리자여야 한다.
     const { data: me } = await asUser
       .from("profiles")
       .select("role")
       .eq("id", auth.user.id)
       .maybeSingle();
-    if (me?.role !== "owner" && me?.role !== "admin") return json(403, "권한이 없습니다.");
+
+    if (me?.role === "owner" || me?.role === "admin") {
+      // 최종관리자·관리자는 누구든 탈퇴시킬 수 있다.
+    } else if (me?.role === "teacher") {
+      // 교사는 담당 반(classes.teacher_id = 본인)의 학생만 탈퇴시킬 수 있다.
+      const { data: targetProfile } = await asUser
+        .from("profiles")
+        .select("role, class_id")
+        .eq("id", target)
+        .maybeSingle();
+      if (targetProfile?.role !== "student" || !targetProfile.class_id) {
+        return json(403, "담당 반 학생만 탈퇴시킬 수 있습니다.");
+      }
+      const { data: myClass } = await asUser
+        .from("classes")
+        .select("id")
+        .eq("id", targetProfile.class_id)
+        .eq("teacher_id", auth.user.id)
+        .maybeSingle();
+      if (!myClass) return json(403, "담당 반 학생만 탈퇴시킬 수 있습니다.");
+    } else {
+      return json(403, "권한이 없습니다.");
+    }
     deleteId = target;
   }
 
