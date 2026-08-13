@@ -51,6 +51,7 @@ export type UnitSummary = {
   dueCount: number;
   status: UnitGateStatus; // 90% 게이트 통과 여부 (locked = 이전 유닛 통과 전)
   cycleCount: number; // 교정학습 반복 횟수
+  masteryRatio: number; // 유닛 단어 중 Lv3 이상 비율 — 종합평가 버튼 노출 여부 판단용
 };
 
 export type UnitProgress = {

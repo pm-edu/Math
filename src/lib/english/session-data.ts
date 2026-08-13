@@ -3,8 +3,8 @@
 // 접근 제어는 RLS(supabase/migrations)가 한다.
 
 import { createClient } from "@/lib/supabase/client";
-import { pickConfusionPartner } from "@/lib/engine";
-import type { ItemType, FsrsRating, MasteryState, FsrsState } from "@/lib/engine";
+import { pickConfusionPartner, computeMasteryRatio } from "@/lib/engine";
+import type { ItemType, FsrsRating, MasteryState, FsrsState, MasteryLevel } from "@/lib/engine";
 import type {
   UnitSummary,
   UnitGateStatus,
@@ -38,8 +38,8 @@ export async function loadPublishedUnits(userId: string): Promise<UnitSummary[]>
 
   const [{ data: states }, { data: progressRows }] = await Promise.all([
     wordIds.length > 0
-      ? supabase.from("user_word_states").select("word_id, due_at").eq("user_id", userId).in("word_id", wordIds)
-      : Promise.resolve({ data: [] as { word_id: string; due_at: string }[] }),
+      ? supabase.from("user_word_states").select("word_id, due_at, level").eq("user_id", userId).in("word_id", wordIds)
+      : Promise.resolve({ data: [] as { word_id: string; due_at: string; level: number }[] }),
     supabase
       .from("unit_progress")
       .select("unit_id, status, cycle_count")
@@ -48,6 +48,7 @@ export async function loadPublishedUnits(userId: string): Promise<UnitSummary[]>
   ]);
 
   const dueAtByWord = new Map((states ?? []).map((s) => [s.word_id, s.due_at]));
+  const levelByWord = new Map((states ?? []).map((s) => [s.word_id, s.level as MasteryLevel]));
   const setTitleById = new Map((sets ?? []).map((s) => [s.id, s.title_ko]));
   const progressByUnit = new Map(
     (progressRows ?? []).map((p) => [p.unit_id, { status: p.status as UnitGateStatus, cycleCount: p.cycle_count }])
@@ -79,6 +80,7 @@ export async function loadPublishedUnits(userId: string): Promise<UnitSummary[]>
     // locked는 항상 "이전 유닛 통과 여부"로만 판단한다(DB에 저장된 값은 안 쓴다) —
     // DB의 status는 in_progress/passed만 의미 있게 갱신되므로 이게 더 안전하다.
     const status: UnitGateStatus = !prevPassed ? "locked" : progress?.status === "passed" ? "passed" : "in_progress";
+    const masteryRatio = computeMasteryRatio(wordIdsInUnit.map((id) => levelByWord.get(id) ?? (0 as MasteryLevel)));
 
     return {
       id: u.id,
@@ -91,6 +93,7 @@ export async function loadPublishedUnits(userId: string): Promise<UnitSummary[]>
       dueCount,
       status,
       cycleCount: progress?.cycleCount ?? 0,
+      masteryRatio,
     };
   });
 }
