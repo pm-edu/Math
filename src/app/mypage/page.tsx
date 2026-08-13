@@ -122,10 +122,10 @@ export default function MyPage() {
                   {t("myWorksheets")}
                 </Link>
                 <Link
-                  href="/vocab"
+                  href="/english"
                   className="inline-block rounded-full bg-[var(--mint)] px-5 py-2.5 text-sm font-medium text-[var(--mint-dark)]"
                 >
-                  단어 학습
+                  영어 학습
                 </Link>
                 {isStaff(profile?.role) && (
                   <Link
