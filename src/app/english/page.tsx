@@ -67,29 +67,57 @@ export default function EnglishHubPage() {
               </div>
             ) : (
               <ul className="mt-4 space-y-3">
-                {units.map((u) => (
-                  <li key={u.id} className="rounded-2xl border border-[var(--border-c)] bg-white p-5">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <p className="text-xs text-[var(--secondary)]">{u.setTitleKo}</p>
-                        <p className="text-sm font-medium text-[var(--foreground)]">{u.title}</p>
-                        <p className="mt-1 text-xs text-[var(--secondary)]">
-                          전체 {u.wordCount} · 새 단어 {u.newCount} · 복습 필요 {u.dueCount}
-                        </p>
+                {units.map((u) => {
+                  const locked = u.status === "locked";
+                  const passed = u.status === "passed";
+                  const readyForTest = u.newCount === 0 && !passed;
+                  return (
+                    <li
+                      key={u.id}
+                      className={`rounded-2xl border bg-white p-5 ${locked ? "border-[var(--border-c)] opacity-50" : "border-[var(--border-c)]"}`}
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-xs text-[var(--secondary)]">{u.setTitleKo}</p>
+                            {passed && (
+                              <span className="rounded-full bg-[var(--mint)] px-2 py-0.5 text-[10px] font-medium text-[var(--mint-dark)]">통과</span>
+                            )}
+                            {locked && (
+                              <span className="rounded-full border border-[var(--border-c)] px-2 py-0.5 text-[10px] text-[var(--secondary)]">🔒 잠김</span>
+                            )}
+                          </div>
+                          <p className="text-sm font-medium text-[var(--foreground)]">{u.title}</p>
+                          <p className="mt-1 text-xs text-[var(--secondary)]">
+                            전체 {u.wordCount} · 새 단어 {u.newCount} · 복습 필요 {u.dueCount}
+                            {u.cycleCount > 0 && ` · 교정학습 ${u.cycleCount}회`}
+                          </p>
+                        </div>
+                        {locked ? (
+                          <span className="rounded-full border border-[var(--border-c)] bg-white px-4 py-1.5 text-sm text-[var(--secondary)]">이전 유닛부터</span>
+                        ) : (
+                          <div className="flex gap-2">
+                            {u.newCount > 0 && (
+                              <Link href={`/english/learn/${u.id}`} className="rounded-full bg-[var(--mint)] px-4 py-1.5 text-sm font-medium text-[var(--mint-dark)]">
+                                새 단어 배우기
+                              </Link>
+                            )}
+                            {readyForTest && (
+                              <Link href={`/english/test/${u.id}`} className="rounded-full bg-[var(--pink)] px-4 py-1.5 text-sm font-medium text-[var(--pink-dark)]">
+                                종합평가
+                              </Link>
+                            )}
+                            {passed && (
+                              <Link href={`/english/test/${u.id}`} className="rounded-full border border-[var(--border-c)] bg-white px-4 py-1.5 text-sm text-[var(--foreground)]">
+                                다시 평가
+                              </Link>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      <Link
-                        href={`/english/learn/${u.id}`}
-                        className={`rounded-full px-4 py-1.5 text-sm font-medium ${
-                          u.newCount > 0
-                            ? "bg-[var(--mint)] text-[var(--mint-dark)]"
-                            : "border border-[var(--border-c)] bg-white text-[var(--secondary)]"
-                        }`}
-                      >
-                        새 단어 배우기
-                      </Link>
-                    </div>
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </>

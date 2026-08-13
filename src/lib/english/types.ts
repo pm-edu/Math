@@ -28,6 +28,7 @@ export type WordProgress = {
   consecutiveWrong: number;
   consecutiveCorrect: number;
   lastSessionId: string | null;
+  lastItemType: string | null;
 };
 
 // 세션 큐 항목 하나. content=단어 내용, progress=이 학생의 기존 진도(없으면 새 단어).
@@ -37,14 +38,26 @@ export type QueueItem = {
   confusionPartner: { wordId: string; lemma: string } | null;
 };
 
+export type UnitGateStatus = "locked" | "in_progress" | "passed";
+
 export type UnitSummary = {
   id: string;
+  setId: string;
   setTitleKo: string;
   title: string;
   position: number;
   wordCount: number;
   newCount: number;
   dueCount: number;
+  status: UnitGateStatus; // 90% 게이트 통과 여부 (locked = 이전 유닛 통과 전)
+  cycleCount: number; // 교정학습 반복 횟수
 };
 
-export type SessionMode = "learn" | "review";
+export type UnitProgress = {
+  masteryRatio: number;
+  testScore: number | null;
+  status: UnitGateStatus;
+  cycleCount: number;
+};
+
+export type SessionMode = "learn" | "review" | "corrective" | "test";

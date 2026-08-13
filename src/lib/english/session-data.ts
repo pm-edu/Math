@@ -5,7 +5,16 @@
 import { createClient } from "@/lib/supabase/client";
 import { pickConfusionPartner } from "@/lib/engine";
 import type { ItemType, FsrsRating, MasteryState, FsrsState } from "@/lib/engine";
-import type { UnitSummary, WordContent, WordSense, WordExample, WordProgress, SessionMode } from "./types";
+import type {
+  UnitSummary,
+  UnitGateStatus,
+  UnitProgress,
+  WordContent,
+  WordSense,
+  WordExample,
+  WordProgress,
+  SessionMode,
+} from "./types";
 
 export async function loadPublishedUnits(userId: string): Promise<UnitSummary[]> {
   const supabase = createClient();
@@ -27,14 +36,33 @@ export async function loadPublishedUnits(userId: string): Promise<UnitSummary[]>
   const unitWordRows = uw ?? [];
   const wordIds = Array.from(new Set(unitWordRows.map((r) => r.word_id)));
 
-  const { data: states } =
+  const [{ data: states }, { data: progressRows }] = await Promise.all([
     wordIds.length > 0
-      ? await supabase.from("user_word_states").select("word_id, due_at").eq("user_id", userId).in("word_id", wordIds)
-      : { data: [] as { word_id: string; due_at: string }[] };
+      ? supabase.from("user_word_states").select("word_id, due_at").eq("user_id", userId).in("word_id", wordIds)
+      : Promise.resolve({ data: [] as { word_id: string; due_at: string }[] }),
+    supabase
+      .from("unit_progress")
+      .select("unit_id, status, cycle_count")
+      .eq("user_id", userId)
+      .in("unit_id", unitIds),
+  ]);
 
   const dueAtByWord = new Map((states ?? []).map((s) => [s.word_id, s.due_at]));
   const setTitleById = new Map((sets ?? []).map((s) => [s.id, s.title_ko]));
+  const progressByUnit = new Map(
+    (progressRows ?? []).map((p) => [p.unit_id, { status: p.status as UnitGateStatus, cycleCount: p.cycle_count }])
+  );
   const now = Date.now();
+
+  // 같은 단어장(set) 안에서 순서대로 통과해야 다음 유닛이 열린다.
+  const passedBySet = new Map<string, Set<number>>(); // set_id -> 통과한 position 집합
+  unitList.forEach((u) => {
+    if (progressByUnit.get(u.id)?.status === "passed") {
+      const set = passedBySet.get(u.set_id) ?? new Set<number>();
+      set.add(u.position);
+      passedBySet.set(u.set_id, set);
+    }
+  });
 
   return unitList.map((u) => {
     const wordIdsInUnit = unitWordRows.filter((r) => r.unit_id === u.id).map((r) => r.word_id);
@@ -43,14 +71,26 @@ export async function loadPublishedUnits(userId: string): Promise<UnitSummary[]>
       const dueAt = dueAtByWord.get(id);
       return dueAt !== undefined && new Date(dueAt).getTime() <= now;
     }).length;
+
+    const progress = progressByUnit.get(u.id);
+    const passedPositions = passedBySet.get(u.set_id) ?? new Set<number>();
+    const isFirstInSet = u.position <= Math.min(...unitList.filter((x) => x.set_id === u.set_id).map((x) => x.position));
+    const prevPassed = isFirstInSet || passedPositions.has(u.position - 1);
+    // locked는 항상 "이전 유닛 통과 여부"로만 판단한다(DB에 저장된 값은 안 쓴다) —
+    // DB의 status는 in_progress/passed만 의미 있게 갱신되므로 이게 더 안전하다.
+    const status: UnitGateStatus = !prevPassed ? "locked" : progress?.status === "passed" ? "passed" : "in_progress";
+
     return {
       id: u.id,
+      setId: u.set_id,
       setTitleKo: setTitleById.get(u.set_id) ?? "",
       title: u.title,
       position: u.position,
       wordCount: wordIdsInUnit.length,
       newCount,
       dueCount,
+      status,
+      cycleCount: progress?.cycleCount ?? 0,
     };
   });
 }
@@ -61,6 +101,43 @@ export async function loadUnitTitle(unitId: string): Promise<{ title: string; se
   if (!unit) return null;
   const { data: set } = await supabase.from("word_sets").select("title_ko").eq("id", unit.set_id).maybeSingle();
   return { title: unit.title, setTitleKo: set?.title_ko ?? "" };
+}
+
+export async function loadUnitProgress(userId: string, unitId: string): Promise<UnitProgress | null> {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("unit_progress")
+    .select("mastery_ratio, test_score, status, cycle_count")
+    .eq("user_id", userId)
+    .eq("unit_id", unitId)
+    .maybeSingle();
+  if (!data) return null;
+  return {
+    masteryRatio: data.mastery_ratio,
+    testScore: data.test_score,
+    status: data.status as UnitGateStatus,
+    cycleCount: data.cycle_count,
+  };
+}
+
+export async function saveUnitProgress(
+  userId: string,
+  unitId: string,
+  progress: { masteryRatio: number; testScore: number; status: "in_progress" | "passed"; cycleCount: number }
+): Promise<void> {
+  const supabase = createClient();
+  await supabase.from("unit_progress").upsert(
+    {
+      user_id: userId,
+      unit_id: unitId,
+      mastery_ratio: progress.masteryRatio,
+      test_score: progress.testScore,
+      status: progress.status,
+      cycle_count: progress.cycleCount,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id,unit_id" }
+  );
 }
 
 export async function loadUnitWordIds(unitId: string): Promise<string[]> {
@@ -123,7 +200,9 @@ export async function loadUserStates(userId: string, wordIds: string[]): Promise
   const supabase = createClient();
   const { data } = await supabase
     .from("user_word_states")
-    .select("word_id, level, stability, difficulty, consecutive_wrong, consecutive_correct, last_session_id")
+    .select(
+      "word_id, level, stability, difficulty, consecutive_wrong, consecutive_correct, last_session_id, last_item_type"
+    )
     .eq("user_id", userId)
     .in("word_id", wordIds);
 
@@ -136,6 +215,7 @@ export async function loadUserStates(userId: string, wordIds: string[]): Promise
       consecutiveWrong: r.consecutive_wrong,
       consecutiveCorrect: r.consecutive_correct,
       lastSessionId: r.last_session_id,
+      lastItemType: r.last_item_type,
     });
   });
   return map;
