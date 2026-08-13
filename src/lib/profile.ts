@@ -41,6 +41,7 @@ export type PurchasedCourse = {
   status: string;
   purchased_at: string;
   course: {
+    id: string;
     slug: string;
     title: string;
     category: string;

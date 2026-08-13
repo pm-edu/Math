@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import ReviewForm from "@/components/ReviewForm";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile, PurchasedCourse } from "@/lib/profile";
 import { isStaff } from "@/lib/roles";
@@ -17,6 +18,10 @@ export default function MyPage() {
   const [purchases, setPurchases] = useState<PurchasedCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [myReviews, setMyReviews] = useState<Map<string, { id: string; rating: number | null; content: string }>>(
+    new Map()
+  );
+  const [openReviewFor, setOpenReviewFor] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -28,13 +33,14 @@ export default function MyPage() {
         return;
       }
 
-      const [profileResult, purchaseResult] = await Promise.all([
+      const [profileResult, purchaseResult, reviewResult] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", auth.user.id).maybeSingle(),
         supabase
           .from("purchases")
-          .select("id, status, purchased_at, course:courses(slug, title, category, price)")
+          .select("id, status, purchased_at, course:courses(id, slug, title, category, price)")
           .eq("user_id", auth.user.id)
           .order("purchased_at", { ascending: false }),
+        supabase.from("reviews").select("id, course_id, rating, content").eq("user_id", auth.user.id),
       ]);
 
       if (profileResult.error) {
@@ -44,6 +50,13 @@ export default function MyPage() {
       }
       if (!purchaseResult.error) {
         setPurchases((purchaseResult.data ?? []) as unknown as PurchasedCourse[]);
+      }
+      if (!reviewResult.error) {
+        const map = new Map<string, { id: string; rating: number | null; content: string }>();
+        (reviewResult.data ?? []).forEach((r) => {
+          map.set(r.course_id, { id: r.id, rating: r.rating, content: r.content });
+        });
+        setMyReviews(map);
       }
       setLoading(false);
     }
@@ -153,40 +166,63 @@ export default function MyPage() {
                 </div>
               ) : (
                 <ul className="mt-4 space-y-3">
-                  {purchases.map((item) => (
-                    <li
-                      key={item.id}
-                      className="flex items-center justify-between rounded-2xl border border-[var(--border-c)] bg-white p-5"
-                    >
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="inline-block rounded-full bg-[var(--mint)] px-3 py-1 text-xs font-medium text-[var(--mint-dark)]">
-                            {item.course ? categoryLabel(item.course.category, lang) : "-"}
-                          </span>
-                          <span
-                            className={`rounded-full px-3 py-1 text-xs font-medium ${
-                              item.status === "paid"
-                                ? "bg-[var(--pink)] text-[var(--pink-dark)]"
-                                : "bg-[var(--border-c)] text-[var(--secondary)]"
-                            }`}
-                          >
-                            {item.status === "paid" ? t("enrolled") : t("enrollPending")}
-                          </span>
+                  {purchases.map((item) => {
+                    const courseId = item.course?.id ?? null;
+                    const existingReview = courseId ? myReviews.get(courseId) ?? null : null;
+                    return (
+                      <li key={item.id} className="rounded-2xl border border-[var(--border-c)] bg-white p-5">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="inline-block rounded-full bg-[var(--mint)] px-3 py-1 text-xs font-medium text-[var(--mint-dark)]">
+                                {item.course ? categoryLabel(item.course.category, lang) : "-"}
+                              </span>
+                              <span
+                                className={`rounded-full px-3 py-1 text-xs font-medium ${
+                                  item.status === "paid"
+                                    ? "bg-[var(--pink)] text-[var(--pink-dark)]"
+                                    : "bg-[var(--border-c)] text-[var(--secondary)]"
+                                }`}
+                              >
+                                {item.status === "paid" ? t("enrolled") : t("enrollPending")}
+                              </span>
+                            </div>
+                            <p className="mt-2 text-sm font-medium text-[var(--foreground)]">
+                              {item.course?.title ?? "삭제된 강좌"}
+                            </p>
+                          </div>
+                          {item.course && item.status === "paid" && (
+                            <div className="flex items-center gap-3">
+                              <button
+                                onClick={() => setOpenReviewFor(openReviewFor === courseId ? null : courseId)}
+                                className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]"
+                              >
+                                {existingReview ? t("editReview") : t("writeReview")}
+                              </button>
+                              <Link
+                                href={`/courses/${item.course.slug}/learn`}
+                                className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]"
+                              >
+                                {t("goWatch")}
+                              </Link>
+                            </div>
+                          )}
                         </div>
-                        <p className="mt-2 text-sm font-medium text-[var(--foreground)]">
-                          {item.course?.title ?? "삭제된 강좌"}
-                        </p>
-                      </div>
-                      {item.course && item.status === "paid" && (
-                        <Link
-                          href={`/courses/${item.course.slug}/learn`}
-                          className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]"
-                        >
-                          {t("goWatch")}
-                        </Link>
-                      )}
-                    </li>
-                  ))}
+
+                        {courseId && openReviewFor === courseId && (
+                          <ReviewForm
+                            courseId={courseId}
+                            userId={profile?.id ?? ""}
+                            existing={existingReview}
+                            onSaved={(saved) => {
+                              setMyReviews((prev) => new Map(prev).set(courseId, saved));
+                              setOpenReviewFor(null);
+                            }}
+                          />
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </section>

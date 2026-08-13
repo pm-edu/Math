@@ -21,9 +21,13 @@ type CourseRow = {
   slug: string;
   category: string;
   title: string;
+  title_en: string | null;
   description: string | null;
+  description_en: string | null;
   price: number;
   price_inr: number | null;
+  includes: string[] | null;
+  includes_en: string[] | null;
 };
 
 // 등록·삭제 직후 미리 만들어 둔 페이지를 즉시 갱신한다.
@@ -55,11 +59,12 @@ export default function AdminCoursesPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const loadCourses = useCallback(async () => {
     const { data } = await createClient()
       .from("courses")
-      .select("id, slug, category, title, description, price, price_inr")
+      .select("id, slug, category, title, title_en, description, description_en, price, price_inr, includes, includes_en")
       .order("category")
       .order("price");
     setCourses((data ?? []) as CourseRow[]);
@@ -136,8 +141,7 @@ export default function AdminCoursesPage() {
       slug = `${CATEGORY_SLUG[category] ?? "course"}-${Date.now().toString(36).slice(-6)}`;
     }
 
-    setSaving(true);
-    const { error } = await createClient().from("courses").insert({
+    const payload = {
       title: form.title.trim(),
       title_en: form.title_en.trim() || null,
       slug,
@@ -152,21 +156,27 @@ export default function AdminCoursesPage() {
       includes_en: form.includes_en.trim()
         ? form.includes_en.split(",").map((s) => s.trim()).filter(Boolean)
         : null,
-    });
+    };
+
+    setSaving(true);
+    const { error } = editingId
+      ? await createClient().from("courses").update(payload).eq("id", editingId)
+      : await createClient().from("courses").insert(payload);
     setSaving(false);
 
     if (error) {
       if (error.code === "23505") {
         setError("이미 같은 주소 이름의 강좌가 있습니다. 다른 이름을 써주세요.");
       } else {
-        setError(`등록에 실패했습니다: ${error.message}`);
+        setError(`${editingId ? "수정" : "등록"}에 실패했습니다: ${error.message}`);
       }
       return;
     }
 
     setForm({ ...EMPTY_FORM, category });
     setNewCategory("");
-    setMessage("강좌를 만들었습니다. 사이트에 바로 반영됩니다.");
+    setEditingId(null);
+    setMessage(editingId ? "강좌를 수정했습니다. 사이트에 바로 반영됩니다." : "강좌를 만들었습니다. 사이트에 바로 반영됩니다.");
     refreshSite();
     loadCourses();
     // 새 분류를 추가했을 수 있으니 목록을 다시 읽는다.
@@ -175,6 +185,31 @@ export default function AdminCoursesPage() {
       .select("id, name, name_en, position")
       .order("position");
     setCategories((cats ?? []) as Category[]);
+  }
+
+  function handleEditStart(course: CourseRow) {
+    setEditingId(course.id);
+    setForm({
+      title: course.title,
+      title_en: course.title_en ?? "",
+      slug: course.slug,
+      category: course.category,
+      price: String(course.price),
+      price_inr: course.price_inr !== null ? String(course.price_inr) : "",
+      description: course.description ?? "",
+      description_en: course.description_en ?? "",
+      includes: (course.includes ?? []).join(", "),
+      includes_en: (course.includes_en ?? []).join(", "),
+    });
+    setError(null);
+    setMessage(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function handleEditCancel() {
+    setEditingId(null);
+    setForm({ ...EMPTY_FORM, category: categories[0]?.name ?? EMPTY_FORM.category });
+    setError(null);
   }
 
   async function handleDelete(course: CourseRow) {
@@ -254,7 +289,20 @@ export default function AdminCoursesPage() {
           onSubmit={handleSubmit}
           className="mt-8 space-y-4 rounded-2xl border border-[var(--border-c)] bg-white p-6"
         >
-          <p className="text-sm font-medium text-[var(--foreground)]">새 강좌 만들기</p>
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-[var(--foreground)]">
+              {editingId ? "강좌 수정" : "새 강좌 만들기"}
+            </p>
+            {editingId && (
+              <button
+                type="button"
+                onClick={handleEditCancel}
+                className="text-xs text-[var(--secondary)] underline hover:text-[var(--foreground)]"
+              >
+                수정 취소
+              </button>
+            )}
+          </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
@@ -416,7 +464,7 @@ export default function AdminCoursesPage() {
             disabled={saving}
             className="rounded-full bg-[var(--pink)] px-6 py-3 text-sm font-medium text-[var(--pink-dark)] transition-transform hover:scale-[1.02] disabled:opacity-60"
           >
-            {saving ? "만드는 중..." : "강좌 만들기"}
+            {saving ? "저장 중..." : editingId ? "수정 저장" : "강좌 만들기"}
           </button>
         </form>
 
@@ -442,12 +490,20 @@ export default function AdminCoursesPage() {
                   {course.price_inr !== null && ` · ₹${course.price_inr.toLocaleString("en-IN")}`}
                 </p>
               </div>
-              <button
-                onClick={() => handleDelete(course)}
-                className="shrink-0 text-sm text-red-600 underline"
-              >
-                삭제
-              </button>
+              <div className="flex shrink-0 items-center gap-3">
+                <button
+                  onClick={() => handleEditStart(course)}
+                  className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]"
+                >
+                  수정
+                </button>
+                <button
+                  onClick={() => handleDelete(course)}
+                  className="text-sm text-red-600 underline"
+                >
+                  삭제
+                </button>
+              </div>
             </li>
           ))}
         </ul>

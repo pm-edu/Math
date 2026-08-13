@@ -140,6 +140,13 @@ const DICT = {
   goWatch: { ko: "보러 가기", en: "Watch" },
   adminPanel: { ko: "학생 관리 화면으로", en: "Go to admin panel" },
   myWorksheets: { ko: "내 학습지", en: "My Worksheets" },
+  writeReview: { ko: "후기 쓰기", en: "Write a review" },
+  editReview: { ko: "후기 수정", en: "Edit review" },
+  reviewPlaceholder: { ko: "강좌는 어떠셨나요?", en: "How was the course?" },
+  reviewSubmit: { ko: "후기 등록", en: "Submit review" },
+  reviewSaving: { ko: "등록 중...", en: "Submitting..." },
+  reviewSaved: { ko: "후기가 등록되었습니다.", en: "Your review has been saved." },
+  reviewFailed: { ko: "후기 등록에 실패했습니다.", en: "Failed to save your review." },
 
   // 계정
   withdraw: { ko: "회원 탈퇴", en: "Delete account" },
