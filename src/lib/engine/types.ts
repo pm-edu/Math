@@ -1,6 +1,12 @@
 // 영어 단어 완전학습 엔진의 공용 타입.
 // 이 파일과 engine/ 아래 다른 파일들은 전부 순수 함수(입력→출력, 부수효과 없음)로만 구성한다.
-// UI·Supabase 호출은 여기 들어오지 않는다. (Stage 2에서 로직 구현, 지금은 뼈대만)
+// UI·Supabase 호출은 여기 들어오지 않는다.
+//
+// 구현된 모듈: rating.ts(등급 산출) · fsrs.ts(언제 복습) · mastery-level.ts(사다리
+// 승급/강등) · gate.ts(90% 게이트+교정루프) · distractors.ts(오답 선택) ·
+// confusion-pairs.ts(혼동쌍 탐지) · items/(EN_KO_MC · KO_EN_TYPE · CLOZE · CONTRAST).
+// AUDIO_MC · DICTATION · COLLOCATION · SENTENCE_WRITE · SPEED_ROUND · SHADOWING는
+// MVP 이후(SENTENCE_WRITE는 AI 채점 필요 — Stage 6에서 items/에 추가).
 
 // 숙련도 5단계 사다리. 0=미학습.
 export type MasteryLevel = 0 | 1 | 2 | 3 | 4 | 5;
@@ -27,6 +33,3 @@ export type GradeResult = {
   // 채점 세부 정보(선택한 오답, 채점 근거 등)는 유형별로 다르므로 unknown으로 열어둔다.
   detail?: unknown;
 };
-
-// TODO(Stage 2): FSRS 스케줄러 상태(stability, difficulty, due_at)와
-// 순수 함수 스케줄 계산기를 여기 또는 fsrs.ts 에 정의한다.
