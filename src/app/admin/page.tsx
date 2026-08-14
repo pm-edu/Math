@@ -14,28 +14,56 @@ import {
   canViewGrades,
   canAssignRoles,
   assignableRoles,
+  ROLES,
   ROLE_LABELS,
   type Role,
 } from "@/lib/roles";
 import { loadClasses, setStudentClass } from "@/lib/classes";
+import { useAdminListQuery, type FilterFieldDef, type SortOptionDef } from "@/lib/admin/useAdminListQuery";
+import type { StatusCountOption } from "@/lib/admin/list-query";
+import { SummaryCountBar, FilterBar, SortSelect, BulkActionBar, Pagination, SelectAllCheckbox } from "@/components/admin/ManagedList";
 
 type PurchaseRow = { user_id: string; status: string };
+
+const FILTER_DEFS: FilterFieldDef[] = [
+  { key: "name", label: "이름 검색", kind: "text", column: "name" },
+  { key: "email", label: "이메일 검색", kind: "text", column: "email" },
+];
+
+const STATUS_OPTIONS: StatusCountOption[] = [
+  { key: "all", label: "전체", status: { kind: "none" } },
+  ...ROLES.map((r) => ({ key: r, label: ROLE_LABELS[r], status: { kind: "value" as const, column: "role", value: r } })),
+];
+
+const SORT_OPTIONS: SortOptionDef[] = [
+  { value: "newest", label: "최신 가입순", column: "created_at", ascending: false },
+  { value: "oldest", label: "오래된 가입순", column: "created_at", ascending: true },
+];
 
 export default function AdminPage() {
   const router = useRouter();
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [myId, setMyId] = useState<string | null>(null);
   const [myRole, setMyRole] = useState<Role | null>(null);
-  const [students, setStudents] = useState<Profile[]>([]);
   const [purchases, setPurchases] = useState<PurchaseRow[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [classes, setClasses] = useState<ClassRow[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
+  const [bulkClassTarget, setBulkClassTarget] = useState("");
 
-  const loadData = useCallback(async () => {
+  const list = useAdminListQuery<Profile>({
+    paramPrefix: "user",
+    table: "profiles",
+    filterDefs: FILTER_DEFS,
+    statusOptions: STATUS_OPTIONS,
+    sortOptions: SORT_OPTIONS,
+    pageSize: 24,
+  });
+
+  // 학생 목록 자체는 list(profiles)가 담당. 구매내역/문의/반 목록은 별도로 가볍게 불러온다.
+  const loadSideData = useCallback(async () => {
     const supabase = createClient();
-    const [profileResult, purchaseResult, contactResult, classList] = await Promise.all([
-      supabase.from("profiles").select("*").order("created_at", { ascending: false }),
+    const [purchaseResult, contactResult, classList] = await Promise.all([
       supabase.from("purchases").select("user_id, status"),
       supabase
         .from("contacts")
@@ -43,7 +71,6 @@ export default function AdminPage() {
         .order("created_at", { ascending: false }),
       loadClasses(),
     ]);
-    setStudents((profileResult.data ?? []) as Profile[]);
     setPurchases((purchaseResult.data ?? []) as PurchaseRow[]);
     setContacts((contactResult.data ?? []) as Contact[]);
     setClasses(classList);
@@ -72,11 +99,11 @@ export default function AdminPage() {
       setMyId(auth.user.id);
       setMyRole((me?.role ?? null) as Role | null);
       setAllowed(true);
-      loadData();
+      loadSideData();
     }
 
     init();
-  }, [router, loadData]);
+  }, [router, loadSideData]);
 
   async function handleRemoveStudent(student: Profile) {
     if (
@@ -102,7 +129,8 @@ export default function AdminPage() {
       return;
     }
     setNotice(`${student.name ?? student.email} 님을 탈퇴 처리했습니다.`);
-    loadData();
+    loadSideData();
+    list.reload();
   }
 
   async function handleSetRole(target: Profile, newRole: string) {
@@ -122,7 +150,7 @@ export default function AdminPage() {
       return;
     }
     setNotice(`${target.name ?? target.email} 님을 ${ROLE_LABELS[newRole as Role]}(으)로 변경했습니다.`);
-    loadData();
+    list.reload();
   }
 
   async function handleSetClass(student: Profile, classId: string) {
@@ -131,7 +159,32 @@ export default function AdminPage() {
       setNotice(`반 배정 실패: ${error}`);
       return;
     }
-    loadData();
+    list.reload();
+  }
+
+  async function handleBulkAssignClass() {
+    if (!bulkClassTarget) return;
+    const targets = list.rows.filter(
+      (s) => list.selected.has(s.id) && (s.role === "student" || s.role === "assistant")
+    );
+    if (targets.length === 0) {
+      setNotice("선택한 사용자 중 반 배정 대상(학생·조교)이 없습니다.");
+      return;
+    }
+    const className = classes.find((c) => c.id === bulkClassTarget)?.name ?? "";
+    if (!confirm(`선택한 ${targets.length}명을 "${className}" 반으로 일괄 배정할까요?`)) return;
+
+    for (const s of targets) {
+      const { error } = await setStudentClass(s.id, bulkClassTarget);
+      if (error) {
+        setNotice(`일괄 배정 중 실패(${s.name ?? s.email}): ${error}`);
+        list.reload();
+        return;
+      }
+    }
+    setNotice(`${targets.length}명을 "${className}" 반으로 배정했습니다.`);
+    list.clearSelection();
+    list.reload();
   }
 
   function purchaseCount(userId: string) {
@@ -169,7 +222,6 @@ export default function AdminPage() {
     );
   }
 
-  const studentCount = students.filter((s) => s.role === "student").length;
   const canAssign = canAssignRoles(myRole);
   const assignChoices = assignableRoles(myRole);
   // 교사 담당 반(들). 3단계: 교사는 owner/admin이 아니어도 담당 반 학생은 탈퇴시킬 수 있다.
@@ -179,6 +231,7 @@ export default function AdminPage() {
     if (canManageSite(myRole)) return true;
     return myRole === "teacher" && !!student.class_id && myTeacherClassIds.includes(student.class_id);
   }
+  const allOnPageSelected = list.rows.length > 0 && list.rows.every((s) => list.selected.has(s.id));
 
   return (
     <>
@@ -272,107 +325,133 @@ export default function AdminPage() {
         {/* 가입자 명단 · 권한 관리 (교사 이상) */}
         {canManageStudents(myRole) ? (
           <>
-            <div className="mt-10 flex items-center justify-between">
-              <h2 className="text-lg font-medium text-[var(--foreground)]">가입자 · 권한</h2>
-              <p className="text-sm text-[var(--secondary)]">학생 {studentCount}명</p>
+            <div className="mt-10 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-lg font-medium text-[var(--foreground)]">가입자 · 권한 {list.totalCount.toLocaleString()}명</h2>
+                <SortSelect options={SORT_OPTIONS} value={list.sortValue} onChange={list.setSort} />
+              </div>
+              {canAssign && (
+                <p className="text-xs text-[var(--secondary)]">
+                  각 사용자의 역할을 드롭다운으로 지정할 수 있습니다.
+                  {myRole === "admin" && " (관리자·최종관리자 지정은 최종관리자만 가능)"}
+                </p>
+              )}
+              <SummaryCountBar options={STATUS_OPTIONS} counts={list.statusCounts} value={list.statusKey} onChange={list.setStatus} />
+              <FilterBar defs={FILTER_DEFS} values={list.filters} onChange={list.setFilter} onClear={list.clearFilters} />
+              {list.rows.length > 0 && (
+                <SelectAllCheckbox checked={allOnPageSelected} onChange={list.toggleSelectAllOnPage} label="이 페이지 전체 선택" />
+              )}
             </div>
-            {canAssign && (
-              <p className="mt-1 text-xs text-[var(--secondary)]">
-                각 사용자의 역할을 드롭다운으로 지정할 수 있습니다.
-                {myRole === "admin" && " (관리자·최종관리자 지정은 최종관리자만 가능)"}
-              </p>
+
+            {list.loading ? (
+              <p className="mt-6 text-sm text-[var(--secondary)]">불러오는 중...</p>
+            ) : list.error ? (
+              <p className="mt-6 text-sm text-red-600">{list.error}</p>
+            ) : (
+              <div className="mt-4 overflow-x-auto rounded-2xl border border-[var(--border-c)] bg-white">
+                <table className="w-full min-w-[760px] text-sm">
+                  <thead>
+                    <tr className="border-b border-[var(--border-c)] text-left text-[var(--secondary)]">
+                      <th className="px-3 py-3 font-medium"></th>
+                      <th className="px-5 py-3 font-medium">이름</th>
+                      <th className="px-5 py-3 font-medium">이메일</th>
+                      <th className="px-5 py-3 font-medium">권한</th>
+                      <th className="px-5 py-3 font-medium">반</th>
+                      <th className="px-5 py-3 font-medium">수강 강좌</th>
+                      <th className="px-5 py-3 font-medium">가입일</th>
+                      <th className="px-5 py-3 font-medium">관리</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {list.rows.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="px-5 py-10 text-center text-[var(--secondary)]">
+                          조건에 맞는 가입자가 없습니다.
+                        </td>
+                      </tr>
+                    ) : (
+                      list.rows.map((student) => {
+                        // 내가 이 사용자의 역할을 바꿀 수 있는지 (admin 은 상위 관리자를 못 바꾼다)
+                        const editable =
+                          canAssign &&
+                          assignChoices.includes(student.role) &&
+                          !(myRole === "admin" && (student.role === "owner" || student.role === "admin"));
+                        return (
+                          <tr key={student.id} className="border-b border-[var(--border-c)] last:border-0">
+                            <td className="px-3 py-4">
+                              <input
+                                type="checkbox"
+                                checked={list.selected.has(student.id)}
+                                onChange={() => list.toggleSelect(student.id)}
+                                className="h-4 w-4 accent-[var(--pink)]"
+                              />
+                            </td>
+                            <td className="px-5 py-4 text-[var(--foreground)]">{student.name ?? "-"}</td>
+                            <td className="px-5 py-4 text-[var(--secondary)]">{student.email ?? "-"}</td>
+                            <td className="px-5 py-4">
+                              {editable ? (
+                                <select
+                                  value={student.role}
+                                  onChange={(e) => handleSetRole(student, e.target.value)}
+                                  className="rounded-lg border border-[var(--border-c)] bg-white px-2 py-1 text-xs"
+                                >
+                                  {assignChoices.map((r) => (
+                                    <option key={r} value={r}>
+                                      {ROLE_LABELS[r]}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <span className="rounded-full bg-[var(--pink-light)] px-3 py-1 text-xs font-medium text-[var(--secondary)]">
+                                  {ROLE_LABELS[student.role]}
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-5 py-4">
+                              {canManageSite(myRole) && (student.role === "student" || student.role === "assistant") ? (
+                                <select
+                                  value={student.class_id ?? ""}
+                                  onChange={(e) => handleSetClass(student, e.target.value)}
+                                  className="rounded-lg border border-[var(--border-c)] bg-white px-2 py-1 text-xs"
+                                >
+                                  <option value="">미배정</option>
+                                  {classes.map((c) => (
+                                    <option key={c.id} value={c.id}>
+                                      {c.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <span className="text-xs text-[var(--secondary)]">
+                                  {classes.find((c) => c.id === student.class_id)?.name ?? "-"}
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-5 py-4 text-[var(--foreground)]">{purchaseCount(student.id)}개</td>
+                            <td className="px-5 py-4 text-[var(--secondary)]">
+                              {new Date(student.created_at).toLocaleDateString("ko-KR")}
+                            </td>
+                            <td className="px-5 py-4">
+                              {canRemove(student) && (
+                                <button
+                                  onClick={() => handleRemoveStudent(student)}
+                                  className="text-sm text-red-600 underline hover:text-red-700"
+                                >
+                                  탈퇴
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
             )}
 
-            <div className="mt-4 overflow-x-auto rounded-2xl border border-[var(--border-c)] bg-white">
-              <table className="w-full min-w-[720px] text-sm">
-                <thead>
-                  <tr className="border-b border-[var(--border-c)] text-left text-[var(--secondary)]">
-                    <th className="px-5 py-3 font-medium">이름</th>
-                    <th className="px-5 py-3 font-medium">이메일</th>
-                    <th className="px-5 py-3 font-medium">권한</th>
-                    <th className="px-5 py-3 font-medium">반</th>
-                    <th className="px-5 py-3 font-medium">수강 강좌</th>
-                    <th className="px-5 py-3 font-medium">가입일</th>
-                    <th className="px-5 py-3 font-medium">관리</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {students.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="px-5 py-10 text-center text-[var(--secondary)]">
-                        아직 가입자가 없습니다.
-                      </td>
-                    </tr>
-                  ) : (
-                    students.map((student) => {
-                      // 내가 이 사용자의 역할을 바꿀 수 있는지 (admin 은 상위 관리자를 못 바꾼다)
-                      const editable =
-                        canAssign &&
-                        assignChoices.includes(student.role) &&
-                        !(myRole === "admin" && (student.role === "owner" || student.role === "admin"));
-                      return (
-                        <tr key={student.id} className="border-b border-[var(--border-c)] last:border-0">
-                          <td className="px-5 py-4 text-[var(--foreground)]">{student.name ?? "-"}</td>
-                          <td className="px-5 py-4 text-[var(--secondary)]">{student.email ?? "-"}</td>
-                          <td className="px-5 py-4">
-                            {editable ? (
-                              <select
-                                value={student.role}
-                                onChange={(e) => handleSetRole(student, e.target.value)}
-                                className="rounded-lg border border-[var(--border-c)] bg-white px-2 py-1 text-xs"
-                              >
-                                {assignChoices.map((r) => (
-                                  <option key={r} value={r}>
-                                    {ROLE_LABELS[r]}
-                                  </option>
-                                ))}
-                              </select>
-                            ) : (
-                              <span className="rounded-full bg-[var(--pink-light)] px-3 py-1 text-xs font-medium text-[var(--secondary)]">
-                                {ROLE_LABELS[student.role]}
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-5 py-4">
-                            {canManageSite(myRole) && (student.role === "student" || student.role === "assistant") ? (
-                              <select
-                                value={student.class_id ?? ""}
-                                onChange={(e) => handleSetClass(student, e.target.value)}
-                                className="rounded-lg border border-[var(--border-c)] bg-white px-2 py-1 text-xs"
-                              >
-                                <option value="">미배정</option>
-                                {classes.map((c) => (
-                                  <option key={c.id} value={c.id}>
-                                    {c.name}
-                                  </option>
-                                ))}
-                              </select>
-                            ) : (
-                              <span className="text-xs text-[var(--secondary)]">
-                                {classes.find((c) => c.id === student.class_id)?.name ?? "-"}
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-5 py-4 text-[var(--foreground)]">{purchaseCount(student.id)}개</td>
-                          <td className="px-5 py-4 text-[var(--secondary)]">
-                            {new Date(student.created_at).toLocaleDateString("ko-KR")}
-                          </td>
-                          <td className="px-5 py-4">
-                            {canRemove(student) && (
-                              <button
-                                onClick={() => handleRemoveStudent(student)}
-                                className="text-sm text-red-600 underline hover:text-red-700"
-                              >
-                                탈퇴
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
+            <div className="mt-4">
+              <Pagination page={list.page} pageSize={list.pageSize} totalCount={list.totalCount} onPageChange={list.goToPage} />
             </div>
           </>
         ) : (
@@ -414,6 +493,37 @@ export default function AdminPage() {
           </>
         )}
       </main>
+
+      {canManageStudents(myRole) && (
+        <div className="mx-auto max-w-5xl px-6">
+          <BulkActionBar
+            selectedCount={list.selected.size}
+            onClear={list.clearSelection}
+            extra={
+              canManageSite(myRole) ? (
+                <select
+                  value={bulkClassTarget}
+                  onChange={(e) => setBulkClassTarget(e.target.value)}
+                  className="rounded-lg border border-[var(--border-c)] bg-white px-2 py-1.5 text-xs"
+                >
+                  <option value="">배정할 반 선택</option>
+                  {classes.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              ) : undefined
+            }
+            actions={
+              canManageSite(myRole)
+                ? [{ label: "선택 학생·조교 반 일괄배정", onClick: handleBulkAssignClass, disabled: !bulkClassTarget }]
+                : []
+            }
+          />
+        </div>
+      )}
+
       <Footer />
     </>
   );

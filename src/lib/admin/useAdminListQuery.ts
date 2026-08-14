@@ -13,8 +13,10 @@ import {
   type StatusCountOption,
 } from "./list-query";
 
+export type SelectOption = { value: string; label: string };
+
 export type FilterFieldDef =
-  | { key: string; label: string; kind: "select"; column: string; options: string[]; placeholder?: string }
+  | { key: string; label: string; kind: "select"; column: string; options: SelectOption[]; placeholder?: string }
   | { key: string; label: string; kind: "text"; column: string; placeholder?: string };
 
 export type SortOptionDef = {

@@ -31,12 +31,14 @@ const EMPTY = {
   memo: "",
 };
 
+const asOptions = (values: readonly string[]) => values.map((v) => ({ value: v, label: v }));
+
 const FILTER_DEFS: FilterFieldDef[] = [
-  { key: "category", label: "전체 학교급", kind: "select", column: "category", options: [...CATEGORIES] },
+  { key: "category", label: "전체 학교급", kind: "select", column: "category", options: asOptions(CATEGORIES) },
   { key: "courseLevel", label: "과정 검색", kind: "text", column: "course_level" },
   { key: "unit", label: "단원 검색", kind: "text", column: "unit" },
-  { key: "problemFormat", label: "전체 유형", kind: "select", column: "problem_format", options: [...FORMATS] },
-  { key: "difficulty", label: "전체 난이도", kind: "select", column: "difficulty", options: [...DIFFICULTIES] },
+  { key: "problemFormat", label: "전체 유형", kind: "select", column: "problem_format", options: asOptions(FORMATS) },
+  { key: "difficulty", label: "전체 난이도", kind: "select", column: "difficulty", options: asOptions(DIFFICULTIES) },
 ];
 
 const SORT_OPTIONS: SortOptionDef[] = [

@@ -4,6 +4,7 @@
 // 데이터를 직접 조회하지 않는다 — useAdminListQuery가 준 상태/콜백만 받아 그린다.
 // 카드 자체(문제 미리보기 등)는 탭마다 다르므로 여기서 만들지 않고 호출부가 renderItem으로 넘긴다.
 
+import type { ReactNode } from "react";
 import type { FilterFieldDef, SortOptionDef } from "@/lib/admin/useAdminListQuery";
 import type { StatusCountOption } from "@/lib/admin/list-query";
 
@@ -62,8 +63,8 @@ export function FilterBar({
           >
             <option value="">{d.placeholder ?? d.label}</option>
             {d.options.map((o) => (
-              <option key={o} value={o}>
-                {o}
+              <option key={o.value} value={o.value}>
+                {o.label}
               </option>
             ))}
           </select>
@@ -117,15 +118,18 @@ export function BulkActionBar({
   selectedCount,
   actions,
   onClear,
+  extra,
 }: {
   selectedCount: number;
   actions: BulkAction[];
   onClear: () => void;
+  extra?: ReactNode; // 예: 일괄배정 대상 선택 드롭다운
 }) {
   if (selectedCount === 0) return null;
   return (
     <div className="sticky bottom-4 z-10 flex flex-wrap items-center gap-3 rounded-2xl border border-[var(--border-c)] bg-white px-5 py-3 shadow-lg">
       <span className="text-sm font-medium text-[var(--foreground)]">{selectedCount}개 선택됨</span>
+      {extra}
       {actions.map((a) => (
         <button
           key={a.label}
