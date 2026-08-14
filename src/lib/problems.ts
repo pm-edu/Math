@@ -6,7 +6,9 @@ export type Problem = {
   id: string;
   subject: string; // 'math' | 'english' — 과목 구분
   category: string;
-  course_level: string | null; // 과정 (예: 고2 미적분, 수능특강, IB HL)
+  course_level: string | null; // 과정 (예: 고2 미적분, 수능특강, IB HL) — 영어(SAT 등)에서 사용
+  curriculum_group: string | null; // 수학 전용 1차 분류 (KR/IB/IGCSE/CBSE/AS_A_Level)
+  curriculum_detail: string | null; // 수학 전용 2차 분류 (curriculum_group에 종속)
   unit: string | null;
   problem_format: string | null; // 유형 (객관식/서술형/단답형)
   difficulty: string;

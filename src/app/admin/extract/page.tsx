@@ -11,6 +11,7 @@ import { canManageMaterials } from "@/lib/roles";
 import { useSubject } from "@/lib/subject";
 import { DIFFICULTIES, FORMATS } from "@/lib/problems";
 import type { Category } from "@/lib/categories";
+import { CURRICULUM_GROUPS, CURRICULUM_DETAILS, type CurriculumGroup } from "@/lib/curriculum";
 
 type Draft = {
   content_text: string;
@@ -24,12 +25,15 @@ type Draft = {
 export default function AdminExtractPage() {
   const router = useRouter();
   const { subject } = useSubject();
+  const isMath = subject === "math";
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
 
   const [file, setFile] = useState<File | null>(null);
   const [category, setCategory] = useState("");
   const [courseLevel, setCourseLevel] = useState("");
+  const [curriculumGroup, setCurriculumGroup] = useState<CurriculumGroup>("KR");
+  const [curriculumDetail, setCurriculumDetail] = useState("");
   const [drafts, setDrafts] = useState<Draft[]>([]);
 
   const [extracting, setExtracting] = useState(false);
@@ -142,14 +146,20 @@ export default function AdminExtractPage() {
       setError("저장할 문제가 없습니다.");
       return;
     }
+    if (isMath && !curriculumDetail) {
+      setError("세부 과정을 선택해주세요.");
+      return;
+    }
     setSaving(true);
 
     // 관리자가 방금 검토했으므로 verified=true 로 저장한다.
     // image_url 은 없이 텍스트 기반 문제로 저장.
     const rows = chosen.map((d) => ({
       subject,
-      category,
-      course_level: courseLevel.trim() || null,
+      category: isMath ? null : category,
+      course_level: isMath ? null : courseLevel.trim() || null,
+      curriculum_group: isMath ? curriculumGroup : null,
+      curriculum_detail: isMath ? curriculumDetail : null,
       unit: d.unit.trim() || null,
       difficulty: d.difficulty,
       problem_format: d.problem_format || null,
@@ -213,28 +223,50 @@ export default function AdminExtractPage() {
         </p>
 
         <div className="mt-8 space-y-4 rounded-2xl border border-[var(--border-c)] bg-white p-6">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="text-sm text-[var(--foreground)]">분류</label>
-              <select value={category} onChange={(e) => setCategory(e.target.value)} className={inputClass}>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.name}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+          {isMath ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="text-sm text-[var(--foreground)]">커리큘럼</label>
+                <select
+                  value={curriculumGroup}
+                  onChange={(e) => { setCurriculumGroup(e.target.value as CurriculumGroup); setCurriculumDetail(""); }}
+                  className={inputClass}
+                >
+                  {CURRICULUM_GROUPS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm text-[var(--foreground)]">세부 과정</label>
+                <select value={curriculumDetail} onChange={(e) => setCurriculumDetail(e.target.value)} className={inputClass}>
+                  <option value="">(선택)</option>
+                  {CURRICULUM_DETAILS[curriculumGroup].map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
+                </select>
+              </div>
             </div>
-            <div>
-              <label className="text-sm text-[var(--foreground)]">과정 (선택)</label>
-              <input
-                type="text"
-                value={courseLevel}
-                onChange={(e) => setCourseLevel(e.target.value)}
-                placeholder="고2 미적분"
-                className={inputClass}
-              />
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="text-sm text-[var(--foreground)]">분류</label>
+                <select value={category} onChange={(e) => setCategory(e.target.value)} className={inputClass}>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.name}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm text-[var(--foreground)]">과정 (선택)</label>
+                <input
+                  type="text"
+                  value={courseLevel}
+                  onChange={(e) => setCourseLevel(e.target.value)}
+                  placeholder="고2 미적분"
+                  className={inputClass}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           <div>
             <label className="text-sm text-[var(--foreground)]">문제지 파일 (이미지 또는 PDF)</label>

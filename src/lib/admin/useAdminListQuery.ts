@@ -103,6 +103,15 @@ export function useAdminListQuery<T>(opts: UseAdminListQueryOptions) {
     setSelected(new Set());
     syncUrl({ filters: next, page: 0 });
   }
+  // 여러 필터 키를 한 번에 바꿀 때(예: 종속 드롭다운 1차 변경 시 2차를 같이 초기화) —
+  // setFilter를 연달아 두 번 부르면 둘 다 같은 이전 filters 스냅샷 기준이라 뒤 호출이 앞 호출을 덮어씀.
+  function setFilterFields(patch: Record<string, string>) {
+    const next = { ...filters, ...patch };
+    setFilters(next);
+    setPage(0);
+    setSelected(new Set());
+    syncUrl({ filters: next, page: 0 });
+  }
   function clearFilters() {
     const next: Record<string, string> = {};
     opts.filterDefs.forEach((d) => (next[d.key] = ""));
@@ -219,6 +228,7 @@ export function useAdminListQuery<T>(opts: UseAdminListQueryOptions) {
     error,
     filters,
     setFilter,
+    setFilterFields,
     clearFilters,
     statusKey,
     setStatus,

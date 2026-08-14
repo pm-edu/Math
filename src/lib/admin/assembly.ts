@@ -7,8 +7,10 @@ import type { Problem } from "@/lib/problems";
 export type Distribution = Record<string, number>; // 예: {"하":20,"중":60,"상":20}, 비율(%)
 
 export type AssemblyCriteria = {
-  category: string[]; // 빈 배열 = 무관
-  courseLevel: string[]; // 빈 배열 = 무관
+  category: string[]; // 빈 배열 = 무관 — 영어(SAT 등)에서 사용
+  courseLevel: string[]; // 빈 배열 = 무관 — 영어에서 사용
+  curriculumGroup: string[]; // 빈 배열 = 무관 — 수학 전용
+  curriculumDetail: string[]; // 빈 배열 = 무관 — 수학 전용
   unit: string[]; // 빈 배열 = 무관
   difficultyDistribution: Distribution | null; // null = 무관
   problemFormatDistribution: Distribution | null; // null = 무관
@@ -18,7 +20,18 @@ export type AssemblyCriteria = {
 
 export type ProblemLite = Pick<
   Problem,
-  "id" | "category" | "course_level" | "unit" | "difficulty" | "problem_format" | "content_text" | "image_url" | "answer" | "problem_type"
+  | "id"
+  | "category"
+  | "course_level"
+  | "curriculum_group"
+  | "curriculum_detail"
+  | "unit"
+  | "difficulty"
+  | "problem_format"
+  | "content_text"
+  | "image_url"
+  | "answer"
+  | "problem_type"
 >;
 
 type Stratum = { difficulty: string | null; problemFormat: string | null; targetCount: number };
@@ -61,18 +74,23 @@ function shuffle<T>(arr: T[]): T[] {
 const CANDIDATE_FETCH_CAP = 300; // 층 하나당 후보를 이 개수까지만 가져와 랜덤 추출(전체 스캔 방지)
 
 async function fetchCandidatesForStratum(
-  criteria: Pick<AssemblyCriteria, "category" | "courseLevel" | "unit">,
+  criteria: Pick<AssemblyCriteria, "category" | "courseLevel" | "curriculumGroup" | "curriculumDetail" | "unit">,
   stratum: { difficulty: string | null; problemFormat: string | null },
   subject: string
 ): Promise<ProblemLite[]> {
   const supabase = createClient();
   let q = supabase
     .from("problems")
-    .select("id, category, course_level, unit, difficulty, problem_format, content_text, image_url, answer, problem_type")
+    .select("id, category, course_level, curriculum_group, curriculum_detail, unit, difficulty, problem_format, content_text, image_url, answer, problem_type")
     .eq("subject", subject)
     .eq("verified", true);
-  if (criteria.category.length) q = q.in("category", criteria.category);
-  if (criteria.courseLevel.length) q = q.in("course_level", criteria.courseLevel);
+  if (subject === "math") {
+    if (criteria.curriculumGroup.length) q = q.in("curriculum_group", criteria.curriculumGroup);
+    if (criteria.curriculumDetail.length) q = q.in("curriculum_detail", criteria.curriculumDetail);
+  } else {
+    if (criteria.category.length) q = q.in("category", criteria.category);
+    if (criteria.courseLevel.length) q = q.in("course_level", criteria.courseLevel);
+  }
   if (criteria.unit.length) q = q.in("unit", criteria.unit);
   if (stratum.difficulty) q = q.eq("difficulty", stratum.difficulty);
   if (stratum.problemFormat) q = q.eq("problem_format", stratum.problemFormat);
@@ -138,7 +156,7 @@ export async function generateAssembly(criteria: AssemblyCriteria, subject: stri
 
 // "다시 뽑기": 같은 층(난이도·유형 조합)에서 지금 세트에 없는 문제 하나를 새로 뽑는다.
 export async function redrawOne(
-  criteria: Pick<AssemblyCriteria, "category" | "courseLevel" | "unit" | "excludeRecentDays">,
+  criteria: Pick<AssemblyCriteria, "category" | "courseLevel" | "curriculumGroup" | "curriculumDetail" | "unit" | "excludeRecentDays">,
   subject: string,
   stratum: { difficulty: string | null; problemFormat: string | null },
   excludeIds: Set<string>

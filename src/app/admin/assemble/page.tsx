@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import { canManageMaterials } from "@/lib/roles";
 import { useSubject } from "@/lib/subject";
 import { CATEGORIES, DIFFICULTIES, FORMATS, type Problem } from "@/lib/problems";
+import { CURRICULUM_GROUPS, CURRICULUM_DETAILS, curriculumGroupLabel, curriculumDetailLabel, type CurriculumGroup } from "@/lib/curriculum";
 import {
   generateAssembly,
   redrawOne,
@@ -31,12 +32,15 @@ type DistMode = "무관" | "비율";
 export default function AdminAssemblePage() {
   const router = useRouter();
   const { subject } = useSubject();
+  const isMath = subject === "math";
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
 
-  // 조건 입력
+  // 조건 입력 — 영어(SAT 등)는 category/courseLevel, 수학은 curriculumGroup/curriculumDetail
   const [category, setCategory] = useState<string[]>([]);
   const [courseLevel, setCourseLevel] = useState<string[]>([]);
+  const [curriculumGroup, setCurriculumGroup] = useState<string[]>([]);
+  const [curriculumDetail, setCurriculumDetail] = useState<string[]>([]);
   const [unit, setUnit] = useState<string[]>([]);
   const [courseLevelOptions, setCourseLevelOptions] = useState<string[]>([]);
   const [unitOptions, setUnitOptions] = useState<string[]>([]);
@@ -82,14 +86,16 @@ export default function AdminAssemblePage() {
   }, [router]);
 
   useEffect(() => {
-    if (!allowed) return;
+    if (!allowed || isMath) return;
     fetchDistinctValues({ subject, column: "course_level", category }).then(setCourseLevelOptions);
-  }, [allowed, subject, category]);
+  }, [allowed, subject, isMath, category]);
 
   useEffect(() => {
     if (!allowed) return;
-    fetchDistinctValues({ subject, column: "unit", category, courseLevel }).then(setUnitOptions);
-  }, [allowed, subject, category, courseLevel]);
+    // 수학은 curriculum_group/detail이 고정 목록이라 단원만 subject 기준으로 조회한다(카테고리 캐스케이드 불필요).
+    if (isMath) fetchDistinctValues({ subject, column: "unit" }).then(setUnitOptions);
+    else fetchDistinctValues({ subject, column: "unit", category, courseLevel }).then(setUnitOptions);
+  }, [allowed, subject, isMath, category, courseLevel]);
 
   useEffect(() => {
     if (!allowed) return;
@@ -98,8 +104,10 @@ export default function AdminAssemblePage() {
 
   function applyRule(rule: AssemblyRule) {
     const c = rule.criteria;
-    setCategory(c.category);
-    setCourseLevel(c.courseLevel);
+    setCategory(c.category ?? []);
+    setCourseLevel(c.courseLevel ?? []);
+    setCurriculumGroup(c.curriculumGroup ?? []);
+    setCurriculumDetail(c.curriculumDetail ?? []);
     setUnit(c.unit);
     setDifficultyMode(c.difficultyDistribution ? "비율" : "무관");
     if (c.difficultyDistribution) setDifficultyDist(c.difficultyDistribution);
@@ -124,7 +132,7 @@ export default function AdminAssemblePage() {
     setError(null);
     try {
       const criteria: AssemblyCriteria = {
-        category, courseLevel, unit,
+        category, courseLevel, curriculumGroup, curriculumDetail, unit,
         difficultyDistribution: difficultyMode === "비율" ? difficultyDist : null,
         problemFormatDistribution: formatMode === "비율" ? formatDist : null,
         count,
@@ -165,6 +173,8 @@ export default function AdminAssemblePage() {
       const criteria: AssemblyCriteria = {
         category,
         courseLevel,
+        curriculumGroup,
+        curriculumDetail,
         unit,
         difficultyDistribution: difficultyMode === "비율" ? difficultyDist : null,
         problemFormatDistribution: formatMode === "비율" ? formatDist : null,
@@ -200,7 +210,7 @@ export default function AdminAssemblePage() {
     try {
       const excludeIds = new Set(picked.map((p) => p.id));
       const next = await redrawOne(
-        { category, courseLevel, unit, excludeRecentDays: excludeRecentDays.trim() ? Number(excludeRecentDays) : null },
+        { category, courseLevel, curriculumGroup, curriculumDetail, unit, excludeRecentDays: excludeRecentDays.trim() ? Number(excludeRecentDays) : null },
         subject,
         { difficulty: target.stratumDifficulty, problemFormat: target.stratumFormat },
         excludeIds
@@ -249,6 +259,11 @@ export default function AdminAssemblePage() {
     </Shell>
   );
 
+  // 수학 세부 과정 칩: 고른 커리큘럼 그룹들의 세부과정을 합쳐 보여준다(그룹 안 고르면 아직 없음).
+  const mathDetailOptions = curriculumGroup.length > 0
+    ? curriculumGroup.flatMap((g) => CURRICULUM_DETAILS[g as CurriculumGroup] ?? [])
+    : [];
+
   const chipClass = (active: boolean) =>
     `rounded-full border px-3 py-1.5 text-xs ${active ? "border-[var(--pink)] bg-[var(--pink-light)]/40 text-[var(--pink-dark)]" : "border-[var(--border-c)] bg-white text-[var(--secondary)] hover:bg-[var(--mint)]/10"}`;
   const inputClass = "mt-1.5 w-full rounded-lg border border-[var(--border-c)] bg-white px-4 py-2.5 text-sm outline-none focus:border-[var(--pink)]";
@@ -293,27 +308,67 @@ export default function AdminAssemblePage() {
 
         {/* 조건 입력 */}
         <div className="mt-6 space-y-5 rounded-2xl border border-[var(--border-c)] bg-white p-6">
-          <div>
-            <p className="text-sm font-medium text-[var(--foreground)]">학교급 (안 고르면 전체)</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {CATEGORIES.map((c) => (
-                <button key={c} type="button" onClick={() => toggleIn(category, setCategory, c)} className={chipClass(category.includes(c))}>
-                  {c}
-                </button>
-              ))}
-            </div>
-          </div>
+          {isMath ? (
+            <>
+              <div>
+                <p className="text-sm font-medium text-[var(--foreground)]">커리큘럼 (안 고르면 전체)</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {CURRICULUM_GROUPS.map((g) => (
+                    <button
+                      key={g.value}
+                      type="button"
+                      onClick={() => toggleIn(curriculumGroup, setCurriculumGroup, g.value)}
+                      className={chipClass(curriculumGroup.includes(g.value))}
+                    >
+                      {g.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-          <div>
-            <p className="text-sm font-medium text-[var(--foreground)]">과정 (안 고르면 전체) {courseLevelOptions.length === 0 && "— 등록된 값 없음"}</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {courseLevelOptions.map((v) => (
-                <button key={v} type="button" onClick={() => toggleIn(courseLevel, setCourseLevel, v)} className={chipClass(courseLevel.includes(v))}>
-                  {v}
-                </button>
-              ))}
-            </div>
-          </div>
+              <div>
+                <p className="text-sm font-medium text-[var(--foreground)]">
+                  세부 과정 (안 고르면 전체) {curriculumGroup.length === 0 && "— 커리큘럼을 먼저 선택하세요"}
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {mathDetailOptions.map((d) => (
+                    <button
+                      key={d.value}
+                      type="button"
+                      onClick={() => toggleIn(curriculumDetail, setCurriculumDetail, d.value)}
+                      className={chipClass(curriculumDetail.includes(d.value))}
+                    >
+                      {d.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <p className="text-sm font-medium text-[var(--foreground)]">학교급 (안 고르면 전체)</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {CATEGORIES.map((c) => (
+                    <button key={c} type="button" onClick={() => toggleIn(category, setCategory, c)} className={chipClass(category.includes(c))}>
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-sm font-medium text-[var(--foreground)]">과정 (안 고르면 전체) {courseLevelOptions.length === 0 && "— 등록된 값 없음"}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {courseLevelOptions.map((v) => (
+                    <button key={v} type="button" onClick={() => toggleIn(courseLevel, setCourseLevel, v)} className={chipClass(courseLevel.includes(v))}>
+                      {v}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
 
           <div>
             <p className="text-sm font-medium text-[var(--foreground)]">단원 (안 고르면 전체) {unitOptions.length === 0 && "— 등록된 값 없음"}</p>
@@ -450,8 +505,17 @@ export default function AdminAssemblePage() {
               {picked.map((p) => (
                 <div key={p.id} className="rounded-2xl border border-[var(--border-c)] bg-white p-4">
                   <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                    <span className="rounded-full bg-[var(--mint)] px-2.5 py-0.5 font-medium text-[var(--mint-dark)]">{p.category}</span>
-                    {p.course_level && <span className="rounded-full bg-[var(--pink-light)] px-2.5 py-0.5 text-[var(--secondary)]">{p.course_level}</span>}
+                    {isMath ? (
+                      <>
+                        <span className="rounded-full bg-[var(--mint)] px-2.5 py-0.5 font-medium text-[var(--mint-dark)]">{curriculumGroupLabel(p.curriculum_group)}</span>
+                        {p.curriculum_detail && <span className="rounded-full bg-[var(--pink-light)] px-2.5 py-0.5 text-[var(--secondary)]">{curriculumDetailLabel(p.curriculum_group, p.curriculum_detail)}</span>}
+                      </>
+                    ) : (
+                      <>
+                        <span className="rounded-full bg-[var(--mint)] px-2.5 py-0.5 font-medium text-[var(--mint-dark)]">{p.category}</span>
+                        {p.course_level && <span className="rounded-full bg-[var(--pink-light)] px-2.5 py-0.5 text-[var(--secondary)]">{p.course_level}</span>}
+                      </>
+                    )}
                     {p.unit && <span className="rounded-full bg-[var(--pink-light)] px-2.5 py-0.5 text-[var(--secondary)]">{p.unit}</span>}
                     <span className="rounded-full border border-[var(--border-c)] px-2.5 py-0.5 text-[var(--secondary)]">{p.difficulty}</span>
                     {p.problem_format && <span className="rounded-full border border-[var(--border-c)] px-2.5 py-0.5 text-[var(--secondary)]">{p.problem_format}</span>}

@@ -12,10 +12,12 @@ import { useSubject } from "@/lib/subject";
 import { type Problem, type Worksheet } from "@/lib/problems";
 import type { Profile } from "@/lib/profile";
 import { fetchDistinctValues } from "@/lib/admin/distinct-values";
+import { CURRICULUM_GROUPS, CURRICULUM_DETAILS, curriculumGroupLabel, curriculumDetailLabel, type CurriculumGroup } from "@/lib/curriculum";
 
 export default function AdminWorksheetsPage() {
   const router = useRouter();
   const { subject } = useSubject();
+  const isMath = subject === "math";
   const [allowed, setAllowed] = useState<boolean | null>(null);
 
   const [problems, setProblems] = useState<Problem[]>([]);
@@ -30,6 +32,8 @@ export default function AdminWorksheetsPage() {
   const [filterUnit, setFilterUnit] = useState("");
   const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
   const [courseLevelOptions, setCourseLevelOptions] = useState<string[]>([]);
+  const [filterGroup, setFilterGroup] = useState("");
+  const [filterDetail, setFilterDetail] = useState("");
 
   // 문제지별 "선별 배포"용 선택 학생 목록
   const [pickedStudents, setPickedStudents] = useState<Record<string, string[]>>({});
@@ -49,12 +53,17 @@ export default function AdminWorksheetsPage() {
       .select("*")
       .eq("subject", subject)
       .order("created_at", { ascending: false });
-    if (filterCat) q = q.eq("category", filterCat);
-    if (filterCourseLevel) q = q.eq("course_level", filterCourseLevel);
+    if (isMath) {
+      if (filterGroup) q = q.eq("curriculum_group", filterGroup);
+      if (filterDetail) q = q.eq("curriculum_detail", filterDetail);
+    } else {
+      if (filterCat) q = q.eq("category", filterCat);
+      if (filterCourseLevel) q = q.eq("course_level", filterCourseLevel);
+    }
     if (filterUnit) q = q.ilike("unit", `%${filterUnit}%`);
     const { data } = await q;
     setProblems((data ?? []) as Problem[]);
-  }, [subject, filterCat, filterCourseLevel, filterUnit]);
+  }, [subject, isMath, filterCat, filterCourseLevel, filterGroup, filterDetail, filterUnit]);
 
   const loadWorksheets = useCallback(async () => {
     const { data } = await createClient()
@@ -83,16 +92,17 @@ export default function AdminWorksheetsPage() {
     if (allowed) { loadProblems(); loadWorksheets(); }
   }, [allowed, loadProblems, loadWorksheets]);
 
-  // 분류·과정 필터 목록은 고정값이 아니라 실제 등록된 값(SAT 등도 포함)에서 가져온다.
+  // 영어는 분류·과정 필터 목록을 고정값이 아니라 실제 등록된 값(SAT 등도 포함)에서 가져온다.
+  // 수학은 curriculum_group/detail이 고정 목록이라 DB 조회가 필요 없다.
   useEffect(() => {
-    if (!allowed) return;
+    if (!allowed || isMath) return;
     fetchDistinctValues({ subject, column: "category" }).then(setCategoryOptions);
-  }, [allowed, subject]);
+  }, [allowed, subject, isMath]);
 
   useEffect(() => {
-    if (!allowed) return;
+    if (!allowed || isMath) return;
     fetchDistinctValues({ subject, column: "course_level", category: filterCat ? [filterCat] : undefined }).then(setCourseLevelOptions);
-  }, [allowed, subject, filterCat]);
+  }, [allowed, subject, isMath, filterCat]);
 
   function togglePick(id: string) {
     setPicked((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -204,14 +214,29 @@ export default function AdminWorksheetsPage() {
           </p>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            <select value={filterCat} onChange={(e) => { setFilterCat(e.target.value); setFilterCourseLevel(""); }} className="rounded-lg border border-[var(--border-c)] bg-white px-3 py-1.5 text-sm">
-              <option value="">전체 분류</option>
-              {categoryOptions.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <select value={filterCourseLevel} onChange={(e) => setFilterCourseLevel(e.target.value)} className="rounded-lg border border-[var(--border-c)] bg-white px-3 py-1.5 text-sm">
-              <option value="">전체 과정</option>
-              {courseLevelOptions.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
+            {isMath ? (
+              <>
+                <select value={filterGroup} onChange={(e) => { setFilterGroup(e.target.value); setFilterDetail(""); }} className="rounded-lg border border-[var(--border-c)] bg-white px-3 py-1.5 text-sm">
+                  <option value="">전체 커리큘럼</option>
+                  {CURRICULUM_GROUPS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
+                </select>
+                <select value={filterDetail} onChange={(e) => setFilterDetail(e.target.value)} className="rounded-lg border border-[var(--border-c)] bg-white px-3 py-1.5 text-sm">
+                  <option value="">전체 과정</option>
+                  {CURRICULUM_DETAILS[(filterGroup || "KR") as CurriculumGroup].map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
+                </select>
+              </>
+            ) : (
+              <>
+                <select value={filterCat} onChange={(e) => { setFilterCat(e.target.value); setFilterCourseLevel(""); }} className="rounded-lg border border-[var(--border-c)] bg-white px-3 py-1.5 text-sm">
+                  <option value="">전체 분류</option>
+                  {categoryOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <select value={filterCourseLevel} onChange={(e) => setFilterCourseLevel(e.target.value)} className="rounded-lg border border-[var(--border-c)] bg-white px-3 py-1.5 text-sm">
+                  <option value="">전체 과정</option>
+                  {courseLevelOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </>
+            )}
             <input value={filterUnit} onChange={(e) => setFilterUnit(e.target.value)} placeholder="단원 검색" className="rounded-lg border border-[var(--border-c)] bg-white px-3 py-1.5 text-sm" />
           </div>
 
@@ -233,8 +258,17 @@ export default function AdminWorksheetsPage() {
                     textClassName="rounded-lg bg-white p-2 text-xs leading-relaxed text-[var(--foreground)] max-h-40 overflow-hidden"
                   />
                   <div className="mt-1.5 flex flex-wrap gap-1 text-[10px] text-[var(--secondary)]">
-                    <span>{p.category}</span>
-                    {p.course_level && <span>· {p.course_level}</span>}
+                    {isMath ? (
+                      <>
+                        <span>{curriculumGroupLabel(p.curriculum_group)}</span>
+                        {p.curriculum_detail && <span>· {curriculumDetailLabel(p.curriculum_group, p.curriculum_detail)}</span>}
+                      </>
+                    ) : (
+                      <>
+                        <span>{p.category}</span>
+                        {p.course_level && <span>· {p.course_level}</span>}
+                      </>
+                    )}
                     {p.unit && <span>· {p.unit}</span>}
                     <span>· {p.difficulty}</span>
                   </div>
