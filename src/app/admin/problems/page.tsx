@@ -10,8 +10,9 @@ import { ProblemBody, MathText } from "@/components/ProblemBody";
 import { canManageMaterials } from "@/lib/roles";
 import { useSubject } from "@/lib/subject";
 import { CATEGORIES, DIFFICULTIES, FORMATS, type Problem } from "@/lib/problems";
-import { useAdminListQuery, type FilterFieldDef, type SortOptionDef } from "@/lib/admin/useAdminListQuery";
+import { useAdminListQuery, type FilterFieldDef, type SelectOption, type SortOptionDef } from "@/lib/admin/useAdminListQuery";
 import type { StatusCountOption } from "@/lib/admin/list-query";
+import { fetchDistinctValues } from "@/lib/admin/distinct-values";
 import {
   SummaryCountBar,
   FilterBar,
@@ -34,8 +35,9 @@ const EMPTY = {
 
 const asOptions = (values: readonly string[]) => values.map((v) => ({ value: v, label: v }));
 
-const FILTER_DEFS: FilterFieldDef[] = [
-  { key: "category", label: "전체 학교급", kind: "select", column: "category", options: asOptions(CATEGORIES) },
+// 학교급은 초등/중등/고등/IB 외에 SAT처럼 등록 폼에 없는 값도 실제로 쓰이므로(영어 SAT 생성 화면이
+// category="SAT"로 저장) 고정 목록이 아니라 실제 DB에 있는 값을 합쳐서 보여준다 — 아래 컴포넌트에서 처리.
+const STATIC_FILTER_DEFS: FilterFieldDef[] = [
   { key: "courseLevel", label: "과정 검색", kind: "text", column: "course_level" },
   { key: "unit", label: "단원 검색", kind: "text", column: "unit" },
   { key: "problemFormat", label: "전체 유형", kind: "select", column: "problem_format", options: asOptions(FORMATS) },
@@ -67,11 +69,25 @@ export default function AdminProblemsPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const [categoryOptions, setCategoryOptions] = useState<SelectOption[]>(asOptions(CATEGORIES));
+  useEffect(() => {
+    if (!allowed) return;
+    fetchDistinctValues({ subject, column: "category" }).then((vals) => {
+      const merged = Array.from(new Set([...CATEGORIES, ...vals]));
+      setCategoryOptions(merged.map((v) => ({ value: v, label: v })));
+    });
+  }, [allowed, subject]);
+
+  const filterDefs: FilterFieldDef[] = [
+    { key: "category", label: "전체 학교급", kind: "select", column: "category", options: categoryOptions },
+    ...STATIC_FILTER_DEFS,
+  ];
+
   const list = useAdminListQuery<Problem>({
     paramPrefix: "prob",
     table: "problems",
     baseEq: [{ column: "subject", value: subject }],
-    filterDefs: FILTER_DEFS,
+    filterDefs,
     statusOptions: STATUS_OPTIONS,
     sortOptions: SORT_OPTIONS,
     pageSize: 24,
@@ -490,7 +506,7 @@ export default function AdminProblemsPage() {
             value={list.statusKey}
             onChange={list.setStatus}
           />
-          <FilterBar defs={FILTER_DEFS} values={list.filters} onChange={list.setFilter} onClear={list.clearFilters} />
+          <FilterBar defs={filterDefs} values={list.filters} onChange={list.setFilter} onClear={list.clearFilters} />
           {list.rows.length > 0 && (
             <SelectAllCheckbox checked={allOnPageSelected} onChange={list.toggleSelectAllOnPage} label="이 페이지 전체 선택" />
           )}

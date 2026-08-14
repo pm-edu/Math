@@ -267,26 +267,5 @@ export async function confirmToWorksheet(params: {
 }
 
 // 조건 입력 화면의 과정/단원 다중선택 칸을 채우기 위한, 실제 존재하는 값 목록.
-export async function fetchDistinctValues(params: {
-  subject: string;
-  column: "course_level" | "unit";
-  category?: string[];
-  courseLevel?: string[];
-}): Promise<string[]> {
-  const supabase = createClient();
-  let q = supabase
-    .from("problems")
-    .select(params.column)
-    .eq("subject", params.subject)
-    .eq("verified", true)
-    .not(params.column, "is", null);
-  if (params.category?.length) q = q.in("category", params.category);
-  if (params.column === "unit" && params.courseLevel?.length) q = q.in("course_level", params.courseLevel);
-  const { data } = await q.limit(3000);
-  const set = new Set<string>();
-  (data ?? []).forEach((r) => {
-    const v = (r as Record<string, string | null>)[params.column];
-    if (v) set.add(v);
-  });
-  return Array.from(set).sort();
-}
+// (문제지 만들기 화면 등 다른 곳에서도 쓰여서 lib/admin/distinct-values.ts로 옮김 — 여기선 재노출만)
+export { fetchDistinctValues } from "./distinct-values";

@@ -9,8 +9,9 @@ import { createClient } from "@/lib/supabase/client";
 import { ProblemBody } from "@/components/ProblemBody";
 import { canManageMaterials } from "@/lib/roles";
 import { useSubject } from "@/lib/subject";
-import { CATEGORIES, type Problem, type Worksheet } from "@/lib/problems";
+import { type Problem, type Worksheet } from "@/lib/problems";
 import type { Profile } from "@/lib/profile";
+import { fetchDistinctValues } from "@/lib/admin/distinct-values";
 
 export default function AdminWorksheetsPage() {
   const router = useRouter();
@@ -25,7 +26,10 @@ export default function AdminWorksheetsPage() {
   const [title, setTitle] = useState("");
   const [picked, setPicked] = useState<string[]>([]); // problem ids (선택 순서 유지)
   const [filterCat, setFilterCat] = useState("");
+  const [filterCourseLevel, setFilterCourseLevel] = useState("");
   const [filterUnit, setFilterUnit] = useState("");
+  const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
+  const [courseLevelOptions, setCourseLevelOptions] = useState<string[]>([]);
 
   // 문제지별 "선별 배포"용 선택 학생 목록
   const [pickedStudents, setPickedStudents] = useState<Record<string, string[]>>({});
@@ -46,10 +50,11 @@ export default function AdminWorksheetsPage() {
       .eq("subject", subject)
       .order("created_at", { ascending: false });
     if (filterCat) q = q.eq("category", filterCat);
+    if (filterCourseLevel) q = q.eq("course_level", filterCourseLevel);
     if (filterUnit) q = q.ilike("unit", `%${filterUnit}%`);
     const { data } = await q;
     setProblems((data ?? []) as Problem[]);
-  }, [subject, filterCat, filterUnit]);
+  }, [subject, filterCat, filterCourseLevel, filterUnit]);
 
   const loadWorksheets = useCallback(async () => {
     const { data } = await createClient()
@@ -77,6 +82,17 @@ export default function AdminWorksheetsPage() {
   useEffect(() => {
     if (allowed) { loadProblems(); loadWorksheets(); }
   }, [allowed, loadProblems, loadWorksheets]);
+
+  // 분류·과정 필터 목록은 고정값이 아니라 실제 등록된 값(SAT 등도 포함)에서 가져온다.
+  useEffect(() => {
+    if (!allowed) return;
+    fetchDistinctValues({ subject, column: "category" }).then(setCategoryOptions);
+  }, [allowed, subject]);
+
+  useEffect(() => {
+    if (!allowed) return;
+    fetchDistinctValues({ subject, column: "course_level", category: filterCat ? [filterCat] : undefined }).then(setCourseLevelOptions);
+  }, [allowed, subject, filterCat]);
 
   function togglePick(id: string) {
     setPicked((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -188,9 +204,13 @@ export default function AdminWorksheetsPage() {
           </p>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            <select value={filterCat} onChange={(e) => setFilterCat(e.target.value)} className="rounded-lg border border-[var(--border-c)] bg-white px-3 py-1.5 text-sm">
+            <select value={filterCat} onChange={(e) => { setFilterCat(e.target.value); setFilterCourseLevel(""); }} className="rounded-lg border border-[var(--border-c)] bg-white px-3 py-1.5 text-sm">
               <option value="">전체 분류</option>
-              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              {categoryOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <select value={filterCourseLevel} onChange={(e) => setFilterCourseLevel(e.target.value)} className="rounded-lg border border-[var(--border-c)] bg-white px-3 py-1.5 text-sm">
+              <option value="">전체 과정</option>
+              {courseLevelOptions.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
             <input value={filterUnit} onChange={(e) => setFilterUnit(e.target.value)} placeholder="단원 검색" className="rounded-lg border border-[var(--border-c)] bg-white px-3 py-1.5 text-sm" />
           </div>
