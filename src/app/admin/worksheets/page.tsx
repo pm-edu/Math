@@ -184,9 +184,6 @@ export default function AdminWorksheetsPage() {
       <main className="mx-auto max-w-5xl px-6 py-16">
         <Link href="/admin/problems" className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]">← 문제은행으로</Link>
         <h1 className="mt-4 text-3xl font-medium text-[var(--foreground)]">문제지 만들기 · 배포</h1>
-        <p className="mt-1 text-xs text-red-500">
-          [임시 진단] 현재 필터 과목 = {subject} · 불러온 문제 {problems.length}개 · 분류 옵션 {categoryOptions.join(", ") || "(없음)"}
-        </p>
 
         {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
         {message && <p className="mt-4 text-sm text-[var(--mint-dark)]">{message}</p>}
