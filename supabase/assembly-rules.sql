@@ -22,6 +22,14 @@ create table if not exists assembly_rules (
   created_at timestamptz default now(),
   last_used_at timestamptz
 );
+-- 예전에 이 테이블이 다른 모양으로 이미 만들어졌을 수 있으니(create table if not exists는
+-- 이미 있으면 그냥 건너뜀), 누락됐을 수 있는 컬럼을 하나씩 안전하게 보강한다.
+alter table assembly_rules add column if not exists name text not null default '';
+alter table assembly_rules add column if not exists subject text not null default 'math';
+alter table assembly_rules add column if not exists criteria jsonb not null default '{}'::jsonb;
+alter table assembly_rules add column if not exists created_by uuid references profiles(id) on delete set null;
+alter table assembly_rules add column if not exists created_at timestamptz default now();
+alter table assembly_rules add column if not exists last_used_at timestamptz;
 create index if not exists assembly_rules_subject_idx on assembly_rules (subject);
 
 -- 2) 결과(한 번의 자동 출제 시도): 어떤 규칙으로 어떤 문제들이 뽑혔는지.
@@ -36,6 +44,12 @@ create table if not exists assembly_results (
   generated_by uuid references profiles(id) on delete set null,
   generated_at timestamptz default now()
 );
+alter table assembly_results add column if not exists rule_id uuid references assembly_rules(id) on delete set null;
+alter table assembly_results add column if not exists rule_snapshot jsonb not null default '{}'::jsonb;
+alter table assembly_results add column if not exists problem_ids uuid[] not null default '{}';
+alter table assembly_results add column if not exists worksheet_id uuid references worksheets(id) on delete set null;
+alter table assembly_results add column if not exists generated_by uuid references profiles(id) on delete set null;
+alter table assembly_results add column if not exists generated_at timestamptz default now();
 create index if not exists assembly_results_rule_idx on assembly_results (rule_id);
 create index if not exists assembly_results_worksheet_idx on assembly_results (worksheet_id);
 
@@ -48,6 +62,11 @@ create table if not exists assembly_result_swaps (
   swapped_by uuid references profiles(id) on delete set null,
   swapped_at timestamptz default now()
 );
+alter table assembly_result_swaps add column if not exists result_id uuid references assembly_results(id) on delete cascade;
+alter table assembly_result_swaps add column if not exists old_problem_id uuid references problems(id) on delete set null;
+alter table assembly_result_swaps add column if not exists new_problem_id uuid references problems(id) on delete set null;
+alter table assembly_result_swaps add column if not exists swapped_by uuid references profiles(id) on delete set null;
+alter table assembly_result_swaps add column if not exists swapped_at timestamptz default now();
 create index if not exists assembly_result_swaps_result_idx on assembly_result_swaps (result_id);
 
 -- ===== 보안 정책: 자료 관리 = 직원 전원(문제은행과 동일 원칙) =====
