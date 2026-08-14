@@ -15,6 +15,7 @@ export default function Header() {
   // 화면이 깜빡이지 않게 한다.
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -109,7 +110,7 @@ export default function Header() {
           {site.partner && (
             <a
               href={site.partner.url}
-              className="hidden text-sm text-[var(--secondary)] transition-colors hover:text-[var(--foreground)] sm:inline"
+              className="hidden text-sm text-[var(--secondary)] transition-colors hover:text-[var(--foreground)] md:inline"
             >
               {site.partner.label} →
             </a>
@@ -117,7 +118,7 @@ export default function Header() {
           {loggedIn !== null && (
             <Link
               href={loggedIn ? "/mypage" : "/login"}
-              className="hidden text-sm text-[var(--secondary)] hover:text-[var(--foreground)] sm:inline"
+              className="hidden text-sm text-[var(--secondary)] hover:text-[var(--foreground)] md:inline"
             >
               {loggedIn ? t("mypage") : t("login")}
             </Link>
@@ -126,7 +127,7 @@ export default function Header() {
             <button
               type="button"
               onClick={handleLogout}
-              className="hidden text-sm text-[var(--secondary)] hover:text-[var(--foreground)] sm:inline"
+              className="hidden text-sm text-[var(--secondary)] hover:text-[var(--foreground)] md:inline"
             >
               {t("logout")}
             </button>
@@ -137,8 +138,65 @@ export default function Header() {
           >
             {t("viewCourses")}
           </Link>
+          <button
+            type="button"
+            onClick={() => setMobileOpen((v) => !v)}
+            aria-label={mobileOpen ? "메뉴 닫기" : "메뉴 열기"}
+            aria-expanded={mobileOpen}
+            className="rounded-full border border-[var(--border-c)] bg-white p-2 text-[var(--foreground)] md:hidden"
+          >
+            {mobileOpen ? (
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                <path d="M3 3l12 12M15 3L3 15" />
+              </svg>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                <path d="M2 4.5h14M2 9h14M2 13.5h14" />
+              </svg>
+            )}
+          </button>
         </div>
       </div>
+
+      {mobileOpen && (
+        <div className="border-t border-[var(--border-c)] bg-[var(--background)] px-6 py-4 md:hidden">
+          <nav className="flex flex-col gap-3">
+            {site.nav.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setMobileOpen(false)}
+                className="text-sm text-[var(--secondary)] hover:text-[var(--foreground)]"
+              >
+                {t(item.key)}
+              </Link>
+            ))}
+            {site.partner && (
+              <a href={site.partner.url} className="text-sm text-[var(--secondary)] hover:text-[var(--foreground)]">
+                {site.partner.label} →
+              </a>
+            )}
+            {loggedIn !== null && (
+              <Link
+                href={loggedIn ? "/mypage" : "/login"}
+                onClick={() => setMobileOpen(false)}
+                className="text-sm text-[var(--secondary)] hover:text-[var(--foreground)]"
+              >
+                {loggedIn ? t("mypage") : t("login")}
+              </Link>
+            )}
+            {loggedIn && (
+              <button
+                type="button"
+                onClick={() => { setMobileOpen(false); handleLogout(); }}
+                className="text-left text-sm text-[var(--secondary)] hover:text-[var(--foreground)]"
+              >
+                {t("logout")}
+              </button>
+            )}
+          </nav>
+        </div>
+      )}
     </header>
   );
 }
