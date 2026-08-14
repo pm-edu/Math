@@ -20,6 +20,7 @@ import {
   Pagination,
   SelectAllCheckbox,
 } from "@/components/admin/ManagedList";
+import { findDuplicateSuspects, type DuplicateGroup } from "@/lib/admin/duplicates";
 
 const EMPTY = {
   category: "고등" as string,
@@ -86,6 +87,15 @@ export default function AdminProblemsPage() {
   // 일괄 AI 풀이 생성 — 저장 전까지는 화면에만 임시 보관(DB에 안 씀). 개별 검수·저장은 기존 그대로.
   const [bulkDrafts, setBulkDrafts] = useState<Map<string, string>>(new Map());
   const [bulkProgress, setBulkProgress] = useState<BulkProgress | null>(null);
+
+  // 일괄 태그 수정 — 빈 칸은 "안 바꿈"으로 처리
+  const [bulkTagOpen, setBulkTagOpen] = useState(false);
+  const [bulkTagForm, setBulkTagForm] = useState({ category: "", courseLevel: "", unit: "", problemFormat: "", difficulty: "" });
+  const [bulkTagSaving, setBulkTagSaving] = useState(false);
+
+  // 중복 문제 탐지(기본 수준) — 검사 버튼을 눌러야 실행됨(자동 아님)
+  const [duplicateGroups, setDuplicateGroups] = useState<DuplicateGroup[] | null>(null);
+  const [checkingDuplicates, setCheckingDuplicates] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -166,6 +176,50 @@ export default function AdminProblemsPage() {
     if (error) { setError(`일괄 삭제 실패: ${error.message}`); return; }
     setMessage(`${ids.length}개 삭제했습니다.`);
     list.clearSelection();
+    list.reload();
+  }
+
+  // 선택한 문제들의 학교급/과정/단원/유형/난이도를 한 번에 바꾼다. 빈 칸으로 둔 항목은 그대로 유지.
+  async function handleBulkTagUpdate() {
+    const ids = Array.from(list.selected);
+    if (ids.length === 0) return;
+    const patch: Record<string, string> = {};
+    if (bulkTagForm.category) patch.category = bulkTagForm.category;
+    if (bulkTagForm.courseLevel.trim()) patch.course_level = bulkTagForm.courseLevel.trim();
+    if (bulkTagForm.unit.trim()) patch.unit = bulkTagForm.unit.trim();
+    if (bulkTagForm.problemFormat) patch.problem_format = bulkTagForm.problemFormat;
+    if (bulkTagForm.difficulty) patch.difficulty = bulkTagForm.difficulty;
+    if (Object.keys(patch).length === 0) { setError("바꿀 항목을 하나 이상 입력해주세요."); return; }
+    if (!confirm(`선택한 ${ids.length}개 문제에 ${Object.keys(patch).length}개 항목을 일괄 적용할까요?`)) return;
+
+    setBulkTagSaving(true);
+    const { error } = await createClient().from("problems").update(patch).in("id", ids);
+    setBulkTagSaving(false);
+    if (error) { setError(`일괄 수정 실패: ${error.message}`); return; }
+    setMessage(`${ids.length}개 문제를 수정했습니다.`);
+    setBulkTagOpen(false);
+    setBulkTagForm({ category: "", courseLevel: "", unit: "", problemFormat: "", difficulty: "" });
+    list.clearSelection();
+    list.reload();
+  }
+
+  async function handleCheckDuplicates() {
+    setCheckingDuplicates(true);
+    setError(null);
+    try {
+      setDuplicateGroups(await findDuplicateSuspects(subject));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "중복 검사 중 오류가 발생했습니다.");
+    } finally {
+      setCheckingDuplicates(false);
+    }
+  }
+
+  async function handleDeleteDuplicate(id: string) {
+    if (!confirm("이 문제를 삭제할까요?")) return;
+    const { error } = await createClient().from("problems").delete().eq("id", id);
+    if (error) { setError(`삭제 실패: ${error.message}`); return; }
+    setDuplicateGroups((prev) => (prev ?? []).map((g) => ({ problems: g.problems.filter((p) => p.id !== id) })).filter((g) => g.problems.length > 1));
     list.reload();
   }
 
@@ -307,8 +361,44 @@ export default function AdminProblemsPage() {
             <Link href="/admin/sat" className="rounded-full bg-[var(--pink)] px-5 py-2.5 text-sm font-medium text-[var(--pink-dark)]">영어 SAT 생성</Link>
             <Link href="/admin/words" className="rounded-full bg-[var(--pink)] px-5 py-2.5 text-sm font-medium text-[var(--pink-dark)]">영어 단어</Link>
             <Link href="/admin/worksheets" className="rounded-full bg-[var(--mint)] px-5 py-2.5 text-sm font-medium text-[var(--mint-dark)]">문제지 만들기 →</Link>
+            <button
+              onClick={handleCheckDuplicates}
+              disabled={checkingDuplicates}
+              className="rounded-full border border-[var(--border-c)] bg-white px-5 py-2.5 text-sm text-[var(--foreground)] hover:bg-[var(--mint)]/20 disabled:opacity-60"
+            >
+              {checkingDuplicates ? "검사 중..." : "중복 문제 검사"}
+            </button>
           </div>
         </div>
+
+        {/* 중복 의심 문제 (텍스트 문제만 대상, 같은 배치에서 등록된 것 중 내용이 거의 같은 것) */}
+        {duplicateGroups !== null && (
+          <div className="mt-6 rounded-2xl border border-[var(--border-c)] bg-white p-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-medium text-[var(--foreground)]">중복 의심 문제 {duplicateGroups.length}건</h2>
+              <button onClick={() => setDuplicateGroups(null)} className="text-xs text-[var(--secondary)] underline hover:text-[var(--foreground)]">닫기</button>
+            </div>
+            <p className="mt-1 text-xs text-[var(--secondary)]">
+              같은 시점(5분 이내)에 같은 방식으로 등록됐고 본문이 거의 같은 문제만 찾습니다(텍스트로 등록된 문제만 대상). 삭제는 직접 판단해서 눌러주세요.
+            </p>
+            {duplicateGroups.length === 0 ? (
+              <p className="mt-3 text-sm text-[var(--secondary)]">중복 의심 문제를 찾지 못했습니다.</p>
+            ) : (
+              <ul className="mt-3 space-y-3">
+                {duplicateGroups.map((g, gi) => (
+                  <li key={gi} className="rounded-xl border border-dashed border-red-300 bg-red-50 p-3">
+                    {g.problems.map((p) => (
+                      <div key={p.id} className="flex items-center justify-between gap-3 border-b border-red-200 py-1.5 last:border-0">
+                        <p className="text-xs text-[var(--foreground)]">{p.preview}…</p>
+                        <button onClick={() => handleDeleteDuplicate(p.id)} className="shrink-0 text-xs text-red-600 underline">삭제</button>
+                      </div>
+                    ))}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
         {/* 등록 폼 */}
         <form onSubmit={handleSubmit} className="mt-8 space-y-4 rounded-2xl border border-[var(--border-c)] bg-white p-6">
@@ -539,6 +629,35 @@ export default function AdminProblemsPage() {
             )}
           </div>
         )}
+        {/* 일괄 태그 수정 패널 */}
+        {bulkTagOpen && (
+          <div className="mt-4 rounded-2xl border border-[var(--border-c)] bg-white p-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-[var(--foreground)]">선택한 {list.selected.size}개 태그 일괄 수정</p>
+              <button onClick={() => setBulkTagOpen(false)} className="text-xs text-[var(--secondary)] underline hover:text-[var(--foreground)]">닫기</button>
+            </div>
+            <p className="mt-1 text-xs text-[var(--secondary)]">비워둔 항목은 바꾸지 않습니다.</p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-5">
+              <select value={bulkTagForm.category} onChange={(e) => setBulkTagForm({ ...bulkTagForm, category: e.target.value })} className="rounded-lg border border-[var(--border-c)] bg-white px-2 py-2 text-xs">
+                <option value="">학교급 유지</option>
+                {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <input type="text" value={bulkTagForm.courseLevel} onChange={(e) => setBulkTagForm({ ...bulkTagForm, courseLevel: e.target.value })} placeholder="과정 유지" className="rounded-lg border border-[var(--border-c)] bg-white px-2 py-2 text-xs" />
+              <input type="text" value={bulkTagForm.unit} onChange={(e) => setBulkTagForm({ ...bulkTagForm, unit: e.target.value })} placeholder="단원 유지" className="rounded-lg border border-[var(--border-c)] bg-white px-2 py-2 text-xs" />
+              <select value={bulkTagForm.problemFormat} onChange={(e) => setBulkTagForm({ ...bulkTagForm, problemFormat: e.target.value })} className="rounded-lg border border-[var(--border-c)] bg-white px-2 py-2 text-xs">
+                <option value="">유형 유지</option>
+                {FORMATS.map((f) => <option key={f} value={f}>{f}</option>)}
+              </select>
+              <select value={bulkTagForm.difficulty} onChange={(e) => setBulkTagForm({ ...bulkTagForm, difficulty: e.target.value })} className="rounded-lg border border-[var(--border-c)] bg-white px-2 py-2 text-xs">
+                <option value="">난이도 유지</option>
+                {DIFFICULTIES.map((d) => <option key={d} value={d}>{d}</option>)}
+              </select>
+            </div>
+            <button onClick={handleBulkTagUpdate} disabled={bulkTagSaving} className="mt-3 rounded-full bg-[var(--mint)] px-5 py-2 text-xs font-medium text-[var(--mint-dark)] disabled:opacity-60">
+              {bulkTagSaving ? "적용 중..." : "적용"}
+            </button>
+          </div>
+        )}
       </main>
 
       {/* 일괄 작업 바 */}
@@ -548,6 +667,7 @@ export default function AdminProblemsPage() {
           onClear={list.clearSelection}
           actions={[
             { label: "선택한 문제 AI 풀이 일괄 생성", onClick: handleBulkGenerateSolutions },
+            { label: "선택 태그 일괄 수정", onClick: () => setBulkTagOpen((v) => !v) },
             { label: "선택 삭제", onClick: handleBulkDelete, tone: "danger" },
           ]}
         />
