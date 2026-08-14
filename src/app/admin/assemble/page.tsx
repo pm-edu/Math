@@ -11,6 +11,7 @@ import { canManageMaterials } from "@/lib/roles";
 import { useSubject } from "@/lib/subject";
 import { CATEGORIES, DIFFICULTIES, FORMATS, type Problem } from "@/lib/problems";
 import { CURRICULUM_GROUPS, CURRICULUM_DETAILS, curriculumGroupLabel, curriculumDetailLabel, type CurriculumGroup } from "@/lib/curriculum";
+import { topicsFor } from "@/lib/curriculum-topics";
 import {
   generateAssembly,
   redrawOne,
@@ -91,11 +92,12 @@ export default function AdminAssemblePage() {
   }, [allowed, subject, isMath, category]);
 
   useEffect(() => {
-    if (!allowed) return;
-    // 수학은 curriculum_group/detail이 고정 목록이라 단원만 subject 기준으로 조회한다(카테고리 캐스케이드 불필요).
-    if (isMath) fetchDistinctValues({ subject, column: "unit" }).then(setUnitOptions);
-    else fetchDistinctValues({ subject, column: "unit", category, courseLevel }).then(setUnitOptions);
+    if (!allowed || isMath) return;
+    fetchDistinctValues({ subject, column: "unit", category, courseLevel }).then(setUnitOptions);
   }, [allowed, subject, isMath, category, courseLevel]);
+
+  // 수학은 단원(topic) 목록이 DB 조회가 아니라 고정 목록 — 고른 세부과정들의 단원을 합쳐서 보여준다.
+  const mathUnitOptions = Array.from(new Set(curriculumDetail.flatMap((d) => topicsFor(d))));
 
   useEffect(() => {
     if (!allowed) return;
@@ -317,7 +319,7 @@ export default function AdminAssemblePage() {
                     <button
                       key={g.value}
                       type="button"
-                      onClick={() => toggleIn(curriculumGroup, setCurriculumGroup, g.value)}
+                      onClick={() => { toggleIn(curriculumGroup, setCurriculumGroup, g.value); setUnit([]); }}
                       className={chipClass(curriculumGroup.includes(g.value))}
                     >
                       {g.label}
@@ -335,7 +337,7 @@ export default function AdminAssemblePage() {
                     <button
                       key={d.value}
                       type="button"
-                      onClick={() => toggleIn(curriculumDetail, setCurriculumDetail, d.value)}
+                      onClick={() => { toggleIn(curriculumDetail, setCurriculumDetail, d.value); setUnit([]); }}
                       className={chipClass(curriculumDetail.includes(d.value))}
                     >
                       {d.label}
@@ -371,9 +373,14 @@ export default function AdminAssemblePage() {
           )}
 
           <div>
-            <p className="text-sm font-medium text-[var(--foreground)]">단원 (안 고르면 전체) {unitOptions.length === 0 && "— 등록된 값 없음"}</p>
+            <p className="text-sm font-medium text-[var(--foreground)]">
+              단원 (안 고르면 전체){" "}
+              {isMath
+                ? curriculumDetail.length === 0 && "— 세부 과정을 먼저 선택하세요"
+                : unitOptions.length === 0 && "— 등록된 값 없음"}
+            </p>
             <div className="mt-2 flex flex-wrap gap-2">
-              {unitOptions.map((v) => (
+              {(isMath ? mathUnitOptions : unitOptions).map((v) => (
                 <button key={v} type="button" onClick={() => toggleIn(unit, setUnit, v)} className={chipClass(unit.includes(v))}>
                   {v}
                 </button>

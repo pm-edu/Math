@@ -11,6 +11,7 @@ import { canManageMaterials } from "@/lib/roles";
 import { useSubject } from "@/lib/subject";
 import { CATEGORIES, DIFFICULTIES, FORMATS, type Problem } from "@/lib/problems";
 import { CURRICULUM_GROUPS, CURRICULUM_DETAILS, curriculumGroupLabel, curriculumDetailLabel, type CurriculumGroup } from "@/lib/curriculum";
+import { topicsFor } from "@/lib/curriculum-topics";
 import { useAdminListQuery, type FilterFieldDef, type SelectOption, type SortOptionDef } from "@/lib/admin/useAdminListQuery";
 import type { StatusCountOption } from "@/lib/admin/list-query";
 import { fetchDistinctValues } from "@/lib/admin/distinct-values";
@@ -42,7 +43,6 @@ const asOptions = (values: readonly string[]) => values.map((v) => ({ value: v, 
 // category="SAT"로 저장) 고정 목록이 아니라 실제 DB에 있는 값을 합쳐서 보여준다 — 아래 컴포넌트에서 처리.
 // 수학(curriculum_group/detail)과 영어(category/course_level) 공통으로 쓰이는 필터.
 const COMMON_FILTER_DEFS: FilterFieldDef[] = [
-  { key: "unit", label: "단원 검색", kind: "text", column: "unit" },
   { key: "problemFormat", label: "전체 유형", kind: "select", column: "problem_format", options: asOptions(FORMATS) },
   { key: "difficulty", label: "전체 난이도", kind: "select", column: "difficulty", options: asOptions(DIFFICULTIES) },
 ];
@@ -87,11 +87,13 @@ export default function AdminProblemsPage() {
     ? [
         { key: "curriculumGroup", label: "전체 커리큘럼", kind: "select", column: "curriculum_group", options: CURRICULUM_GROUPS },
         { key: "curriculumDetail", label: "전체 과정", kind: "select", column: "curriculum_detail", options: [] },
+        { key: "unit", label: "전체 단원", kind: "select", column: "unit", options: [] },
         ...COMMON_FILTER_DEFS,
       ]
     : [
         { key: "category", label: "전체 학교급", kind: "select", column: "category", options: categoryOptions },
         { key: "courseLevel", label: "과정 검색", kind: "text", column: "course_level" },
+        { key: "unit", label: "단원 검색", kind: "text", column: "unit" },
         ...COMMON_FILTER_DEFS,
       ];
 
@@ -105,13 +107,17 @@ export default function AdminProblemsPage() {
     pageSize: 24,
   });
 
-  // curriculumDetail의 실제 옵션은 지금 선택된 curriculumGroup 필터값에 따라 달라진다(종속 드롭다운).
+  // curriculumDetail/unit의 실제 옵션은 한 단계 위(그룹→세부과정) 선택값에 따라 달라진다(종속 드롭다운).
   const displayFilterDefs: FilterFieldDef[] = isMath
-    ? filterDefs.map((d) =>
-        d.key === "curriculumDetail" && d.kind === "select"
-          ? { ...d, options: CURRICULUM_DETAILS[(list.filters.curriculumGroup || "KR") as CurriculumGroup] ?? [] }
-          : d
-      )
+    ? filterDefs.map((d) => {
+        if (d.key === "curriculumDetail" && d.kind === "select") {
+          return { ...d, options: CURRICULUM_DETAILS[(list.filters.curriculumGroup || "KR") as CurriculumGroup] ?? [] };
+        }
+        if (d.key === "unit" && d.kind === "select") {
+          return { ...d, options: asOptions(topicsFor(list.filters.curriculumDetail)) };
+        }
+        return d;
+      })
     : filterDefs;
 
   // 풀이 검수 패널 (문제별) — 기존 개별 검수 화면은 그대로 유지
@@ -483,7 +489,7 @@ export default function AdminProblemsPage() {
                 <label className="text-sm text-[var(--foreground)]">커리큘럼</label>
                 <select
                   value={form.curriculumGroup}
-                  onChange={(e) => setForm({ ...form, curriculumGroup: e.target.value as CurriculumGroup, curriculumDetail: "" })}
+                  onChange={(e) => setForm({ ...form, curriculumGroup: e.target.value as CurriculumGroup, curriculumDetail: "", unit: "" })}
                   className={inputClass}
                 >
                   {CURRICULUM_GROUPS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
@@ -491,7 +497,11 @@ export default function AdminProblemsPage() {
               </div>
               <div>
                 <label className="text-sm text-[var(--foreground)]">세부 과정</label>
-                <select value={form.curriculumDetail} onChange={(e) => setForm({ ...form, curriculumDetail: e.target.value })} className={inputClass}>
+                <select
+                  value={form.curriculumDetail}
+                  onChange={(e) => setForm({ ...form, curriculumDetail: e.target.value, unit: "" })}
+                  className={inputClass}
+                >
                   <option value="">(선택)</option>
                   {CURRICULUM_DETAILS[form.curriculumGroup].map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
                 </select>
@@ -515,7 +525,14 @@ export default function AdminProblemsPage() {
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
               <label className="text-sm text-[var(--foreground)]">단원</label>
-              <input type="text" value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} placeholder="이차방정식" className={inputClass} />
+              {isMath ? (
+                <select value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} className={inputClass} disabled={!form.curriculumDetail}>
+                  <option value="">{form.curriculumDetail ? "(선택)" : "세부 과정을 먼저 선택하세요"}</option>
+                  {topicsFor(form.curriculumDetail).map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
+              ) : (
+                <input type="text" value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} placeholder="이차방정식" className={inputClass} />
+              )}
             </div>
             <div>
               <label className="text-sm text-[var(--foreground)]">유형</label>
@@ -560,7 +577,8 @@ export default function AdminProblemsPage() {
             defs={displayFilterDefs}
             values={list.filters}
             onChange={(k, v) => {
-              if (isMath && k === "curriculumGroup") list.setFilterFields({ curriculumGroup: v, curriculumDetail: "" });
+              if (isMath && k === "curriculumGroup") list.setFilterFields({ curriculumGroup: v, curriculumDetail: "", unit: "" });
+              else if (isMath && k === "curriculumDetail") list.setFilterFields({ curriculumDetail: v, unit: "" });
               else list.setFilter(k, v);
             }}
             onClear={list.clearFilters}
@@ -725,7 +743,7 @@ export default function AdminProblemsPage() {
                 <>
                   <select
                     value={bulkTagForm.curriculumGroup}
-                    onChange={(e) => setBulkTagForm({ ...bulkTagForm, curriculumGroup: e.target.value, curriculumDetail: "" })}
+                    onChange={(e) => setBulkTagForm({ ...bulkTagForm, curriculumGroup: e.target.value, curriculumDetail: "", unit: "" })}
                     className="rounded-lg border border-[var(--border-c)] bg-white px-2 py-2 text-xs"
                   >
                     <option value="">커리큘럼 유지</option>
@@ -733,11 +751,20 @@ export default function AdminProblemsPage() {
                   </select>
                   <select
                     value={bulkTagForm.curriculumDetail}
-                    onChange={(e) => setBulkTagForm({ ...bulkTagForm, curriculumDetail: e.target.value })}
+                    onChange={(e) => setBulkTagForm({ ...bulkTagForm, curriculumDetail: e.target.value, unit: "" })}
                     className="rounded-lg border border-[var(--border-c)] bg-white px-2 py-2 text-xs"
                   >
                     <option value="">세부 과정 유지</option>
                     {CURRICULUM_DETAILS[(bulkTagForm.curriculumGroup || "KR") as CurriculumGroup].map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
+                  </select>
+                  <select
+                    value={bulkTagForm.unit}
+                    onChange={(e) => setBulkTagForm({ ...bulkTagForm, unit: e.target.value })}
+                    className="rounded-lg border border-[var(--border-c)] bg-white px-2 py-2 text-xs"
+                    disabled={!bulkTagForm.curriculumDetail}
+                  >
+                    <option value="">{bulkTagForm.curriculumDetail ? "단원 유지" : "세부 과정 먼저 선택"}</option>
+                    {topicsFor(bulkTagForm.curriculumDetail).map((t) => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </>
               ) : (
@@ -747,9 +774,9 @@ export default function AdminProblemsPage() {
                     {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
                   </select>
                   <input type="text" value={bulkTagForm.courseLevel} onChange={(e) => setBulkTagForm({ ...bulkTagForm, courseLevel: e.target.value })} placeholder="과정 유지" className="rounded-lg border border-[var(--border-c)] bg-white px-2 py-2 text-xs" />
+                  <input type="text" value={bulkTagForm.unit} onChange={(e) => setBulkTagForm({ ...bulkTagForm, unit: e.target.value })} placeholder="단원 유지" className="rounded-lg border border-[var(--border-c)] bg-white px-2 py-2 text-xs" />
                 </>
               )}
-              <input type="text" value={bulkTagForm.unit} onChange={(e) => setBulkTagForm({ ...bulkTagForm, unit: e.target.value })} placeholder="단원 유지" className="rounded-lg border border-[var(--border-c)] bg-white px-2 py-2 text-xs" />
               <select value={bulkTagForm.problemFormat} onChange={(e) => setBulkTagForm({ ...bulkTagForm, problemFormat: e.target.value })} className="rounded-lg border border-[var(--border-c)] bg-white px-2 py-2 text-xs">
                 <option value="">유형 유지</option>
                 {FORMATS.map((f) => <option key={f} value={f}>{f}</option>)}

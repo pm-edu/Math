@@ -13,6 +13,7 @@ import { type Problem, type Worksheet } from "@/lib/problems";
 import type { Profile } from "@/lib/profile";
 import { fetchDistinctValues } from "@/lib/admin/distinct-values";
 import { CURRICULUM_GROUPS, CURRICULUM_DETAILS, curriculumGroupLabel, curriculumDetailLabel, type CurriculumGroup } from "@/lib/curriculum";
+import { topicsFor } from "@/lib/curriculum-topics";
 
 export default function AdminWorksheetsPage() {
   const router = useRouter();
@@ -56,11 +57,12 @@ export default function AdminWorksheetsPage() {
     if (isMath) {
       if (filterGroup) q = q.eq("curriculum_group", filterGroup);
       if (filterDetail) q = q.eq("curriculum_detail", filterDetail);
+      if (filterUnit) q = q.eq("unit", filterUnit);
     } else {
       if (filterCat) q = q.eq("category", filterCat);
       if (filterCourseLevel) q = q.eq("course_level", filterCourseLevel);
+      if (filterUnit) q = q.ilike("unit", `%${filterUnit}%`);
     }
-    if (filterUnit) q = q.ilike("unit", `%${filterUnit}%`);
     const { data } = await q;
     setProblems((data ?? []) as Problem[]);
   }, [subject, isMath, filterCat, filterCourseLevel, filterGroup, filterDetail, filterUnit]);
@@ -216,11 +218,11 @@ export default function AdminWorksheetsPage() {
           <div className="mt-4 flex flex-wrap gap-2">
             {isMath ? (
               <>
-                <select value={filterGroup} onChange={(e) => { setFilterGroup(e.target.value); setFilterDetail(""); }} className="rounded-lg border border-[var(--border-c)] bg-white px-3 py-1.5 text-sm">
+                <select value={filterGroup} onChange={(e) => { setFilterGroup(e.target.value); setFilterDetail(""); setFilterUnit(""); }} className="rounded-lg border border-[var(--border-c)] bg-white px-3 py-1.5 text-sm">
                   <option value="">전체 커리큘럼</option>
                   {CURRICULUM_GROUPS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
                 </select>
-                <select value={filterDetail} onChange={(e) => setFilterDetail(e.target.value)} className="rounded-lg border border-[var(--border-c)] bg-white px-3 py-1.5 text-sm">
+                <select value={filterDetail} onChange={(e) => { setFilterDetail(e.target.value); setFilterUnit(""); }} className="rounded-lg border border-[var(--border-c)] bg-white px-3 py-1.5 text-sm">
                   <option value="">전체 과정</option>
                   {CURRICULUM_DETAILS[(filterGroup || "KR") as CurriculumGroup].map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
                 </select>
@@ -237,7 +239,19 @@ export default function AdminWorksheetsPage() {
                 </select>
               </>
             )}
-            <input value={filterUnit} onChange={(e) => setFilterUnit(e.target.value)} placeholder="단원 검색" className="rounded-lg border border-[var(--border-c)] bg-white px-3 py-1.5 text-sm" />
+            {isMath ? (
+              <select
+                value={filterUnit}
+                onChange={(e) => setFilterUnit(e.target.value)}
+                className="rounded-lg border border-[var(--border-c)] bg-white px-3 py-1.5 text-sm"
+                disabled={!filterDetail}
+              >
+                <option value="">{filterDetail ? "전체 단원" : "세부 과정을 먼저 선택하세요"}</option>
+                {topicsFor(filterDetail).map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            ) : (
+              <input value={filterUnit} onChange={(e) => setFilterUnit(e.target.value)} placeholder="단원 검색" className="rounded-lg border border-[var(--border-c)] bg-white px-3 py-1.5 text-sm" />
+            )}
           </div>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-4">

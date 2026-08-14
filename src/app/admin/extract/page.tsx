@@ -12,6 +12,7 @@ import { useSubject } from "@/lib/subject";
 import { DIFFICULTIES, FORMATS } from "@/lib/problems";
 import type { Category } from "@/lib/categories";
 import { CURRICULUM_GROUPS, CURRICULUM_DETAILS, type CurriculumGroup } from "@/lib/curriculum";
+import { topicsFor } from "@/lib/curriculum-topics";
 
 type Draft = {
   content_text: string;
@@ -354,13 +355,25 @@ export default function AdminExtractPage() {
                       placeholder="정답"
                       className="rounded-lg border border-[var(--border-c)] bg-white px-3 py-2 text-sm outline-none focus:border-[var(--pink)]"
                     />
-                    <input
-                      type="text"
-                      value={d.unit}
-                      onChange={(e) => updateDraft(i, { unit: e.target.value })}
-                      placeholder="단원"
-                      className="rounded-lg border border-[var(--border-c)] bg-white px-3 py-2 text-sm outline-none focus:border-[var(--pink)]"
-                    />
+                    {isMath ? (
+                      <select
+                        value={d.unit}
+                        onChange={(e) => updateDraft(i, { unit: e.target.value })}
+                        className="rounded-lg border border-[var(--border-c)] bg-white px-3 py-2 text-sm"
+                        disabled={!curriculumDetail}
+                      >
+                        <option value="">{curriculumDetail ? "단원" : "세부 과정 먼저 선택"}</option>
+                        {topicsFor(curriculumDetail).map((t) => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        value={d.unit}
+                        onChange={(e) => updateDraft(i, { unit: e.target.value })}
+                        placeholder="단원"
+                        className="rounded-lg border border-[var(--border-c)] bg-white px-3 py-2 text-sm outline-none focus:border-[var(--pink)]"
+                      />
+                    )}
                     <select
                       value={d.difficulty}
                       onChange={(e) => updateDraft(i, { difficulty: e.target.value })}
