@@ -8,6 +8,7 @@ import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/client";
 import { ProblemBody, MathText } from "@/components/ProblemBody";
 import type { Problem } from "@/lib/problems";
+import { normAnswer } from "@/lib/grading";
 
 type Submission = {
   problem_id: string;
@@ -15,16 +16,11 @@ type Submission = {
   is_correct: boolean | null;
 };
 
-// 답 비교용 정규화: 공백 제거 + 소문자 (③ vs ③, x = 2 vs x=2 등 가벼운 차이 흡수)
-function norm(s: string | null | undefined): string {
-  return (s ?? "").trim().replace(/\s+/g, "").toLowerCase();
-}
-
 // 한 문제 채점: 정답이 없거나 서술형이면 자동채점 불가(null)
 function gradeOne(p: Problem, ans: string): boolean | null {
   if (!p.answer) return null;
   if (p.problem_format === "서술형") return null;
-  return norm(ans) === norm(p.answer);
+  return normAnswer(ans) === normAnswer(p.answer);
 }
 
 export default function WorksheetDetailPage({
@@ -242,7 +238,7 @@ export default function WorksheetDetailPage({
                               <div className="mt-3 space-y-2">
                                 {choices.map((c, ci) => {
                                   const letter = String.fromCharCode(65 + ci);
-                                  const isCorrect = norm(letter) === norm(p.answer);
+                                  const isCorrect = normAnswer(letter) === normAnswer(p.answer);
                                   const isMine = answers[p.id] === letter;
                                   return (
                                     <div
