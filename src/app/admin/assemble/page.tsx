@@ -17,7 +17,12 @@ import {
   saveAssemblyResult,
   confirmToWorksheet,
   fetchDistinctValues,
+  saveRule,
+  loadRules,
+  deleteRule,
+  touchRuleLastUsed,
   type AssemblyCriteria,
+  type AssemblyRule,
   type PickedProblem,
 } from "@/lib/admin/assembly";
 
@@ -43,6 +48,12 @@ export default function AdminAssemblePage() {
 
   const [count, setCount] = useState(20);
   const [excludeRecentDays, setExcludeRecentDays] = useState("");
+
+  // 템플릿(저장된 규칙)
+  const [rules, setRules] = useState<AssemblyRule[]>([]);
+  const [loadedRuleId, setLoadedRuleId] = useState<string | null>(null);
+  const [newRuleName, setNewRuleName] = useState("");
+  const [savingRule, setSavingRule] = useState(false);
 
   // 생성 결과
   const [generating, setGenerating] = useState(false);
@@ -80,6 +91,68 @@ export default function AdminAssemblePage() {
     fetchDistinctValues({ subject, column: "unit", category, courseLevel }).then(setUnitOptions);
   }, [allowed, subject, category, courseLevel]);
 
+  useEffect(() => {
+    if (!allowed) return;
+    loadRules(subject).then(setRules);
+  }, [allowed, subject]);
+
+  function applyRule(rule: AssemblyRule) {
+    const c = rule.criteria;
+    setCategory(c.category);
+    setCourseLevel(c.courseLevel);
+    setUnit(c.unit);
+    setDifficultyMode(c.difficultyDistribution ? "비율" : "무관");
+    if (c.difficultyDistribution) setDifficultyDist(c.difficultyDistribution);
+    setFormatMode(c.problemFormatDistribution ? "비율" : "무관");
+    if (c.problemFormatDistribution) setFormatDist(c.problemFormatDistribution);
+    setCount(c.count);
+    setExcludeRecentDays(c.excludeRecentDays ? String(c.excludeRecentDays) : "");
+    setLoadedRuleId(rule.id);
+    setResultId(null);
+    setPicked([]);
+    setConfirmedUrl(null);
+  }
+
+  function startCustom() {
+    setLoadedRuleId(null);
+  }
+
+  async function handleSaveRule() {
+    if (!userId) return;
+    if (!newRuleName.trim()) { setError("템플릿 이름을 입력해주세요."); return; }
+    setSavingRule(true);
+    setError(null);
+    try {
+      const criteria: AssemblyCriteria = {
+        category, courseLevel, unit,
+        difficultyDistribution: difficultyMode === "비율" ? difficultyDist : null,
+        problemFormatDistribution: formatMode === "비율" ? formatDist : null,
+        count,
+        excludeRecentDays: excludeRecentDays.trim() ? Number(excludeRecentDays) : null,
+      };
+      const id = await saveRule({ name: newRuleName.trim(), subject, criteria, userId });
+      setNewRuleName("");
+      setLoadedRuleId(id);
+      setRules(await loadRules(subject));
+      setMessage(`"${newRuleName.trim()}" 템플릿으로 저장했습니다.`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "템플릿 저장 실패");
+    } finally {
+      setSavingRule(false);
+    }
+  }
+
+  async function handleDeleteRule(rule: AssemblyRule) {
+    if (!confirm(`"${rule.name}" 템플릿을 삭제할까요?`)) return;
+    try {
+      await deleteRule(rule.id);
+      if (loadedRuleId === rule.id) setLoadedRuleId(null);
+      setRules(await loadRules(subject));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "템플릿 삭제 실패");
+    }
+  }
+
   function toggleIn(list: string[], setList: (v: string[]) => void, value: string) {
     setList(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
   }
@@ -99,7 +172,11 @@ export default function AdminAssemblePage() {
         excludeRecentDays: excludeRecentDays.trim() ? Number(excludeRecentDays) : null,
       };
       const result = await generateAssembly(criteria, subject);
-      const id = await saveAssemblyResult({ criteria, problemIds: result.picked.map((p) => p.id), userId });
+      const id = await saveAssemblyResult({ criteria, problemIds: result.picked.map((p) => p.id), userId, ruleId: loadedRuleId });
+      if (loadedRuleId) {
+        touchRuleLastUsed(loadedRuleId);
+        setRules((prev) => prev.map((r) => (r.id === loadedRuleId ? { ...r, lastUsedAt: new Date().toISOString() } : r)));
+      }
       setResultId(id);
       setPicked(result.picked);
       setShortages(result.shortages);
@@ -184,8 +261,38 @@ export default function AdminAssemblePage() {
         <h1 className="mt-4 text-3xl font-medium text-[var(--foreground)]">규칙으로 자동 출제</h1>
         <p className="mt-2 text-[var(--secondary)]">조건을 정하면 조건에 맞는 문제를 무작위로 뽑아 문제지 초안을 만들어줍니다.</p>
 
+        {/* 저장된 템플릿 */}
+        {rules.length > 0 && (
+          <div className="mt-6 rounded-2xl border border-[var(--border-c)] bg-white p-4">
+            <p className="text-sm font-medium text-[var(--foreground)]">저장된 템플릿</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button type="button" onClick={startCustom} className={chipClass(loadedRuleId === null)}>
+                직접 입력
+              </button>
+              {rules.map((r) => (
+                <span key={r.id} className="inline-flex items-center gap-1">
+                  <button type="button" onClick={() => applyRule(r)} className={chipClass(loadedRuleId === r.id)}>
+                    {r.name}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteRule(r)}
+                    className="text-xs text-red-500 hover:text-red-700"
+                    title="템플릿 삭제"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+            <p className="mt-1 text-xs text-[var(--secondary)]">
+              템플릿을 고르면 아래 조건이 자동으로 채워집니다. 같은 템플릿으로 "생성"을 여러 번 누르면 매번 다른 문제 조합이 나옵니다.
+            </p>
+          </div>
+        )}
+
         {/* 조건 입력 */}
-        <div className="mt-8 space-y-5 rounded-2xl border border-[var(--border-c)] bg-white p-6">
+        <div className="mt-6 space-y-5 rounded-2xl border border-[var(--border-c)] bg-white p-6">
           <div>
             <p className="text-sm font-medium text-[var(--foreground)]">학교급 (안 고르면 전체)</p>
             <div className="mt-2 flex flex-wrap gap-2">
@@ -287,9 +394,20 @@ export default function AdminAssemblePage() {
           {error && <p className="text-sm text-red-600">{error}</p>}
           {message && <p className="text-sm text-[var(--mint-dark)]">{message}</p>}
 
-          <button onClick={handleGenerate} disabled={generating} className="rounded-full bg-[var(--pink)] px-6 py-3 text-sm font-medium text-[var(--pink-dark)] disabled:opacity-60">
-            {generating ? "생성 중..." : "생성"}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button onClick={handleGenerate} disabled={generating} className="rounded-full bg-[var(--pink)] px-6 py-3 text-sm font-medium text-[var(--pink-dark)] disabled:opacity-60">
+              {generating ? "생성 중..." : "생성"}
+            </button>
+            <span className="text-[var(--secondary)]">|</span>
+            <input
+              type="text" value={newRuleName} onChange={(e) => setNewRuleName(e.target.value)}
+              placeholder="템플릿 이름 (예: 중2 2학기 중간고사 세트)"
+              className="rounded-lg border border-[var(--border-c)] bg-white px-3 py-2.5 text-sm outline-none focus:border-[var(--pink)]"
+            />
+            <button onClick={handleSaveRule} disabled={savingRule} className="whitespace-nowrap rounded-full border border-[var(--border-c)] bg-white px-5 py-2.5 text-sm text-[var(--foreground)] hover:bg-[var(--mint)]/20 disabled:opacity-60">
+              {savingRule ? "저장 중..." : "이 조건을 템플릿으로 저장"}
+            </button>
+          </div>
         </div>
 
         {/* 결과 미리보기 */}

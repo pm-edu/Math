@@ -156,15 +156,73 @@ export async function saveAssemblyResult(params: {
   criteria: AssemblyCriteria;
   problemIds: string[];
   userId: string;
+  ruleId?: string | null;
 }): Promise<string> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("assembly_results")
-    .insert({ rule_id: null, rule_snapshot: params.criteria, problem_ids: params.problemIds, generated_by: params.userId })
+    .insert({
+      rule_id: params.ruleId ?? null,
+      rule_snapshot: params.criteria,
+      problem_ids: params.problemIds,
+      generated_by: params.userId,
+    })
     .select("id")
     .single();
   if (error) throw new Error(error.message);
   return data.id;
+}
+
+// ===== STAGE 6: 규칙 저장(템플릿화) =====
+
+export type AssemblyRule = {
+  id: string;
+  name: string;
+  subject: string;
+  criteria: AssemblyCriteria;
+  createdAt: string;
+  lastUsedAt: string | null;
+};
+
+export async function saveRule(params: { name: string; subject: string; criteria: AssemblyCriteria; userId: string }): Promise<string> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("assembly_rules")
+    .insert({ name: params.name, subject: params.subject, criteria: params.criteria, created_by: params.userId })
+    .select("id")
+    .single();
+  if (error) throw new Error(error.message);
+  return data.id;
+}
+
+export async function loadRules(subject: string): Promise<AssemblyRule[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("assembly_rules")
+    .select("id, name, subject, criteria, created_at, last_used_at")
+    .eq("subject", subject)
+    .order("last_used_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r) => ({
+    id: r.id,
+    name: r.name,
+    subject: r.subject,
+    criteria: r.criteria as AssemblyCriteria,
+    createdAt: r.created_at,
+    lastUsedAt: r.last_used_at,
+  }));
+}
+
+export async function deleteRule(id: string): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.from("assembly_rules").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+export async function touchRuleLastUsed(id: string): Promise<void> {
+  const supabase = createClient();
+  await supabase.from("assembly_rules").update({ last_used_at: new Date().toISOString() }).eq("id", id);
 }
 
 export async function recordSwap(params: {
