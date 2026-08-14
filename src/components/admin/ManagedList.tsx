@@ -5,40 +5,33 @@
 // 카드 자체(문제 미리보기 등)는 탭마다 다르므로 여기서 만들지 않고 호출부가 renderItem으로 넘긴다.
 
 import type { FilterFieldDef, SortOptionDef } from "@/lib/admin/useAdminListQuery";
-import type { StatusCounts, StatusMode } from "@/lib/admin/list-query";
+import type { StatusCountOption } from "@/lib/admin/list-query";
 
 export function SummaryCountBar({
+  options,
   counts,
-  statusMode,
-  onStatusChange,
-  presentLabel,
-  absentLabel,
+  value,
+  onChange,
 }: {
-  counts: StatusCounts | null;
-  statusMode: StatusMode;
-  onStatusChange: (mode: StatusMode) => void;
-  presentLabel: string;
-  absentLabel: string;
+  options: StatusCountOption[];
+  counts: Record<string, number> | null;
+  value: string;
+  onChange: (key: string) => void;
 }) {
   if (!counts) return null;
-  const items: { mode: StatusMode; label: string; count: number }[] = [
-    { mode: "all", label: "전체", count: counts.all },
-    { mode: "absent", label: absentLabel, count: counts.absent },
-    { mode: "present", label: presentLabel, count: counts.present },
-  ];
   return (
     <div className="flex flex-wrap gap-2">
-      {items.map((it) => (
+      {options.map((opt) => (
         <button
-          key={it.mode}
-          onClick={() => onStatusChange(it.mode)}
+          key={opt.key}
+          onClick={() => onChange(opt.key)}
           className={`rounded-full px-4 py-1.5 text-xs font-medium transition-colors ${
-            statusMode === it.mode
+            value === opt.key
               ? "bg-[var(--pink)] text-[var(--pink-dark)]"
               : "border border-[var(--border-c)] bg-white text-[var(--secondary)] hover:bg-[var(--mint)]/20"
           }`}
         >
-          {it.label} {it.count.toLocaleString()}
+          {opt.label} {(counts[opt.key] ?? 0).toLocaleString()}
         </button>
       ))}
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-// admin 목록 탭(문제은행/영어단어/SAT 등) 공용 상태 관리 훅.
+// admin 목록 탭(문제은행/수강신청 등) 공용 상태 관리 훅.
 // 필터·정렬·상태필터·페이지·다중선택을 관리하고, list-query.ts로 실제 조회를 위임한다.
 // 필터 상태는 URL 쿼리파라미터에 반영해 새로고침해도 유지된다.
 
@@ -10,8 +10,7 @@ import {
   fetchManagedList,
   fetchStatusCounts,
   type EqFilter,
-  type StatusCounts,
-  type StatusMode,
+  type StatusCountOption,
 } from "./list-query";
 
 export type FilterFieldDef =
@@ -27,20 +26,21 @@ export type SortOptionDef = {
 };
 
 export type UseAdminListQueryOptions = {
-  // URL 쿼리파라미터 접두어. 한 화면에 여러 ManagedList를 쓸 경우를 대비해 탭마다 다르게(예: "prob", "word")
+  // URL 쿼리파라미터 접두어. 한 화면에 여러 ManagedList를 쓸 경우를 대비해 탭마다 다르게(예: "prob", "enroll")
   paramPrefix: string;
   table: string;
   select?: string;
   // 항상 고정으로 적용되는 필터(예: subject='math') — 필터바에 노출되지 않음
   baseEq?: EqFilter[];
   filterDefs: FilterFieldDef[];
-  // 상태 요약바/상태필터 기준 컬럼. null이면 상태 관련 기능을 아예 끈다.
-  statusColumn: string | null;
+  // 요약 카운트바/상태필터 옵션. 첫 항목이 기본 선택값이 된다(보통 "전체").
+  // 빈 배열이면 상태 관련 기능을 아예 끈다.
+  statusOptions: StatusCountOption[];
   sortOptions: SortOptionDef[];
   pageSize?: number;
 };
 
-function readParams(prefix: string) {
+function readParams() {
   if (typeof window === "undefined") return new URLSearchParams();
   return new URLSearchParams(window.location.search);
 }
@@ -49,8 +49,9 @@ export function useAdminListQuery<T>(opts: UseAdminListQueryOptions) {
   const router = useRouter();
   const pageSize = opts.pageSize ?? 24;
   const key = useCallback((k: string) => `${opts.paramPrefix}_${k}`, [opts.paramPrefix]);
+  const defaultStatusKey = opts.statusOptions[0]?.key ?? "all";
 
-  const initial = readParams(opts.paramPrefix);
+  const initial = readParams();
   const [filters, setFilters] = useState<Record<string, string>>(() => {
     const f: Record<string, string> = {};
     opts.filterDefs.forEach((d) => {
@@ -58,31 +59,28 @@ export function useAdminListQuery<T>(opts: UseAdminListQueryOptions) {
     });
     return f;
   });
-  const [statusMode, setStatusMode] = useState<StatusMode>(
-    (initial.get(key("status")) as StatusMode) || "all"
-  );
+  const [statusKey, setStatusKey] = useState<string>(initial.get(key("status")) || defaultStatusKey);
   const [sortValue, setSortValue] = useState<string>(initial.get(key("sort")) || opts.sortOptions[0]?.value || "");
   const [page, setPage] = useState<number>(Number(initial.get(key("page"))) || 0);
 
   const [rows, setRows] = useState<T[]>([]);
   const [totalCount, setTotalCount] = useState(0);
-  const [statusCounts, setStatusCounts] = useState<StatusCounts | null>(null);
+  const [statusCounts, setStatusCounts] = useState<Record<string, number> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  // 필터/정렬/상태가 바뀌면 URL에 반영 + 1페이지로 (단, 필터 변경 자체가 아닌 page 자체 변경일 땐 유지)
   const syncUrl = useCallback(
-    (next: { filters?: Record<string, string>; statusMode?: StatusMode; sortValue?: string; page?: number }) => {
-      const params = readParams(opts.paramPrefix);
+    (next: { filters?: Record<string, string>; statusKey?: string; sortValue?: string; page?: number }) => {
+      const params = readParams();
       const f = next.filters ?? filters;
       Object.entries(f).forEach(([k, v]) => {
         const paramKey = key(k);
         if (v) params.set(paramKey, v);
         else params.delete(paramKey);
       });
-      const status = next.statusMode ?? statusMode;
-      if (status !== "all") params.set(key("status"), status);
+      const status = next.statusKey ?? statusKey;
+      if (status !== defaultStatusKey) params.set(key("status"), status);
       else params.delete(key("status"));
       const sort = next.sortValue ?? sortValue;
       if (sort) params.set(key("sort"), sort);
@@ -93,7 +91,7 @@ export function useAdminListQuery<T>(opts: UseAdminListQueryOptions) {
       const qs = params.toString();
       router.replace(qs ? `?${qs}` : window.location.pathname, { scroll: false });
     },
-    [filters, statusMode, sortValue, page, key, opts.paramPrefix, router]
+    [filters, statusKey, sortValue, page, key, defaultStatusKey, router]
   );
 
   function setFilter(k: string, v: string) {
@@ -111,11 +109,11 @@ export function useAdminListQuery<T>(opts: UseAdminListQueryOptions) {
     setSelected(new Set());
     syncUrl({ filters: next, page: 0 });
   }
-  function setStatus(mode: StatusMode) {
-    setStatusMode(mode);
+  function setStatus(k: string) {
+    setStatusKey(k);
     setPage(0);
     setSelected(new Set());
-    syncUrl({ statusMode: mode, page: 0 });
+    syncUrl({ statusKey: k, page: 0 });
   }
   function setSort(value: string) {
     setSortValue(value);
@@ -164,6 +162,7 @@ export function useAdminListQuery<T>(opts: UseAdminListQueryOptions) {
         if (d.kind === "select") eq.push({ column: d.column, value: v });
         else ilike.push({ column: d.column, value: v });
       });
+      const statusOpt = opts.statusOptions.find((s) => s.key === statusKey);
 
       const [listResult, counts] = await Promise.all([
         fetchManagedList<T>({
@@ -171,16 +170,15 @@ export function useAdminListQuery<T>(opts: UseAdminListQueryOptions) {
           select: opts.select,
           eq,
           ilike,
-          statusColumn: opts.statusColumn ?? undefined,
-          statusMode,
+          status: statusOpt?.status,
           sortColumn: sort?.column ?? "created_at",
           sortAscending: sort?.ascending ?? false,
-          sortNullsFirst: sort?.nullsFirst ?? false,
+          sortNullsFirst: sort?.nullsFirst,
           page,
           pageSize,
         }),
-        opts.statusColumn
-          ? fetchStatusCounts({ table: opts.table, eq, ilike, statusColumn: opts.statusColumn })
+        opts.statusOptions.length > 0
+          ? fetchStatusCounts({ table: opts.table, eq, ilike, options: opts.statusOptions })
           : Promise.resolve(null),
       ]);
 
@@ -195,7 +193,17 @@ export function useAdminListQuery<T>(opts: UseAdminListQueryOptions) {
       if (myReqId === reqIdRef.current) setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opts.table, opts.select, opts.statusColumn, JSON.stringify(opts.baseEq), JSON.stringify(filters), statusMode, sortValue, page, pageSize]);
+  }, [
+    opts.table,
+    opts.select,
+    JSON.stringify(opts.statusOptions),
+    JSON.stringify(opts.baseEq),
+    JSON.stringify(filters),
+    statusKey,
+    sortValue,
+    page,
+    pageSize,
+  ]);
 
   useEffect(() => {
     load();
@@ -210,7 +218,7 @@ export function useAdminListQuery<T>(opts: UseAdminListQueryOptions) {
     filters,
     setFilter,
     clearFilters,
-    statusMode,
+    statusKey,
     setStatus,
     sortValue,
     setSort,

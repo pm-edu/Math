@@ -11,6 +11,7 @@ import { canManageMaterials } from "@/lib/roles";
 import { useSubject } from "@/lib/subject";
 import { CATEGORIES, DIFFICULTIES, FORMATS, type Problem } from "@/lib/problems";
 import { useAdminListQuery, type FilterFieldDef, type SortOptionDef } from "@/lib/admin/useAdminListQuery";
+import type { StatusCountOption } from "@/lib/admin/list-query";
 import {
   SummaryCountBar,
   FilterBar,
@@ -44,6 +45,12 @@ const SORT_OPTIONS: SortOptionDef[] = [
   { value: "difficulty", label: "난이도순(상→하)", column: "difficulty", ascending: true },
 ];
 
+const STATUS_OPTIONS: StatusCountOption[] = [
+  { key: "all", label: "전체", status: { kind: "none" } },
+  { key: "absent", label: "풀이 없음", status: { kind: "isNull", column: "solution_text" } },
+  { key: "present", label: "풀이 있음", status: { kind: "notNull", column: "solution_text" } },
+];
+
 type BulkProgress = { total: number; done: number; failed: { id: string; reason: string }[] };
 
 export default function AdminProblemsPage() {
@@ -62,7 +69,7 @@ export default function AdminProblemsPage() {
     table: "problems",
     baseEq: [{ column: "subject", value: subject }],
     filterDefs: FILTER_DEFS,
-    statusColumn: "solution_text",
+    statusOptions: STATUS_OPTIONS,
     sortOptions: SORT_OPTIONS,
     pageSize: 24,
   });
@@ -385,11 +392,10 @@ export default function AdminProblemsPage() {
             <SortSelect options={SORT_OPTIONS} value={list.sortValue} onChange={list.setSort} />
           </div>
           <SummaryCountBar
+            options={STATUS_OPTIONS}
             counts={list.statusCounts}
-            statusMode={list.statusMode}
-            onStatusChange={list.setStatus}
-            presentLabel="풀이 있음"
-            absentLabel="풀이 없음"
+            value={list.statusKey}
+            onChange={list.setStatus}
           />
           <FilterBar defs={FILTER_DEFS} values={list.filters} onChange={list.setFilter} onClear={list.clearFilters} />
           {list.rows.length > 0 && (
