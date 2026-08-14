@@ -208,7 +208,7 @@ export default function AdminExtractPage() {
   return (
     <>
       <Header />
-      <main className="mx-auto max-w-4xl px-6 py-16">
+      <main className="mx-auto max-w-5xl px-6 py-16">
         <Link
           href="/admin/problems"
           className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]"

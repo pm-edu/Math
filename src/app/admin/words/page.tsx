@@ -205,7 +205,7 @@ export default function AdminWordsPage() {
   return (
     <>
       <Header />
-      <main className="mx-auto max-w-4xl px-6 py-16">
+      <main className="mx-auto max-w-5xl px-6 py-16">
         <Link href="/admin/problems" className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]">← 문제은행으로</Link>
         <h1 className="mt-4 text-3xl font-medium text-[var(--foreground)]">영어 단어장 빌더</h1>
         <p className="mt-2 text-[var(--secondary)]">단어장 → 유닛 → 단어 순서로 만듭니다. AI가 만든 단어는 검토·수정 후 저장해야 학생에게 노출됩니다.</p>

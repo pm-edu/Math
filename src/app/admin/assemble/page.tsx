@@ -271,7 +271,7 @@ export default function AdminAssemblePage() {
   return (
     <>
       <Header />
-      <main className="mx-auto max-w-4xl px-6 py-16">
+      <main className="mx-auto max-w-5xl px-6 py-16">
         <Link href="/admin/problems" className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]">← 문제은행으로</Link>
         <h1 className="mt-4 text-3xl font-medium text-[var(--foreground)]">규칙으로 자동 출제</h1>
         <p className="mt-2 text-[var(--secondary)]">조건을 정하면 조건에 맞는 문제를 무작위로 뽑아 문제지 초안을 만들어줍니다.</p>

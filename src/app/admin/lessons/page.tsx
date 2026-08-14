@@ -135,7 +135,7 @@ export default function AdminLessonsPage() {
     return (
       <>
         <Header />
-        <main className="mx-auto max-w-4xl px-6 py-16">
+        <main className="mx-auto max-w-5xl px-6 py-16">
           <p className="text-sm text-[var(--secondary)]">확인 중...</p>
         </main>
         <Footer />
@@ -169,7 +169,7 @@ export default function AdminLessonsPage() {
   return (
     <>
       <Header />
-      <main className="mx-auto max-w-4xl px-6 py-16">
+      <main className="mx-auto max-w-5xl px-6 py-16">
         <Link
           href="/admin"
           className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]"

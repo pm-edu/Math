@@ -157,7 +157,7 @@ export default function AdminSatPage() {
   return (
     <>
       <Header />
-      <main className="mx-auto max-w-4xl px-6 py-16">
+      <main className="mx-auto max-w-5xl px-6 py-16">
         <Link href="/admin/problems" className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]">← 문제은행으로</Link>
         <h1 className="mt-4 text-3xl font-medium text-[var(--foreground)]">영어 SAT 문제 생성</h1>
         <p className="mt-2 text-[var(--secondary)]">
