@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
@@ -10,6 +10,15 @@ import { ProblemBody, MathText } from "@/components/ProblemBody";
 import { canManageMaterials } from "@/lib/roles";
 import { useSubject } from "@/lib/subject";
 import { CATEGORIES, DIFFICULTIES, FORMATS, type Problem } from "@/lib/problems";
+import { useAdminListQuery, type FilterFieldDef, type SortOptionDef } from "@/lib/admin/useAdminListQuery";
+import {
+  SummaryCountBar,
+  FilterBar,
+  SortSelect,
+  BulkActionBar,
+  Pagination,
+  SelectAllCheckbox,
+} from "@/components/admin/ManagedList";
 
 const EMPTY = {
   category: "고등" as string,
@@ -21,11 +30,26 @@ const EMPTY = {
   memo: "",
 };
 
+const FILTER_DEFS: FilterFieldDef[] = [
+  { key: "category", label: "전체 학교급", kind: "select", column: "category", options: [...CATEGORIES] },
+  { key: "courseLevel", label: "과정 검색", kind: "text", column: "course_level" },
+  { key: "unit", label: "단원 검색", kind: "text", column: "unit" },
+  { key: "problemFormat", label: "전체 유형", kind: "select", column: "problem_format", options: [...FORMATS] },
+  { key: "difficulty", label: "전체 난이도", kind: "select", column: "difficulty", options: [...DIFFICULTIES] },
+];
+
+const SORT_OPTIONS: SortOptionDef[] = [
+  { value: "newest", label: "최신순", column: "created_at", ascending: false },
+  { value: "pending_first", label: "검수대기 우선", column: "solution_text", ascending: true, nullsFirst: true },
+  { value: "difficulty", label: "난이도순(상→하)", column: "difficulty", ascending: true },
+];
+
+type BulkProgress = { total: number; done: number; failed: { id: string; reason: string }[] };
+
 export default function AdminProblemsPage() {
   const router = useRouter();
   const { subject } = useSubject();
   const [allowed, setAllowed] = useState<boolean | null>(null);
-  const [problems, setProblems] = useState<Problem[]>([]);
   const [form, setForm] = useState(EMPTY);
   const [files, setFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
@@ -33,30 +57,26 @@ export default function AdminProblemsPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // 검색 필터
-  const [filterCat, setFilterCat] = useState("");
-  const [filterLevel, setFilterLevel] = useState("");
-  const [filterUnit, setFilterUnit] = useState("");
+  const list = useAdminListQuery<Problem>({
+    paramPrefix: "prob",
+    table: "problems",
+    baseEq: [{ column: "subject", value: subject }],
+    filterDefs: FILTER_DEFS,
+    statusColumn: "solution_text",
+    sortOptions: SORT_OPTIONS,
+    pageSize: 24,
+  });
 
-  // 풀이 검수 패널 (문제별)
+  // 풀이 검수 패널 (문제별) — 기존 개별 검수 화면은 그대로 유지
   const [solveOpen, setSolveOpen] = useState<string | null>(null);
   const [solveDraft, setSolveDraft] = useState("");
   const [solveGenLoading, setSolveGenLoading] = useState(false);
   const [solveSaving, setSolveSaving] = useState(false);
   const [solveMsg, setSolveMsg] = useState<string | null>(null);
 
-  const loadProblems = useCallback(async () => {
-    let q = createClient()
-      .from("problems")
-      .select("*")
-      .eq("subject", subject)
-      .order("created_at", { ascending: false });
-    if (filterCat) q = q.eq("category", filterCat);
-    if (filterLevel) q = q.ilike("course_level", `%${filterLevel}%`);
-    if (filterUnit) q = q.ilike("unit", `%${filterUnit}%`);
-    const { data } = await q;
-    setProblems((data ?? []) as Problem[]);
-  }, [subject, filterCat, filterLevel, filterUnit]);
+  // 일괄 AI 풀이 생성 — 저장 전까지는 화면에만 임시 보관(DB에 안 씀). 개별 검수·저장은 기존 그대로.
+  const [bulkDrafts, setBulkDrafts] = useState<Map<string, string>>(new Map());
+  const [bulkProgress, setBulkProgress] = useState<BulkProgress | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -69,8 +89,6 @@ export default function AdminProblemsPage() {
     }
     init();
   }, [router]);
-
-  useEffect(() => { if (allowed) loadProblems(); }, [allowed, loadProblems]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -119,7 +137,7 @@ export default function AdminProblemsPage() {
       const el = document.getElementById("problem-file") as HTMLInputElement | null;
       if (el) el.value = "";
       setMessage(`${ok}개 문제를 등록했습니다.`);
-      loadProblems();
+      list.reload();
     }
   }
 
@@ -128,15 +146,26 @@ export default function AdminProblemsPage() {
     const { error } = await createClient().from("problems").delete().eq("id", p.id);
     if (error) { setError(`삭제 실패: ${error.message}`); return; }
     setMessage("삭제했습니다.");
-    loadProblems();
+    list.reload();
   }
 
-  // 풀이 검수 패널 열기/닫기
+  async function handleBulkDelete() {
+    const ids = Array.from(list.selected);
+    if (ids.length === 0) return;
+    if (!confirm(`선택한 ${ids.length}개 문제를 삭제할까요? 되돌릴 수 없습니다.`)) return;
+    const { error } = await createClient().from("problems").delete().in("id", ids);
+    if (error) { setError(`일괄 삭제 실패: ${error.message}`); return; }
+    setMessage(`${ids.length}개 삭제했습니다.`);
+    list.clearSelection();
+    list.reload();
+  }
+
+  // 풀이 검수 패널 열기/닫기 — 일괄생성 초안이 있으면 그걸 먼저 보여준다(없으면 저장된 것)
   function toggleSolve(p: Problem) {
     setSolveMsg(null);
     if (solveOpen === p.id) { setSolveOpen(null); return; }
     setSolveOpen(p.id);
-    setSolveDraft(p.solution_text ?? ""); // 저장돼 있던 풀이를 편집칸에 채운다
+    setSolveDraft(bulkDrafts.get(p.id) ?? p.solution_text ?? "");
   }
 
   // AI 풀이 "초안" 생성 → 편집칸에만 채운다 (아직 저장 아님)
@@ -179,7 +208,68 @@ export default function AdminProblemsPage() {
     if (error) { setSolveMsg(`저장 실패: ${error.message}`); return; }
     setSolveMsg("풀이를 저장했습니다.");
     setSolveOpen(null);
-    loadProblems();
+    setBulkDrafts((prev) => { const next = new Map(prev); next.delete(p.id); return next; });
+    list.reload();
+  }
+
+  // 선택한 문제들에 대해 순차적으로 AI 풀이 초안을 생성한다. 저장은 안 함(화면에만 보관) —
+  // 각 문제를 "풀이 검수"로 열어 검토 후 직접 저장해야 학생에게 노출된다.
+  async function generateSolutionsFor(targets: Problem[]) {
+    setBulkProgress({ total: targets.length, done: 0, failed: [] });
+    const supabase = createClient();
+    const { data: session } = await supabase.auth.getSession();
+    const token = session.session?.access_token;
+
+    const nextDrafts = new Map(bulkDrafts);
+    let done = 0;
+    const failed: { id: string; reason: string }[] = [];
+
+    for (const p of targets) {
+      try {
+        const res = await fetch("/api/generate-solution", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            content_text: p.content_text,
+            image_url: p.image_url,
+            answer: p.answer,
+            problem_format: p.problem_format,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.message ?? "생성 실패");
+        nextDrafts.set(p.id, data.solution);
+      } catch (e) {
+        failed.push({ id: p.id, reason: e instanceof Error ? e.message : "알 수 없는 오류" });
+      }
+      done++;
+      setBulkProgress({ total: targets.length, done, failed: [...failed] });
+      setBulkDrafts(new Map(nextDrafts));
+    }
+  }
+
+  async function handleBulkGenerateSolutions() {
+    const targets = list.rows.filter((p) => list.selected.has(p.id));
+    if (targets.length === 0) return;
+    if (
+      !confirm(
+        `선택한 ${targets.length}개 문제의 AI 풀이 초안을 생성할까요?\n생성만 되고 저장은 안 됩니다 — 각 문제를 "풀이 검수"로 열어 확인 후 저장해야 학생에게 보입니다.`
+      )
+    )
+      return;
+    list.clearSelection();
+    await generateSolutionsFor(targets);
+  }
+
+  function retryFailedBulk() {
+    if (!bulkProgress || bulkProgress.failed.length === 0) return;
+    const failedIds = new Set(bulkProgress.failed.map((f) => f.id));
+    const targets = list.rows.filter((p) => failedIds.has(p.id));
+    if (targets.length === 0) {
+      setError("실패한 문제가 지금 페이지 목록에 없어 재시도할 수 없습니다. 필터로 다시 찾아 선택해주세요.");
+      return;
+    }
+    generateSolutionsFor(targets);
   }
 
   if (allowed === null) return <Shell><p className="text-sm text-[var(--secondary)]">확인 중...</p></Shell>;
@@ -192,6 +282,8 @@ export default function AdminProblemsPage() {
 
   const inputClass =
     "mt-1.5 w-full rounded-lg border border-[var(--border-c)] bg-white px-4 py-2.5 text-sm outline-none focus:border-[var(--pink)]";
+
+  const allOnPageSelected = list.rows.length > 0 && list.rows.every((p) => list.selected.has(p.id));
 
   return (
     <>
@@ -286,88 +378,172 @@ export default function AdminProblemsPage() {
           </button>
         </form>
 
-        {/* 검색 + 목록 */}
-        <div className="mt-10 flex flex-wrap items-center gap-2">
-          <h2 className="text-lg font-medium text-[var(--foreground)]">등록된 문제 {problems.length}개</h2>
-          <select value={filterCat} onChange={(e) => setFilterCat(e.target.value)} className="ml-auto rounded-lg border border-[var(--border-c)] bg-white px-3 py-1.5 text-sm">
-            <option value="">전체 학교급</option>
-            {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-          <input type="text" value={filterLevel} onChange={(e) => setFilterLevel(e.target.value)} placeholder="과정 검색" className="rounded-lg border border-[var(--border-c)] bg-white px-3 py-1.5 text-sm" />
-          <input type="text" value={filterUnit} onChange={(e) => setFilterUnit(e.target.value)} placeholder="단원 검색" className="rounded-lg border border-[var(--border-c)] bg-white px-3 py-1.5 text-sm" />
+        {/* 요약 카운트 + 필터 + 정렬 */}
+        <div className="mt-10 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-lg font-medium text-[var(--foreground)]">등록된 문제 {list.totalCount.toLocaleString()}개</h2>
+            <SortSelect options={SORT_OPTIONS} value={list.sortValue} onChange={list.setSort} />
+          </div>
+          <SummaryCountBar
+            counts={list.statusCounts}
+            statusMode={list.statusMode}
+            onStatusChange={list.setStatus}
+            presentLabel="풀이 있음"
+            absentLabel="풀이 없음"
+          />
+          <FilterBar defs={FILTER_DEFS} values={list.filters} onChange={list.setFilter} onClear={list.clearFilters} />
+          {list.rows.length > 0 && (
+            <SelectAllCheckbox checked={allOnPageSelected} onChange={list.toggleSelectAllOnPage} label="이 페이지 전체 선택" />
+          )}
         </div>
 
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {problems.map((p) => (
-            <div key={p.id} className="rounded-2xl border border-[var(--border-c)] bg-white p-4">
-              <ProblemBody
-                problem={p}
-                imgClassName="w-full rounded-lg border border-[var(--border-c)]"
-                textClassName="rounded-lg border border-[var(--border-c)] bg-[var(--pink-light)]/20 p-3 text-sm leading-relaxed text-[var(--foreground)]"
-              />
-              <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs">
-                {p.subject === "english" && (
-                  <span className="rounded-full bg-[var(--pink)] px-2.5 py-0.5 font-medium text-[var(--pink-dark)]">영어</span>
-                )}
-                <span className="rounded-full bg-[var(--mint)] px-2.5 py-0.5 font-medium text-[var(--mint-dark)]">{p.category}</span>
-                {p.course_level && <span className="rounded-full bg-[var(--pink-light)] px-2.5 py-0.5 text-[var(--secondary)]">{p.course_level}</span>}
-                {p.unit && <span className="rounded-full bg-[var(--pink-light)] px-2.5 py-0.5 text-[var(--secondary)]">{p.unit}</span>}
-                {p.problem_format && <span className="rounded-full border border-[var(--border-c)] px-2.5 py-0.5 text-[var(--secondary)]">{p.problem_format}</span>}
-                <span className="rounded-full border border-[var(--border-c)] px-2.5 py-0.5 text-[var(--secondary)]">{p.difficulty}</span>
-                {p.answer && <span className="text-[var(--secondary)]">정답 {p.answer}</span>}
-                {p.solution_text
-                  ? <span className="rounded-full bg-[var(--mint)] px-2 py-0.5 text-[var(--mint-dark)]">풀이 있음</span>
-                  : <span className="rounded-full border border-dashed border-[var(--border-c)] px-2 py-0.5 text-[var(--secondary)]">풀이 없음</span>}
-              </div>
-              <div className="mt-2 flex gap-3">
-                <button onClick={() => toggleSolve(p)} className="text-xs text-[var(--mint-dark)] underline">
-                  {solveOpen === p.id ? "풀이 닫기" : "풀이 검수"}
-                </button>
-                <button onClick={() => handleDelete(p)} className="text-xs text-red-600 underline">삭제</button>
-              </div>
-
-              {/* 풀이 검수 패널: AI 초안 생성 → 검토·수정 → 저장(승인) */}
-              {solveOpen === p.id && (
-                <div className="mt-3 rounded-xl border border-[var(--border-c)] bg-[var(--background)] p-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-xs font-medium text-[var(--foreground)]">풀이 (검수 후 저장해야 학생에게 보입니다)</p>
-                    <button
-                      onClick={() => generateSolution(p)}
-                      disabled={solveGenLoading}
-                      className="rounded-full bg-[var(--pink)] px-3 py-1 text-xs font-medium text-[var(--pink-dark)] disabled:opacity-60"
-                    >
-                      {solveGenLoading ? "생성 중..." : "AI 풀이 초안"}
-                    </button>
-                  </div>
-                  <textarea
-                    rows={5}
-                    value={solveDraft}
-                    onChange={(e) => setSolveDraft(e.target.value)}
-                    placeholder="풀이를 직접 쓰거나, AI 초안을 만든 뒤 검토·수정하세요. 수식은 $...$"
-                    className="mt-2 w-full rounded-lg border border-[var(--border-c)] bg-white px-3 py-2 text-sm outline-none focus:border-[var(--pink)]"
-                  />
-                  {solveDraft.trim() && (
-                    <div className="mt-2 rounded-lg border border-dashed border-[var(--border-c)] bg-white p-2">
-                      <p className="mb-1 text-[10px] text-[var(--secondary)]">학생 화면 미리보기</p>
-                      <MathText text={solveDraft} className="text-sm leading-relaxed text-[var(--foreground)]" />
-                    </div>
+        {list.loading ? (
+          <p className="mt-8 text-sm text-[var(--secondary)]">불러오는 중...</p>
+        ) : list.error ? (
+          <p className="mt-8 text-sm text-red-600">{list.error}</p>
+        ) : list.rows.length === 0 ? (
+          <p className="mt-8 text-sm text-[var(--secondary)]">조건에 맞는 문제가 없습니다.</p>
+        ) : (
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {list.rows.map((p) => (
+              <div key={p.id} className={`rounded-2xl border bg-white p-4 ${list.selected.has(p.id) ? "border-[var(--pink)]" : "border-[var(--border-c)]"}`}>
+                <div className="mb-2 flex items-center justify-between">
+                  <label className="flex items-center gap-1.5 text-xs text-[var(--secondary)]">
+                    <input
+                      type="checkbox"
+                      checked={list.selected.has(p.id)}
+                      onChange={() => list.toggleSelect(p.id)}
+                      className="h-4 w-4 accent-[var(--pink)]"
+                    />
+                    선택
+                  </label>
+                  {bulkDrafts.has(p.id) && (
+                    <span className="rounded-full bg-[var(--pink-light)] px-2 py-0.5 text-[10px] font-medium text-[var(--pink-dark)]">
+                      AI 초안 준비됨
+                    </span>
                   )}
-                  {solveMsg && <p className="mt-2 text-xs text-[var(--mint-dark)]">{solveMsg}</p>}
-                  <div className="mt-2 flex justify-end">
-                    <button
-                      onClick={() => saveSolution(p)}
-                      disabled={solveSaving}
-                      className="rounded-full bg-[var(--mint)] px-4 py-1.5 text-xs font-medium text-[var(--mint-dark)] disabled:opacity-60"
-                    >
-                      {solveSaving ? "저장 중..." : "풀이 저장 (검수 승인)"}
-                    </button>
-                  </div>
                 </div>
-              )}
-            </div>
-          ))}
+                <ProblemBody
+                  problem={p}
+                  imgClassName="w-full rounded-lg border border-[var(--border-c)]"
+                  textClassName="rounded-lg border border-[var(--border-c)] bg-[var(--pink-light)]/20 p-3 text-sm leading-relaxed text-[var(--foreground)]"
+                />
+                <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs">
+                  {p.subject === "english" && (
+                    <span className="rounded-full bg-[var(--pink)] px-2.5 py-0.5 font-medium text-[var(--pink-dark)]">영어</span>
+                  )}
+                  <span className="rounded-full bg-[var(--mint)] px-2.5 py-0.5 font-medium text-[var(--mint-dark)]">{p.category}</span>
+                  {p.course_level && <span className="rounded-full bg-[var(--pink-light)] px-2.5 py-0.5 text-[var(--secondary)]">{p.course_level}</span>}
+                  {p.unit && <span className="rounded-full bg-[var(--pink-light)] px-2.5 py-0.5 text-[var(--secondary)]">{p.unit}</span>}
+                  {p.problem_format && <span className="rounded-full border border-[var(--border-c)] px-2.5 py-0.5 text-[var(--secondary)]">{p.problem_format}</span>}
+                  <span className="rounded-full border border-[var(--border-c)] px-2.5 py-0.5 text-[var(--secondary)]">{p.difficulty}</span>
+                  {p.answer && <span className="text-[var(--secondary)]">정답 {p.answer}</span>}
+                  {p.solution_text
+                    ? <span className="rounded-full bg-[var(--mint)] px-2 py-0.5 text-[var(--mint-dark)]">풀이 있음</span>
+                    : <span className="rounded-full border border-dashed border-[var(--border-c)] px-2 py-0.5 text-[var(--secondary)]">풀이 없음</span>}
+                </div>
+                <div className="mt-2 flex gap-3">
+                  <button onClick={() => toggleSolve(p)} className="text-xs text-[var(--mint-dark)] underline">
+                    {solveOpen === p.id ? "풀이 닫기" : "풀이 검수"}
+                  </button>
+                  <button onClick={() => handleDelete(p)} className="text-xs text-red-600 underline">삭제</button>
+                </div>
+
+                {/* 풀이 검수 패널: AI 초안 생성(개별 또는 일괄) → 검토·수정 → 저장(승인) */}
+                {solveOpen === p.id && (
+                  <div className="mt-3 rounded-xl border border-[var(--border-c)] bg-[var(--background)] p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-medium text-[var(--foreground)]">풀이 (검수 후 저장해야 학생에게 보입니다)</p>
+                      <button
+                        onClick={() => generateSolution(p)}
+                        disabled={solveGenLoading}
+                        className="rounded-full bg-[var(--pink)] px-3 py-1 text-xs font-medium text-[var(--pink-dark)] disabled:opacity-60"
+                      >
+                        {solveGenLoading ? "생성 중..." : "AI 풀이 초안"}
+                      </button>
+                    </div>
+                    <textarea
+                      rows={5}
+                      value={solveDraft}
+                      onChange={(e) => setSolveDraft(e.target.value)}
+                      placeholder="풀이를 직접 쓰거나, AI 초안을 만든 뒤 검토·수정하세요. 수식은 $...$"
+                      className="mt-2 w-full rounded-lg border border-[var(--border-c)] bg-white px-3 py-2 text-sm outline-none focus:border-[var(--pink)]"
+                    />
+                    {solveDraft.trim() && (
+                      <div className="mt-2 rounded-lg border border-dashed border-[var(--border-c)] bg-white p-2">
+                        <p className="mb-1 text-[10px] text-[var(--secondary)]">학생 화면 미리보기</p>
+                        <MathText text={solveDraft} className="text-sm leading-relaxed text-[var(--foreground)]" />
+                      </div>
+                    )}
+                    {solveMsg && <p className="mt-2 text-xs text-[var(--mint-dark)]">{solveMsg}</p>}
+                    <div className="mt-2 flex justify-end">
+                      <button
+                        onClick={() => saveSolution(p)}
+                        disabled={solveSaving}
+                        className="rounded-full bg-[var(--mint)] px-4 py-1.5 text-xs font-medium text-[var(--mint-dark)] disabled:opacity-60"
+                      >
+                        {solveSaving ? "저장 중..." : "풀이 저장 (검수 승인)"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-6">
+          <Pagination page={list.page} pageSize={list.pageSize} totalCount={list.totalCount} onPageChange={list.goToPage} />
         </div>
+
+        {/* 일괄 AI 풀이 생성 진행 상황 */}
+        {bulkProgress && (
+          <div className="mt-4 rounded-2xl border border-[var(--border-c)] bg-white p-4">
+            <p className="text-sm text-[var(--foreground)]">
+              AI 풀이 일괄 생성: {bulkProgress.total}개 중 {bulkProgress.done}개 완료
+              {bulkProgress.failed.length > 0 && ` · 실패 ${bulkProgress.failed.length}개`}
+            </p>
+            {bulkProgress.done < bulkProgress.total && (
+              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[var(--mint)]/20">
+                <div
+                  className="h-full rounded-full bg-[var(--mint)] transition-all"
+                  style={{ width: `${(bulkProgress.done / bulkProgress.total) * 100}%` }}
+                />
+              </div>
+            )}
+            {bulkProgress.failed.length > 0 && bulkProgress.done === bulkProgress.total && (
+              <div className="mt-2">
+                <ul className="text-xs text-red-600">
+                  {bulkProgress.failed.map((f) => (
+                    <li key={f.id}>문제 {f.id.slice(0, 8)}… — {f.reason}</li>
+                  ))}
+                </ul>
+                <button onClick={retryFailedBulk} className="mt-2 rounded-full border border-[var(--border-c)] bg-white px-4 py-1.5 text-xs text-[var(--foreground)] hover:bg-[var(--mint)]/20">
+                  실패한 항목 재시도
+                </button>
+              </div>
+            )}
+            {bulkProgress.done === bulkProgress.total && (
+              <p className="mt-2 text-xs text-[var(--secondary)]">
+                생성된 초안은 저장되지 않았습니다. &quot;AI 초안 준비됨&quot; 표시된 문제를 열어(풀이 검수) 확인 후 저장해주세요.
+              </p>
+            )}
+          </div>
+        )}
       </main>
+
+      {/* 일괄 작업 바 */}
+      <div className="mx-auto max-w-5xl px-6">
+        <BulkActionBar
+          selectedCount={list.selected.size}
+          onClear={list.clearSelection}
+          actions={[
+            { label: "선택한 문제 AI 풀이 일괄 생성", onClick: handleBulkGenerateSolutions },
+            { label: "선택 삭제", onClick: handleBulkDelete, tone: "danger" },
+          ]}
+        />
+      </div>
+
       <Footer />
     </>
   );
