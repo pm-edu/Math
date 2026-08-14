@@ -227,7 +227,7 @@ export default function WorksheetDetailPage({
                                         }`}
                                       >
                                         <span className="font-semibold text-[var(--secondary)]">{letter}</span>
-                                        <span className="text-[var(--foreground)]">{c}</span>
+                                        <MathText text={c} className="text-[var(--foreground)]" />
                                       </button>
                                     );
                                   })}
@@ -252,7 +252,7 @@ export default function WorksheetDetailPage({
                                       }`}
                                     >
                                       <span className="font-semibold text-[var(--secondary)]">{letter}</span>
-                                      <span className="flex-1 text-[var(--foreground)]">{c}</span>
+                                      <MathText text={c} className="flex-1 text-[var(--foreground)]" />
                                       {isCorrect && <span className="text-xs font-medium text-[var(--mint-dark)]">정답</span>}
                                       {isMine && !isCorrect && <span className="text-xs font-medium text-red-600">내 선택</span>}
                                     </div>

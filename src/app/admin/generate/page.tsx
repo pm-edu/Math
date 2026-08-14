@@ -294,6 +294,7 @@ export default function AdminGeneratePage() {
                               onChange={(e) => updateChoice(i, ci, e.target.value)}
                               className="flex-1 rounded-lg border border-[var(--border-c)] bg-white px-3 py-2 text-sm outline-none focus:border-[var(--pink)]"
                             />
+                            {c.trim() && <MathText text={c} className="w-40 shrink-0 text-sm text-[var(--secondary)]" />}
                           </div>
                         ))}
                       </div>
