@@ -40,28 +40,37 @@ export async function POST(req: Request) {
 
   if (!GEMINI_API_KEY) return json(500, "문제 추출이 아직 설정되지 않았습니다. (GEMINI_API_KEY 없음)");
 
-  // 2) 업로드된 파일(이미지 또는 PDF)을 받는다
+  // 2) 업로드된 파일(이미지·PDF는 base64, 마크다운/텍스트는 text)을 받는다
   const body = (await req.json().catch(() => ({}))) as {
     fileBase64?: string;
     mimeType?: string;
+    text?: string;
   };
-  if (!body.fileBase64 || !body.mimeType) return json(400, "파일이 없습니다.");
+  const isText = !!body.text?.trim();
+  if (!isText && (!body.fileBase64 || !body.mimeType)) return json(400, "파일이 없습니다.");
 
-  // 3) Gemini 에게 문제 추출을 요청한다
-  const prompt = `이 이미지는 수학 문제지입니다. 담긴 문제를 하나씩 분리해서 추출해 주세요.
+  // 3) Gemini 에게 문제 추출을 요청한다. 소스가 마크다운/텍스트면 직접 입력한 정답이 이미 있을 가능성이
+  // 높으므로("이미지에 적힌"이 아니라 "본문에 적힌") 프롬프트 표현만 바꾸고 나머지 스키마는 동일하게 유지한다.
+  const sourceLabel = isText ? "아래 마크다운/텍스트" : "이 이미지";
+  const answerHint = isText ? "본문에 정답이 적혀 있으면" : "이미지에 정답이 있으면";
+  const prompt = `${sourceLabel}는 수학 문제지입니다. 담긴 문제를 하나씩 분리해서 추출해 주세요.
 각 문제마다 다음 정보를 JSON 배열로 정리하세요. 반드시 JSON 만 출력하고 다른 설명은 넣지 마세요.
 
 [
   {
     "content_text": "문제 본문. 수식은 LaTeX로. 예: 다음 방정식을 풀어라. $x^2 - 5x + 6 = 0$",
-    "answer": "정답. 이미지에 정답이 있으면 그대로. 없으면 빈 문자열",
+    "answer": "정답. ${answerHint} 그대로. 없으면 빈 문자열",
     "unit": "단원명 추정. 모르면 빈 문자열",
     "difficulty": "하/중/상 중 하나로 추정",
     "problem_format": "객관식/서술형/단답형 중 하나로 추정"
   }
 ]
 
-주의: 정답을 직접 풀어서 만들지 마세요. 이미지에 적힌 정답만 옮기고, 없으면 비워두세요.`;
+주의: 정답을 직접 풀어서 만들지 마세요. 원본에 적힌 정답만 옮기고, 없으면 비워두세요.`;
+
+  const parts: Array<Record<string, unknown>> = isText
+    ? [{ text: prompt }, { text: `문제지 원문:\n\n${body.text}` }]
+    : [{ text: prompt }, { inline_data: { mime_type: body.mimeType, data: body.fileBase64 } }];
 
   const geminiRes = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`,
@@ -69,14 +78,7 @@ export async function POST(req: Request) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              { text: prompt },
-              { inline_data: { mime_type: body.mimeType, data: body.fileBase64 } },
-            ],
-          },
-        ],
+        contents: [{ parts }],
         generationConfig: { temperature: 0, responseMimeType: "application/json" },
       }),
     }
