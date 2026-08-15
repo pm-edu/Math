@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { curriculumGroupLabel, curriculumDetailLabel } from "@/lib/curriculum";
 import { normAnswer } from "@/lib/grading";
+import { callGemini } from "@/lib/gemini-server";
 
 // 수학 문제를 Gemini로 새로 생성한다. 저장은 하지 않는다 — 관리자가 화면에서 검수·수정 후 직접 저장한다.
 // 정답 정확도를 보완하기 위해 Gemini를 두 번 부른다:
@@ -11,7 +12,6 @@ import { normAnswer } from "@/lib/grading";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? "";
-const MODEL = "gemini-flash-latest";
 
 type GeneratedProblem = {
   content_text: string;
@@ -80,8 +80,8 @@ export async function POST(req: Request) {
 ]
 객관식이 아니면 choices는 빈 배열 []로 두세요.`;
 
-  const genRes = await callGemini(genPrompt, 0.7);
-  if (!genRes.ok) return json(502, genRes.message);
+  const genRes = await callGemini([{ text: genPrompt }], { temperature: 0.7, json: true });
+  if (!genRes.ok) return json(502, `생성 실패: ${genRes.message}`);
 
   let problems: GeneratedProblem[] = [];
   try {
@@ -107,7 +107,7 @@ ${problems.map((p, i) => `${i}. ${p.content_text}${p.choices.length ? "\n보기:
 
 반드시 JSON 배열만 출력하세요: [{"index": 0, "computed_answer": "..."}]`;
 
-  const verifyRes = await callGemini(verifyPrompt, 0);
+  const verifyRes = await callGemini([{ text: verifyPrompt }], { temperature: 0, json: true });
   let computedAnswers = new Map<number, string>();
   if (verifyRes.ok) {
     try {
@@ -130,27 +130,6 @@ ${problems.map((p, i) => `${i}. ${p.content_text}${p.choices.length ? "\n보기:
   });
 
   return Response.json({ ok: true, problems: result });
-}
-
-async function callGemini(prompt: string, temperature: number): Promise<{ ok: true; text: string } | { ok: false; message: string }> {
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature, responseMimeType: "application/json" },
-      }),
-    }
-  );
-  if (!res.ok) {
-    const detail = await res.text();
-    return { ok: false, message: `생성 실패: ${detail.slice(0, 200)}` };
-  }
-  const data = await res.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-  return { ok: true, text };
 }
 
 function json(status: number, message: string) {

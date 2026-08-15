@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { callGemini } from "@/lib/gemini-server";
 
 // PDF/이미지에서 문제를 추출한다 (Gemini).
 // 관리자가 올린 이미지를 Gemini 에게 보내 "문제별로 나눠 JSON 으로" 받고,
@@ -9,7 +10,6 @@ import { createClient } from "@supabase/supabase-js";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? "";
-const MODEL = "gemini-flash-latest";
 
 type ExtractedProblem = {
   content_text: string;
@@ -72,29 +72,12 @@ export async function POST(req: Request) {
     ? [{ text: prompt }, { text: `문제지 원문:\n\n${body.text}` }]
     : [{ text: prompt }, { inline_data: { mime_type: body.mimeType, data: body.fileBase64 } }];
 
-  const geminiRes = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts }],
-        generationConfig: { temperature: 0, responseMimeType: "application/json" },
-      }),
-    }
-  );
-
-  if (!geminiRes.ok) {
-    const detail = await geminiRes.text();
-    return json(502, `추출에 실패했습니다: ${detail.slice(0, 200)}`);
-  }
-
-  const geminiData = await geminiRes.json();
-  const raw = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  const geminiRes = await callGemini(parts, { temperature: 0, json: true });
+  if (!geminiRes.ok) return json(502, `추출에 실패했습니다: ${geminiRes.message}`);
 
   let problems: ExtractedProblem[] = [];
   try {
-    problems = JSON.parse(raw);
+    problems = JSON.parse(geminiRes.text);
     if (!Array.isArray(problems)) problems = [];
   } catch {
     return json(502, "추출 결과를 해석하지 못했습니다. 다시 시도해주세요.");

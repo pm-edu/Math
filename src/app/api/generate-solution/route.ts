@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { callGemini } from "@/lib/gemini-server";
 
 // 문제의 풀이(해설) "초안"을 Gemini로 만들어 돌려준다.
 // 저장은 하지 않는다 — 관리자가 화면에서 검수·수정 후 직접 저장(승인)한다.
@@ -7,7 +8,6 @@ import { createClient } from "@supabase/supabase-js";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? "";
-const MODEL = "gemini-flash-latest";
 
 export async function POST(req: Request) {
   // 1) 관리자 확인
@@ -67,25 +67,10 @@ ${body.answer ? `- 정답은 "${body.answer}" 입니다. 이 정답이 나오도
     return json(400, "문제 내용이 없습니다. (본문 텍스트나 이미지가 필요합니다)");
   }
 
-  const geminiRes = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts }],
-        generationConfig: { temperature: 0.2 },
-      }),
-    }
-  );
+  const geminiRes = await callGemini(parts, { temperature: 0.2 });
+  if (!geminiRes.ok) return json(502, `풀이 생성 실패: ${geminiRes.message}`);
 
-  if (!geminiRes.ok) {
-    const detail = await geminiRes.text();
-    return json(502, `풀이 생성 실패: ${detail.slice(0, 200)}`);
-  }
-
-  const geminiData = await geminiRes.json();
-  const solution = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  const solution = geminiRes.text;
   if (!solution.trim()) return json(502, "풀이를 만들지 못했습니다. 다시 시도해주세요.");
 
   return Response.json({ ok: true, solution });

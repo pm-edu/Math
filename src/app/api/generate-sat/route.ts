@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { callGemini } from "@/lib/gemini-server";
 
 // SAT(Reading & Writing) 형식의 영어 객관식 문제를 Gemini로 생성한다.
 // 저장은 하지 않는다 — 관리자가 화면에서 검수·수정 후 직접 저장한다.
@@ -6,7 +7,6 @@ import { createClient } from "@supabase/supabase-js";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? "";
-const MODEL = "gemini-flash-latest";
 
 export async function POST(req: Request) {
   // 관리자/직원 확인
@@ -62,29 +62,12 @@ Return ONLY a JSON array, no other text, in this exact shape:
   }
 ]`;
 
-  const geminiRes = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7, responseMimeType: "application/json" },
-      }),
-    }
-  );
-
-  if (!geminiRes.ok) {
-    const detail = await geminiRes.text();
-    return json(502, `생성 실패: ${detail.slice(0, 200)}`);
-  }
-
-  const geminiData = await geminiRes.json();
-  const raw = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  const geminiRes = await callGemini([{ text: prompt }], { temperature: 0.7, json: true });
+  if (!geminiRes.ok) return json(502, `생성 실패: ${geminiRes.message}`);
 
   let problems: unknown[] = [];
   try {
-    problems = JSON.parse(raw);
+    problems = JSON.parse(geminiRes.text);
     if (!Array.isArray(problems)) problems = [];
   } catch {
     return json(502, "생성 결과를 해석하지 못했습니다. 다시 시도해주세요.");
