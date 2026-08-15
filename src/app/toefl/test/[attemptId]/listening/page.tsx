@@ -15,11 +15,12 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import TaskRenderer from "@/components/toefl/TaskRenderer";
 import AudioPlayer from "@/components/toefl/AudioPlayer";
+import SectionDoneActions from "@/components/toefl/SectionDoneActions";
 import type { ToeflItemPublic, ToeflStimulusPublic } from "@/lib/toefl/types";
 
 type CurrentResponse = {
   ok: true;
-  attempt: { id: string; status: string };
+  attempt: { id: string; status: string; mode: string };
   section: {
     section: string;
     finished: boolean;
@@ -34,7 +35,7 @@ type CurrentResponse = {
   answers: Record<string, { answer: unknown; time_spent_ms: number | null }>;
 };
 
-type Phase = "loading" | "in_module" | "section_done" | "submitted" | "error";
+type Phase = "loading" | "in_module" | "section_done" | "error";
 
 function audioUrlFor(item: ToeflItemPublic, stimuli: ToeflStimulusPublic[]): string | null {
   if (item.task_type === "choose_a_response") {
@@ -67,7 +68,7 @@ export default function ToeflListeningTestPage({ params }: { params: Promise<{ a
     scaled_score: number | null;
     band: number | null;
   } | null>(null);
-  const [overall, setOverall] = useState<{ total_scaled: number; band: number } | null>(null);
+  const [mode, setMode] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const tokenRef = useRef<string | null>(null);
@@ -101,12 +102,17 @@ export default function ToeflListeningTestPage({ params }: { params: Promise<{ a
     }
 
     if (data.section.finished) {
+      if (data.attempt.status !== "in_progress") {
+        router.replace(`/toefl/report/${attemptId}`);
+        return;
+      }
       setSectionResult({
         raw_score: data.section.raw_score ?? null,
         scaled_score: data.section.scaled_score ?? null,
         band: data.section.band ?? null,
       });
-      setPhase(data.attempt.status === "in_progress" ? "section_done" : "submitted");
+      setMode(data.attempt.mode);
+      setPhase("section_done");
       return;
     }
 
@@ -125,6 +131,7 @@ export default function ToeflListeningTestPage({ params }: { params: Promise<{ a
     setPlayedIds(restoredPlayed);
     setDeadlineAt(data.section.deadline_at);
     setStage(data.module?.stage ?? null);
+    setMode(data.attempt.mode);
     setActiveIndex(0);
     autoFinishedRef.current = false;
     itemStartRef.current = Date.now();
@@ -234,26 +241,6 @@ export default function ToeflListeningTestPage({ params }: { params: Promise<{ a
     }
   }
 
-  async function submitAttempt() {
-    setBusy(true);
-    setErrorMsg(null);
-    try {
-      const headers = await authHeaders();
-      const res = await fetch(`/api/toefl/attempts/${attemptId}/submit`, { method: "POST", headers });
-      const data = await res.json();
-      if (!res.ok || !data.ok) {
-        setErrorMsg(data.message ?? "Failed to submit.");
-        return;
-      }
-      setOverall(data.overall);
-      setPhase("submitted");
-    } catch (e) {
-      setErrorMsg(`Failed to submit: ${(e as Error).message}`);
-    } finally {
-      setBusy(false);
-    }
-  }
-
   if (phase === "loading") {
     return (
       <main className="flex min-h-screen items-center justify-center">
@@ -273,12 +260,10 @@ export default function ToeflListeningTestPage({ params }: { params: Promise<{ a
     );
   }
 
-  if (phase === "section_done" || phase === "submitted") {
+  if (phase === "section_done") {
     return (
       <main className="mx-auto flex min-h-screen max-w-xl flex-col items-center justify-center gap-4 px-6 text-center">
-        <h1 className="text-2xl font-medium text-[var(--foreground)]">
-          {phase === "submitted" ? "Result" : "Listening section complete"}
-        </h1>
+        <h1 className="text-2xl font-medium text-[var(--foreground)]">Listening section complete</h1>
         <div className="w-full rounded-2xl border border-[var(--mint-dark)]/30 bg-[var(--mint)]/30 px-6 py-6">
           <p className="text-sm text-[var(--secondary)]">Listening band</p>
           <p className="text-4xl font-bold text-[var(--mint-dark)]">{sectionResult?.band ?? "—"}</p>
@@ -286,23 +271,7 @@ export default function ToeflListeningTestPage({ params }: { params: Promise<{ a
             Scaled score: {sectionResult?.scaled_score ?? "—"} / 30
           </p>
         </div>
-        {phase === "submitted" && overall && (
-          <p className="text-sm text-[var(--secondary)]">Overall band (avg): {overall.band}</p>
-        )}
-        {phase === "section_done" && (
-          <button
-            onClick={submitAttempt}
-            disabled={busy}
-            className="rounded-full bg-[var(--pink)] px-8 py-3 text-sm font-medium text-[var(--pink-dark)] disabled:opacity-60"
-          >
-            {busy ? "Submitting..." : "Submit and see result"}
-          </button>
-        )}
-        {phase === "submitted" && (
-          <button onClick={() => router.push("/toefl")} className="text-sm text-[var(--secondary)] underline">
-            ← Back to TOEFL home
-          </button>
-        )}
+        <SectionDoneActions attemptId={attemptId} section="listening" mode={mode} />
       </main>
     );
   }

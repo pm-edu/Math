@@ -50,3 +50,23 @@ export function scaledToBand(scaled: number): number {
 export function applyRouteCap(band: number, route: "base" | "easy" | "hard"): number {
   return route === "easy" ? Math.min(band, 4.0) : band;
 }
+
+// 밴드(1.0-6.0) → CEFR 등급. spec §7 표 그대로("총점: ... 밴드 병기, 리포트에는 셋 다 표시").
+const BAND_TO_CEFR: { minBand: number; cefr: string }[] = [
+  { minBand: 1.0, cefr: "A1" },
+  { minBand: 2.0, cefr: "A2" },
+  { minBand: 3.0, cefr: "B1" },
+  { minBand: 4.0, cefr: "B2" },
+  { minBand: 5.0, cefr: "C1" },
+  { minBand: 6.0, cefr: "C2" },
+];
+
+export function bandToCefr(band: number): string {
+  const clamped = Math.min(6.0, Math.max(1.0, band));
+  let matched = BAND_TO_CEFR[0].cefr;
+  for (const row of BAND_TO_CEFR) {
+    if (clamped >= row.minBand) matched = row.cefr;
+    else break;
+  }
+  return matched;
+}

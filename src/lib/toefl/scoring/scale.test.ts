@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyRouteCap, rawToScaled, scaledToBand, type ScaleConversionRow } from "./scale";
+import { applyRouteCap, bandToCefr, rawToScaled, scaledToBand, type ScaleConversionRow } from "./scale";
 
 const ROWS: ScaleConversionRow[] = [
   { raw_min: 0, raw_max: 8, scaled: 0 },
@@ -45,5 +45,22 @@ describe("applyRouteCap", () => {
   it("hard/base 경로는 그대로", () => {
     expect(applyRouteCap(5.0, "hard")).toBe(5.0);
     expect(applyRouteCap(6.0, "base")).toBe(6.0);
+  });
+});
+
+describe("bandToCefr", () => {
+  it("spec §7 표대로 매핑", () => {
+    expect(bandToCefr(1.0)).toBe("A1");
+    expect(bandToCefr(1.5)).toBe("A1");
+    expect(bandToCefr(2.0)).toBe("A2");
+    expect(bandToCefr(4.0)).toBe("B2");
+    expect(bandToCefr(4.5)).toBe("B2");
+    expect(bandToCefr(5.0)).toBe("C1");
+    expect(bandToCefr(6.0)).toBe("C2");
+  });
+
+  it("범위를 벗어나도 clamp", () => {
+    expect(bandToCefr(0)).toBe("A1");
+    expect(bandToCefr(10)).toBe("C2");
   });
 });

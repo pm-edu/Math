@@ -4,7 +4,7 @@ export type { ScoreableItem, ScoreableResponse, ScoreResult } from "./score-item
 export { aggregateRaw } from "./aggregate";
 export type { AggregatableResponse } from "./aggregate";
 export { routeStage2 } from "./routing";
-export { rawToScaled, scaledToBand, applyRouteCap } from "./scale";
+export { rawToScaled, scaledToBand, applyRouteCap, bandToCefr } from "./scale";
 export type { ScaleConversionRow } from "./scale";
 export { round2 } from "./round";
 export { aiRubricToPoints } from "./ai-rubric";

@@ -64,6 +64,30 @@ export default function ToeflDashboardPage() {
     router.push(`/toefl/test/${data.attempt_id}/${section}`);
   }
 
+  // 풀 모의고사(mode='full')는 항상 reading부터 시작한다(§2 고정 순서). 이후 각 영역 화면이
+  // 다음 영역 시작(sections/:s/start)으로 이어 붙인다.
+  async function startFull(formId: string) {
+    setError(null);
+    const key = `${formId}:full`;
+    setStarting(key);
+    const supabase = createClient();
+    const { data: session } = await supabase.auth.getSession();
+    const token = session.session?.access_token;
+
+    const res = await fetch("/api/toefl/attempts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ form_id: formId, mode: "full" }),
+    });
+    const data = await res.json();
+    setStarting(null);
+    if (!res.ok || !data.ok) {
+      setError(data.message ?? "Failed to start the test.");
+      return;
+    }
+    router.push(`/toefl/test/${data.attempt_id}/reading`);
+  }
+
   return (
     <main className="mx-auto max-w-3xl px-6 py-16">
       <h1 className="text-3xl font-medium text-[var(--foreground)]">TOEFL Practice</h1>
@@ -84,7 +108,14 @@ export default function ToeflDashboardPage() {
                 <p className="font-medium text-[var(--foreground)]">{f.title}</p>
                 <p className="text-xs text-[var(--secondary)]">{f.code}</p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <button
+                  onClick={() => startFull(f.id)}
+                  disabled={starting === `${f.id}:full`}
+                  className="rounded-full bg-[var(--mint-dark)] px-5 py-2 text-sm font-medium text-white disabled:opacity-60"
+                >
+                  {starting === `${f.id}:full` ? "Starting..." : "Start Full Mock Test (90 min)"}
+                </button>
                 {SECTIONS.map((s) => {
                   const key = `${f.id}:${s.key}`;
                   return (

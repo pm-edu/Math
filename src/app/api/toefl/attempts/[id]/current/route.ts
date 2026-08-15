@@ -15,7 +15,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   const { data: attempt } = await client
     .from("toefl_attempt")
-    .select("id, user_id, form_id, status")
+    .select("id, user_id, form_id, status, mode")
     .eq("id", attemptId)
     .maybeSingle();
   if (!attempt || attempt.user_id !== auth.userId) return jsonError(404, "시험 응시 기록을 찾을 수 없습니다.");
@@ -35,7 +35,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   if (sectionAttempt.finished_at) {
     return Response.json({
       ok: true,
-      attempt: { id: attempt.id, status: attempt.status },
+      attempt: { id: attempt.id, status: attempt.status, mode: attempt.mode },
       section: {
         section,
         finished: true,
@@ -110,7 +110,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   return Response.json({
     ok: true,
-    attempt: { id: attempt.id, status: attempt.status },
+    attempt: { id: attempt.id, status: attempt.status, mode: attempt.mode },
     section: {
       section,
       finished: false,
