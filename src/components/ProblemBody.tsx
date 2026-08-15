@@ -53,7 +53,8 @@ export function MathText({ text, className }: { text: string; className?: string
 
 // 문제 하나를 화면에 표시한다.
 // - 텍스트로 추출한 문제(problem_type === "text")는 수식을 렌더링해 보여주고,
-// - 이미지로 등록한 문제는 기존처럼 이미지를 보여준다.
+//   image_url이 같이 있으면(예: AI가 그려준 함수 그래프) 본문 아래에 그림도 이어서 보여준다.
+// - 이미지로 등록한 문제(problem_type === "image")는 기존처럼 이미지만 보여준다.
 export function ProblemBody({
   problem,
   imgClassName,
@@ -65,13 +66,19 @@ export function ProblemBody({
 }) {
   if (problem.problem_type === "text" && problem.content_text) {
     return (
-      <MathText
-        text={problem.content_text}
-        className={
-          textClassName ??
-          "text-[15px] leading-relaxed text-[var(--foreground)]"
-        }
-      />
+      <>
+        <MathText
+          text={problem.content_text}
+          className={
+            textClassName ??
+            "text-[15px] leading-relaxed text-[var(--foreground)]"
+          }
+        />
+        {problem.image_url && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={problem.image_url} alt="그래프" className={`mt-2 ${imgClassName ?? ""}`} />
+        )}
+      </>
     );
   }
   // eslint-disable-next-line @next/next/no-img-element

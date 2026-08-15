@@ -21,6 +21,7 @@ type Draft = {
   problem_format: string;
   selfCheckAnswer: string | null;
   selfCheckMatch: boolean | null; // null = 검증 생략(서술형 등)
+  imageUrl: string | null; // 함수 그래프 등 서버가 그려준 그림
   include: boolean;
 };
 
@@ -83,6 +84,7 @@ export default function AdminGeneratePage() {
           problem_format: String(p.problem_format ?? problemFormat),
           selfCheckAnswer: (p.selfCheckAnswer as string | null) ?? null,
           selfCheckMatch: (p.selfCheckMatch as boolean | null) ?? null,
+          imageUrl: (p.image_url as string | null) ?? null,
           include: true,
         };
       });
@@ -125,7 +127,7 @@ export default function AdminGeneratePage() {
       content_text: d.content_text.trim(),
       solution_text: d.solution_text.trim() || null,
       choices: d.choices.length ? d.choices.map((c) => c.trim()) : null,
-      image_url: "",
+      image_url: d.imageUrl ?? "",
       problem_type: "text",
       source: "ai",
       verified: true,
@@ -248,6 +250,9 @@ export default function AdminGeneratePage() {
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="text-sm font-medium text-[var(--secondary)]">{i + 1}번 · {d.problem_format} · {d.difficulty}</span>
                     <div className="flex items-center gap-2">
+                      {d.imageUrl && (
+                        <span className="rounded-full bg-[var(--pink-light)] px-2.5 py-0.5 text-[11px] font-medium text-[var(--pink-dark)]">그래프 포함</span>
+                      )}
                       {d.selfCheckMatch === null ? (
                         <span className="rounded-full border border-[var(--border-c)] px-2.5 py-0.5 text-[11px] text-[var(--secondary)]">AI 재검증 생략</span>
                       ) : d.selfCheckMatch ? (
@@ -271,6 +276,10 @@ export default function AdminGeneratePage() {
                     <div className="mt-2 rounded-lg border border-dashed border-[var(--border-c)] bg-[var(--pink-light)]/20 p-3">
                       <p className="mb-1 text-xs text-[var(--secondary)]">학생 화면 미리보기</p>
                       <MathText text={d.content_text} className="text-[15px] leading-relaxed text-[var(--foreground)]" />
+                      {d.imageUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={d.imageUrl} alt="그래프" className="mt-2 rounded-lg border border-[var(--border-c)] bg-white" />
+                      )}
                     </div>
                   )}
 
