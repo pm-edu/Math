@@ -6,6 +6,10 @@ import { gradeWritingResponse } from "@/lib/toefl/server/ai-grading";
 import { aggregateRaw, aiRubricToPoints, applyRouteCap, rawToScaled, routeStage2, scaledToBand } from "@/lib/toefl/scoring";
 import type { AcademicDiscussionPayload, ToeflSection, WriteAnEmailPayload } from "@/lib/toefl/types";
 
+// writing 종료 시 ai_rubric 문항 2개를 순차로 Gemini 채점(각각 최대 2회 파싱 재시도 ×
+// callGemini 내부 3회 네트워크 재시도)하면 기본 서버리스 함수 실행시간 제한을 넘을 수 있어 늘려둔다.
+export const maxDuration = 120;
+
 // reading·listening만 Stage1→Stage2 적응형 구조다(§8: "Reading/Listening에만 적용").
 // writing(그리고 나중에 speaking)은 블루프린트에 stage2 행이 아예 없어서(단일 stage1/base) 이
 // 라우팅 로직이 안 맞는다 — 아래에서 완전히 다른 분기(단일 종료)로 처리한다.

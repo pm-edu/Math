@@ -201,43 +201,57 @@ export default function ToeflListeningTestPage({ params }: { params: Promise<{ a
     setActiveIndex((i) => i + 1);
   }
 
+  // try/catch 없이 fetch가 실패하면 busy가 안 풀려서 화면이 멈춘다(실사용 중 writing 페이지에서
+  // 발견된 버그, 모든 영역 페이지에 동일하게 적용).
   async function finishModule() {
     setBusy(true);
-    const current = items[activeIndex];
-    if (current) await flushPending(current.id);
+    setErrorMsg(null);
+    try {
+      const current = items[activeIndex];
+      if (current) await flushPending(current.id);
 
-    const headers = await authHeaders();
-    const res = await fetch(`/api/toefl/attempts/${attemptId}/sections/listening/finish`, {
-      method: "POST",
-      headers,
-    });
-    const data = await res.json();
-    setBusy(false);
-    if (!res.ok || !data.ok) {
-      setErrorMsg(data.message ?? "Failed to finish this part.");
-      return;
-    }
-    if (data.done) {
-      setSectionResult({ raw_score: data.raw_score, scaled_score: data.scaled_score, band: data.band });
-      setPhase("section_done");
-    } else {
-      setPhase("loading");
-      loadCurrent();
+      const headers = await authHeaders();
+      const res = await fetch(`/api/toefl/attempts/${attemptId}/sections/listening/finish`, {
+        method: "POST",
+        headers,
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        setErrorMsg(data.message ?? "Failed to finish this part.");
+        return;
+      }
+      if (data.done) {
+        setSectionResult({ raw_score: data.raw_score, scaled_score: data.scaled_score, band: data.band });
+        setPhase("section_done");
+      } else {
+        setPhase("loading");
+        loadCurrent();
+      }
+    } catch (e) {
+      setErrorMsg(`Failed to finish this part: ${(e as Error).message}`);
+    } finally {
+      setBusy(false);
     }
   }
 
   async function submitAttempt() {
     setBusy(true);
-    const headers = await authHeaders();
-    const res = await fetch(`/api/toefl/attempts/${attemptId}/submit`, { method: "POST", headers });
-    const data = await res.json();
-    setBusy(false);
-    if (!res.ok || !data.ok) {
-      setErrorMsg(data.message ?? "Failed to submit.");
-      return;
+    setErrorMsg(null);
+    try {
+      const headers = await authHeaders();
+      const res = await fetch(`/api/toefl/attempts/${attemptId}/submit`, { method: "POST", headers });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        setErrorMsg(data.message ?? "Failed to submit.");
+        return;
+      }
+      setOverall(data.overall);
+      setPhase("submitted");
+    } catch (e) {
+      setErrorMsg(`Failed to submit: ${(e as Error).message}`);
+    } finally {
+      setBusy(false);
     }
-    setOverall(data.overall);
-    setPhase("submitted");
   }
 
   if (phase === "loading") {

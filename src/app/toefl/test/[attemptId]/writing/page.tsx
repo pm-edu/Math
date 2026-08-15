@@ -182,41 +182,69 @@ export default function ToeflWritingTestPage({ params }: { params: Promise<{ att
     setActiveIndex(index);
   }
 
+  // AI 채점(§12)이 여기서 동기로 돌아서 시간이 꽤 걸릴 수 있다 — 네트워크 오류·서버 타임아웃 등
+  // 어떤 이유로든 실패하면 반드시 grading/busy를 풀고 에러를 보여준다(try/catch 없으면 "Grading..."
+  // 화면에서 영원히 멈춰버리는 버그가 있었음, 실사용 중 발견됨).
   async function finishModule() {
     setBusy(true);
     setGrading(true);
-    const current = items[activeIndex];
-    if (current) await flushPending(current.id);
+    setErrorMsg(null);
+    try {
+      const current = items[activeIndex];
+      if (current) await flushPending(current.id);
 
-    const headers = await authHeaders();
-    const res = await fetch(`/api/toefl/attempts/${attemptId}/sections/writing/finish`, {
-      method: "POST",
-      headers,
-    });
-    const data = await res.json();
-    setBusy(false);
-    setGrading(false);
-    if (!res.ok || !data.ok) {
-      setErrorMsg(data.message ?? "Failed to finish this part.");
-      return;
+      const headers = await authHeaders();
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // AI 채점 대기 상한 2분
+      let res: Response;
+      try {
+        res = await fetch(`/api/toefl/attempts/${attemptId}/sections/writing/finish`, {
+          method: "POST",
+          headers,
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        setErrorMsg(data.message ?? "Failed to finish this part.");
+        return;
+      }
+      setWarnings(data.warnings ?? []);
+      setSectionResult({ raw_score: data.raw_score, scaled_score: data.scaled_score, band: data.band });
+      setPhase("section_done");
+    } catch (e) {
+      const err = e as Error;
+      setErrorMsg(
+        err.name === "AbortError"
+          ? "Grading is taking too long and timed out. Please try again."
+          : `Failed to finish this part: ${err.message}`
+      );
+    } finally {
+      setBusy(false);
+      setGrading(false);
     }
-    setWarnings(data.warnings ?? []);
-    setSectionResult({ raw_score: data.raw_score, scaled_score: data.scaled_score, band: data.band });
-    setPhase("section_done");
   }
 
   async function submitAttempt() {
     setBusy(true);
-    const headers = await authHeaders();
-    const res = await fetch(`/api/toefl/attempts/${attemptId}/submit`, { method: "POST", headers });
-    const data = await res.json();
-    setBusy(false);
-    if (!res.ok || !data.ok) {
-      setErrorMsg(data.message ?? "Failed to submit.");
-      return;
+    setErrorMsg(null);
+    try {
+      const headers = await authHeaders();
+      const res = await fetch(`/api/toefl/attempts/${attemptId}/submit`, { method: "POST", headers });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        setErrorMsg(data.message ?? "Failed to submit.");
+        return;
+      }
+      setOverall(data.overall);
+      setPhase("submitted");
+    } catch (e) {
+      setErrorMsg(`Failed to submit: ${(e as Error).message}`);
+    } finally {
+      setBusy(false);
     }
-    setOverall(data.overall);
-    setPhase("submitted");
   }
 
   if (phase === "loading") {
