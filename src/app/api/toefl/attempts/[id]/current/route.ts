@@ -78,8 +78,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       finished: false,
       deadline_at: sectionAttempt.deadline_at,
     },
-    // stage/route는 절대 클라이언트에 노출하지 않는다(§8) — module.id/position만 넘긴다.
-    module: { id: module.id, position: module.position },
+    // route(easy/hard)는 절대 클라이언트에 노출하지 않는다(§8). stage(1/2)는 몇 단계인지만
+    // 알려주는 정보라 난이도를 드러내지 않으므로 노출해도 무방하다 — "Part 1/2" 표시용.
+    module: { id: module.id, position: module.position, stage: module.stage },
     items: items ?? [],
     stimuli: stimuli ?? [],
     answers,

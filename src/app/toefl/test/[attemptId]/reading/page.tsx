@@ -25,7 +25,7 @@ type CurrentResponse = {
     scaled_score?: number | null;
     band?: number | null;
   };
-  module: { id: string; position: number } | null;
+  module: { id: string; position: number; stage: "stage1" | "stage2" } | null;
   items: ToeflItemPublic[];
   stimuli: ToeflStimulusPublic[];
   answers: Record<string, { answer: unknown; time_spent_ms: number | null }>;
@@ -45,6 +45,7 @@ export default function ToeflReadingTestPage({ params }: { params: Promise<{ att
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [activeIndex, setActiveIndex] = useState(0);
   const [deadlineAt, setDeadlineAt] = useState<string | null>(null);
+  const [stage, setStage] = useState<"stage1" | "stage2" | null>(null);
   const [remainingMs, setRemainingMs] = useState<number | null>(null);
   const [sectionResult, setSectionResult] = useState<{
     raw_score: number | null;
@@ -105,6 +106,7 @@ export default function ToeflReadingTestPage({ params }: { params: Promise<{ att
     setAnswers(restored);
     setSavedIds(restoredSaved);
     setDeadlineAt(data.section.deadline_at);
+    setStage(data.module?.stage ?? null);
     setActiveIndex(0);
     autoFinishedRef.current = false;
     itemStartRef.current = Date.now();
@@ -288,7 +290,14 @@ export default function ToeflReadingTestPage({ params }: { params: Promise<{ att
   return (
     <main className="min-h-screen bg-[var(--background)]">
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-[var(--border-c)] bg-white px-6 py-3">
-        <p className="text-sm font-medium text-[var(--foreground)]">TOEFL Reading</p>
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-medium text-[var(--foreground)]">TOEFL Reading</p>
+          {stage && (
+            <span className="rounded-full bg-[var(--mint)]/40 px-2.5 py-0.5 text-xs font-medium text-[var(--mint-dark)]">
+              Part {stage === "stage1" ? 1 : 2} of 2
+            </span>
+          )}
+        </div>
         <p
           aria-live="polite"
           className={`text-sm font-semibold ${timeLow ? "text-red-600" : "text-[var(--foreground)]"}`}
