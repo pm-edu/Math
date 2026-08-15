@@ -12,5 +12,5 @@ div.math-body {
    PDF로 찍은 문제 사진은 항상 같은 크기로 또렷하게 보이는 것과 맞추기 위해, rem 기준 고정값으로
    모든 화면에서 동일하게 렌더링되게 한다. */
 div.math-body .katex {
-  font-size: 1.15rem;
+  font-size: 1.3rem;
 }

@@ -279,22 +279,29 @@ export default function AdminGeneratePage() {
                       <label className="mt-3 block text-xs text-[var(--secondary)]">보기 (정답을 라디오로 선택)</label>
                       <div className="mt-1 space-y-2">
                         {d.choices.map((c, ci) => (
-                          <div key={ci} className="flex items-center gap-2">
-                            <input
-                              type="radio"
-                              name={`ans-${i}`}
-                              checked={d.answer === LETTERS[ci]}
-                              onChange={() => update(i, { answer: LETTERS[ci] })}
-                              title="정답으로 지정"
-                            />
-                            <span className="w-5 text-sm font-medium text-[var(--secondary)]">{LETTERS[ci]}</span>
+                          <div key={ci} className="rounded-lg border border-[var(--border-c)] bg-white px-3 py-2">
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="radio"
+                                name={`ans-${i}`}
+                                checked={d.answer === LETTERS[ci]}
+                                onChange={() => update(i, { answer: LETTERS[ci] })}
+                                title="정답으로 지정"
+                              />
+                              <span className="w-5 text-sm font-medium text-[var(--secondary)]">{LETTERS[ci]}</span>
+                              {c.trim() ? (
+                                <MathText text={c} className="flex-1 text-[var(--foreground)]" />
+                              ) : (
+                                <span className="flex-1 text-sm text-[var(--secondary)]">(빈 보기)</span>
+                              )}
+                            </div>
                             <input
                               type="text"
                               value={c}
                               onChange={(e) => updateChoice(i, ci, e.target.value)}
-                              className="flex-1 rounded-lg border border-[var(--border-c)] bg-white px-3 py-2 text-sm outline-none focus:border-[var(--pink)]"
+                              placeholder="원본 텍스트 수정 (LaTeX는 $...$)"
+                              className="mt-1.5 w-full rounded-md border border-dashed border-[var(--border-c)] bg-[var(--background)] px-2 py-1 text-xs text-[var(--secondary)] outline-none focus:border-[var(--pink)]"
                             />
-                            {c.trim() && <MathText text={c} className="w-40 shrink-0 text-sm text-[var(--secondary)]" />}
                           </div>
                         ))}
                       </div>
