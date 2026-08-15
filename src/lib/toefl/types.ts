@@ -246,3 +246,14 @@ export type WritingRubricScore = {
   improvements: string[];
   corrected_excerpts: { original: string; corrected: string; reason_ko: string }[];
 };
+
+// ── AI 루브릭 채점 응답 (spec §12, Speaking take_an_interview) ──
+export type InterviewRubricScore = {
+  delivery: number;
+  language_use: number;
+  topic_development: number;
+  overall_band: number;
+  feedback_ko: string;
+  strengths: string[];
+  improvements: string[];
+};

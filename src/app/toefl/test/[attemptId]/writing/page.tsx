@@ -361,6 +361,7 @@ export default function ToeflWritingTestPage({ params }: { params: Promise<{ att
         {activeItem && (
           <TaskRenderer
             item={activeItem}
+            attemptId={attemptId}
             value={answers[activeItem.id]}
             onChange={(answer) => handleAnswerChange(activeItem.id, answer)}
           />

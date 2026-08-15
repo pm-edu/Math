@@ -14,7 +14,11 @@ const bodySchema = z.object({
     .array(
       z.object({
         item_id: z.string().uuid(),
-        answer: z.unknown(),
+        answer: z.unknown().nullable().optional(),
+        // Speaking(listen_and_repeat/take_an_interview): 클라이언트가 RLS로 본인 폴더에
+        // 직접 업로드한 녹음의 Storage 경로. 실제 채점(STT/AI 루브릭)은 finish 시점에 한다 —
+        // 여기서는 "제출됨"만 기록한다(§9 idempotent upsert 원칙 그대로).
+        audio_path: z.string().optional(),
         time_spent_ms: z.number().int().nonnegative().optional(),
       })
     )
@@ -79,11 +83,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const now = new Date().toISOString();
   const rows = responses.map((r) => {
     const item = itemById.get(r.item_id) as ScoreableItem & { id: string };
-    const { isCorrect, pointsEarned } = scoreItem(item, { answer: r.answer as never });
+    // 녹음만 있고 아직 transcript가 없는 Speaking 응답은 scoreItem이 0점을 매긴다 —
+    // finish 시점에 실제 STT/AI 루브릭 채점 후 points_earned가 갱신된다(writing과 동일 패턴).
+    const { isCorrect, pointsEarned } = scoreItem(item, { answer: (r.answer ?? null) as never });
     return {
       attempt_id: attemptId,
       item_id: r.item_id,
-      answer: r.answer,
+      answer: r.answer ?? null,
+      audio_path: r.audio_path ?? null,
       time_spent_ms: r.time_spent_ms ?? null,
       is_correct: isCorrect,
       points_earned: pointsEarned,

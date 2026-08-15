@@ -1,12 +1,13 @@
 "use client";
 
-// TOEFL Reading 응시 화면. docs/toefl-spec.md §10, §11.
-// - 전역 네비게이션(Header/Footer) 없이 전체화면으로 그린다(§10 UI 요구사항).
-// - 좌 지문 / 우 문항 2단(지문이 있는 문항만; complete_the_words는 지문이 없다).
-// - 타이머는 서버가 발급한 deadline_at을 표시만 한다(계산 권위는 서버, §11 1번).
-// - 답안은 문항 이동 시 즉시 저장 + 3초 debounce 자동저장(§11 2번).
-// - GET current 하나로 최초 진입·새로고침 복구를 모두 처리한다(§11 3번).
-// - 학생 응시 화면은 영어만 사용한다(§14).
+// TOEFL Speaking 응시 화면. docs/toefl-spec.md §6, §10, §11, §12.
+// Writing 화면과 골격이 비슷하지만(자유 이동 + AI 채점 대기), 저장하는 게 텍스트가 아니라 녹음
+// 파일의 Storage 경로(audio_path)다 — 렌더러가 onChange({audio_path})로 넘겨주면, 이 페이지의
+// saveResponse가 그걸 toefl_response.audio_path 전용 컬럼으로 보낸다(answer jsonb에 안 넣음,
+// 스키마가 이미 그렇게 분리해뒀다).
+// 채점(STT+정확도, 3지표 AI 루브릭)은 finish 호출 시 서버가 처리 — 녹음 파일을 내려받아 Gemini에
+// 보내야 해서 Writing보다도 더 걸릴 수 있다.
+// 학생 응시 화면은 영어만 사용한다(§14).
 
 import { use, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -25,7 +26,7 @@ type CurrentResponse = {
     scaled_score?: number | null;
     band?: number | null;
   };
-  module: { id: string; position: number; stage: "stage1" | "stage2" } | null;
+  module: { id: string; position: number } | null;
   items: ToeflItemPublic[];
   stimuli: ToeflStimulusPublic[];
   answers: Record<string, { answer: unknown; time_spent_ms: number | null }>;
@@ -33,31 +34,28 @@ type CurrentResponse = {
 
 type Phase = "loading" | "in_module" | "section_done" | "submitted" | "error";
 
-export default function ToeflReadingTestPage({ params }: { params: Promise<{ attemptId: string }> }) {
+export default function ToeflSpeakingTestPage({ params }: { params: Promise<{ attemptId: string }> }) {
   const { attemptId } = use(params);
   const router = useRouter();
 
   const [phase, setPhase] = useState<Phase>("loading");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [items, setItems] = useState<ToeflItemPublic[]>([]);
-  const [stimuli, setStimuli] = useState<ToeflStimulusPublic[]>([]);
-  const [answers, setAnswers] = useState<Record<string, unknown>>({});
-  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [answers, setAnswers] = useState<Record<string, { audio_path?: string }>>({});
   const [activeIndex, setActiveIndex] = useState(0);
   const [deadlineAt, setDeadlineAt] = useState<string | null>(null);
-  const [stage, setStage] = useState<"stage1" | "stage2" | null>(null);
   const [remainingMs, setRemainingMs] = useState<number | null>(null);
   const [sectionResult, setSectionResult] = useState<{
     raw_score: number | null;
     scaled_score: number | null;
     band: number | null;
   } | null>(null);
+  const [warnings, setWarnings] = useState<string[]>([]);
   const [overall, setOverall] = useState<{ total_scaled: number; band: number } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [grading, setGrading] = useState(false);
 
   const tokenRef = useRef<string | null>(null);
-  const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
-  const itemStartRef = useRef<number>(Date.now());
   const autoFinishedRef = useRef(false);
 
   const authHeaders = useCallback(async () => {
@@ -96,20 +94,14 @@ export default function ToeflReadingTestPage({ params }: { params: Promise<{ att
     }
 
     setItems(data.items);
-    setStimuli(data.stimuli);
-    const restored: Record<string, unknown> = {};
-    const restoredSaved = new Set<string>();
+    const restored: Record<string, { audio_path?: string }> = {};
     for (const [itemId, r] of Object.entries(data.answers)) {
-      restored[itemId] = r.answer;
-      restoredSaved.add(itemId);
+      restored[itemId] = (r.answer as { audio_path?: string } | null) ?? {};
     }
     setAnswers(restored);
-    setSavedIds(restoredSaved);
     setDeadlineAt(data.section.deadline_at);
-    setStage(data.module?.stage ?? null);
     setActiveIndex(0);
     autoFinishedRef.current = false;
-    itemStartRef.current = Date.now();
     setPhase("in_module");
   }, [attemptId, authHeaders, router]);
 
@@ -117,7 +109,6 @@ export default function ToeflReadingTestPage({ params }: { params: Promise<{ att
     loadCurrent();
   }, [loadCurrent]);
 
-  // 이탈 방지(§10): 응시 중 탭을 닫거나 새로고침하면 경고한다.
   useEffect(() => {
     if (phase !== "in_module") return;
     function onBeforeUnload(e: BeforeUnloadEvent) {
@@ -128,7 +119,6 @@ export default function ToeflReadingTestPage({ params }: { params: Promise<{ att
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [phase]);
 
-  // 서버 타이머 표시 + 만료 시 자동 제출.
   useEffect(() => {
     if (phase !== "in_module" || !deadlineAt) return;
     function tick() {
@@ -145,77 +135,59 @@ export default function ToeflReadingTestPage({ params }: { params: Promise<{ att
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, deadlineAt]);
 
-  async function saveResponse(itemId: string, answer: unknown) {
-    const timeSpentMs = Date.now() - itemStartRef.current;
+  // 녹음 업로드가 끝나야만 호출된다(렌더러가 onChange를 그 시점에만 부름) — 별도 debounce 불필요.
+  async function handleRecorded(itemId: string, audioPath: string) {
+    setAnswers((prev) => ({ ...prev, [itemId]: { audio_path: audioPath } }));
     const headers = await authHeaders();
-    const res = await fetch(`/api/toefl/attempts/${attemptId}/responses`, {
+    await fetch(`/api/toefl/attempts/${attemptId}/responses`, {
       method: "POST",
       headers,
-      body: JSON.stringify({ responses: [{ item_id: itemId, answer, time_spent_ms: timeSpentMs }] }),
+      body: JSON.stringify({ responses: [{ item_id: itemId, audio_path: audioPath }] }),
     });
-    if (res.ok) setSavedIds((prev) => new Set(prev).add(itemId));
   }
 
-  function handleAnswerChange(itemId: string, answer: unknown) {
-    setAnswers((prev) => ({ ...prev, [itemId]: answer }));
-    setSavedIds((prev) => {
-      const next = new Set(prev);
-      next.delete(itemId);
-      return next;
-    });
-    // 3초 debounce 자동저장(§11 2번) — 같은 문항에 대한 이전 타이머는 취소.
-    if (debounceTimers.current[itemId]) clearTimeout(debounceTimers.current[itemId]);
-    debounceTimers.current[itemId] = setTimeout(() => saveResponse(itemId, answer), 3000);
-  }
-
-  async function flushPending(itemId: string) {
-    if (debounceTimers.current[itemId]) {
-      clearTimeout(debounceTimers.current[itemId]);
-      delete debounceTimers.current[itemId];
-    }
-    if (!savedIds.has(itemId) && itemId in answers) {
-      await saveResponse(itemId, answers[itemId]);
-    }
-  }
-
-  async function goTo(index: number) {
-    const current = items[activeIndex];
-    if (current) await flushPending(current.id);
-    itemStartRef.current = Date.now();
+  function goTo(index: number) {
     setActiveIndex(index);
   }
 
-  // try/catch 없이 fetch가 실패하면 busy가 안 풀려서 화면이 멈춘다(실사용 중 writing 페이지에서
-  // 발견된 버그, 모든 영역 페이지에 동일하게 적용).
+  // AI 채점(STT+루브릭)이 녹음 다운로드까지 포함해 시간이 걸릴 수 있다 — 실패해도 반드시
+  // grading/busy를 풀고 에러를 보여준다(writing에서 겪은 멈춤 버그와 같은 패턴 방지).
   async function finishModule() {
     setBusy(true);
+    setGrading(true);
     setErrorMsg(null);
     try {
-      const current = items[activeIndex];
-      if (current) await flushPending(current.id);
-
       const headers = await authHeaders();
-      const res = await fetch(`/api/toefl/attempts/${attemptId}/sections/reading/finish`, {
-        method: "POST",
-        headers,
-      });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 150000);
+      let res: Response;
+      try {
+        res = await fetch(`/api/toefl/attempts/${attemptId}/sections/speaking/finish`, {
+          method: "POST",
+          headers,
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
       const data = await res.json();
       if (!res.ok || !data.ok) {
         setErrorMsg(data.message ?? "Failed to finish this part.");
         return;
       }
-      if (data.done) {
-        setSectionResult({ raw_score: data.raw_score, scaled_score: data.scaled_score, band: data.band });
-        setPhase("section_done");
-      } else {
-        // stage2로 라우팅됨 — 다음 모듈을 새로 불러온다(라우팅 결과는 알 수 없다).
-        setPhase("loading");
-        loadCurrent();
-      }
+      setWarnings(data.warnings ?? []);
+      setSectionResult({ raw_score: data.raw_score, scaled_score: data.scaled_score, band: data.band });
+      setPhase("section_done");
     } catch (e) {
-      setErrorMsg(`Failed to finish this part: ${(e as Error).message}`);
+      const err = e as Error;
+      setErrorMsg(
+        err.name === "AbortError"
+          ? "Grading is taking too long and timed out. Please try again."
+          : `Failed to finish this part: ${err.message}`
+      );
     } finally {
       setBusy(false);
+      setGrading(false);
     }
   }
 
@@ -262,15 +234,22 @@ export default function ToeflReadingTestPage({ params }: { params: Promise<{ att
     return (
       <main className="mx-auto flex min-h-screen max-w-xl flex-col items-center justify-center gap-4 px-6 text-center">
         <h1 className="text-2xl font-medium text-[var(--foreground)]">
-          {phase === "submitted" ? "Result" : "Reading section complete"}
+          {phase === "submitted" ? "Result" : "Speaking section complete"}
         </h1>
         <div className="w-full rounded-2xl border border-[var(--mint-dark)]/30 bg-[var(--mint)]/30 px-6 py-6">
-          <p className="text-sm text-[var(--secondary)]">Reading band</p>
+          <p className="text-sm text-[var(--secondary)]">Speaking band</p>
           <p className="text-4xl font-bold text-[var(--mint-dark)]">{sectionResult?.band ?? "—"}</p>
           <p className="mt-1 text-xs text-[var(--secondary)]">
             Scaled score: {sectionResult?.scaled_score ?? "—"} / 30
           </p>
         </div>
+        {warnings.length > 0 && (
+          <div className="w-full rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-left text-xs text-amber-800">
+            {warnings.map((w, i) => (
+              <p key={i}>{w}</p>
+            ))}
+          </div>
+        )}
         {phase === "submitted" && overall && (
           <p className="text-sm text-[var(--secondary)]">Overall band (avg): {overall.band}</p>
         )}
@@ -293,25 +272,24 @@ export default function ToeflReadingTestPage({ params }: { params: Promise<{ att
   }
 
   const activeItem = items[activeIndex];
-  const activeStimulus = activeItem?.stimulus_id
-    ? stimuli.find((s) => s.id === activeItem.stimulus_id)
-    : null;
-  const answeredCount = items.filter((i) => i.id in answers).length;
+  const answeredCount = items.filter((i) => answers[i.id]?.audio_path).length;
   const minutes = remainingMs !== null ? Math.max(0, Math.floor(remainingMs / 60000)) : null;
   const seconds = remainingMs !== null ? Math.max(0, Math.floor((remainingMs % 60000) / 1000)) : null;
   const timeLow = remainingMs !== null && remainingMs <= 5 * 60 * 1000;
 
+  if (grading) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center gap-2 px-6 text-center">
+        <p className="text-sm font-medium text-[var(--foreground)]">Grading your speaking…</p>
+        <p className="text-xs text-[var(--secondary)]">This can take up to a couple of minutes. Please don't close this tab.</p>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-[var(--background)]">
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-[var(--border-c)] bg-white px-6 py-3">
-        <div className="flex items-center gap-2">
-          <p className="text-sm font-medium text-[var(--foreground)]">TOEFL Reading</p>
-          {stage && (
-            <span className="rounded-full bg-[var(--mint)]/40 px-2.5 py-0.5 text-xs font-medium text-[var(--mint-dark)]">
-              Part {stage === "stage1" ? 1 : 2} of 2
-            </span>
-          )}
-        </div>
+        <p className="text-sm font-medium text-[var(--foreground)]">TOEFL Speaking</p>
         <p
           aria-live="polite"
           className={`text-sm font-semibold ${timeLow ? "text-red-600" : "text-[var(--foreground)]"}`}
@@ -328,7 +306,7 @@ export default function ToeflReadingTestPage({ params }: { params: Promise<{ att
             className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium ${
               idx === activeIndex
                 ? "bg-[var(--pink)] text-[var(--pink-dark)]"
-                : it.id in answers
+                : answers[it.id]?.audio_path
                 ? "bg-[var(--mint)] text-[var(--mint-dark)]"
                 : "border border-[var(--border-c)] bg-white text-[var(--secondary)]"
             }`}
@@ -337,35 +315,21 @@ export default function ToeflReadingTestPage({ params }: { params: Promise<{ att
           </button>
         ))}
         <span className="ml-2 text-xs text-[var(--secondary)]">
-          {answeredCount} / {items.length} answered
+          {answeredCount} / {items.length} recorded
         </span>
       </div>
 
       {errorMsg && <p className="mx-auto max-w-3xl px-6 text-sm text-red-600">{errorMsg}</p>}
 
-      <div className="mx-auto grid max-w-3xl gap-6 px-6 pb-24 pt-2 md:grid-cols-2">
-        {activeStimulus && (
-          <div className="rounded-2xl border border-[var(--border-c)] bg-white p-5">
-            {activeStimulus.title && (
-              <p className="mb-2 text-sm font-semibold text-[var(--foreground)]">{activeStimulus.title}</p>
-            )}
-            {activeStimulus.body && (
-              <p className="whitespace-pre-line text-sm leading-relaxed text-[var(--foreground)]">
-                {activeStimulus.body}
-              </p>
-            )}
-          </div>
+      <div className="mx-auto max-w-3xl px-6 pb-24 pt-2">
+        {activeItem && (
+          <TaskRenderer
+            item={activeItem}
+            attemptId={attemptId}
+            value={answers[activeItem.id]}
+            onChange={(answer) => handleRecorded(activeItem.id, (answer as { audio_path: string }).audio_path)}
+          />
         )}
-        <div className={activeStimulus ? "" : "md:col-span-2"}>
-          {activeItem && (
-            <TaskRenderer
-              item={activeItem}
-              attemptId={attemptId}
-              value={answers[activeItem.id]}
-              onChange={(answer) => handleAnswerChange(activeItem.id, answer)}
-            />
-          )}
-        </div>
       </div>
 
       <footer className="fixed bottom-0 left-0 right-0 flex items-center justify-between border-t border-[var(--border-c)] bg-white px-6 py-3">
@@ -389,7 +353,7 @@ export default function ToeflReadingTestPage({ params }: { params: Promise<{ att
             disabled={busy}
             className="rounded-full bg-[var(--pink)] px-6 py-2 text-sm font-medium text-[var(--pink-dark)] disabled:opacity-60"
           >
-            {busy ? "Submitting..." : "Finish this part"}
+            {busy ? "Grading..." : "Finish this part"}
           </button>
         )}
       </footer>

@@ -89,12 +89,22 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   );
   const itemsSigned = await Promise.all(
     (items ?? []).map(async (it) => {
-      const payload = it.payload as { clip_path?: string | null } | null;
-      if (!payload?.clip_path) return it;
-      const { data: signed } = await service.storage
-        .from("toefl-audio")
-        .createSignedUrl(payload.clip_path, AUDIO_URL_TTL_SEC);
-      return signed?.signedUrl ? { ...it, payload: { ...payload, clip_path: signed.signedUrl } } : it;
+      const payload = it.payload as { clip_path?: string | null; question_audio_path?: string | null } | null;
+      let nextPayload = payload;
+      if (payload?.clip_path) {
+        const { data: signed } = await service.storage
+          .from("toefl-audio")
+          .createSignedUrl(payload.clip_path, AUDIO_URL_TTL_SEC);
+        if (signed?.signedUrl) nextPayload = { ...nextPayload, clip_path: signed.signedUrl };
+      }
+      // take_an_interview 질문 음성(§10: 질문을 텍스트로 보여주지 않으므로 이 오디오가 유일한 전달 수단)
+      if (payload?.question_audio_path) {
+        const { data: signed } = await service.storage
+          .from("toefl-audio")
+          .createSignedUrl(payload.question_audio_path, AUDIO_URL_TTL_SEC);
+        if (signed?.signedUrl) nextPayload = { ...nextPayload, question_audio_path: signed.signedUrl };
+      }
+      return nextPayload === payload ? it : { ...it, payload: nextPayload };
     })
   );
 

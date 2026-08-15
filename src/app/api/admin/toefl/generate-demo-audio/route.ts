@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { jsonError, requireToeflStaff } from "@/lib/toefl/server/auth";
 import { generateSpeechWav } from "@/lib/toefl/server/tts";
 
-// TOEFL 데모 Listening 콘텐츠(TOEFL_DEMO_001)에 실제 음성 파일을 채워 넣는 1회성 관리자 도구.
+// TOEFL 데모 Listening/Speaking 콘텐츠(TOEFL_DEMO_001)에 실제 음성 파일을 채워 넣는 1회성 관리자 도구.
 // P0에서 심은 데모 데이터는 대본(transcript)만 있고 오디오가 없었다(P1은 Reading이라 필요 없었음).
 // - conversation/announcement/academic_talk: toefl_stimulus.transcript를 그대로 읽어서 저장.
 // - choose_a_response: payload에 "말하는 문장" 필드가 원래 없어서(spec §6 계약에 없음), 정답이
@@ -104,6 +104,75 @@ export async function POST(req: Request) {
         ? { kind: "item", id: item.id, status: "error", message: `DB 저장 실패: ${updateErr.message}` }
         : { kind: "item", id: item.id, status: "generated", message: `${path} (${result.durationSec.toFixed(1)}s)` }
     );
+  }
+
+  // ── Speaking: listen_and_repeat(target_sentence) + take_an_interview(질문) ──
+  // take_an_interview는 질문을 화면에 텍스트로 안 보여주는 게 spec §10 규칙이라, item.prompt(질문
+  // 문장)를 음성으로 만들어 payload.question_audio_path에 채운다 — 이게 학생이 질문을 알 수 있는
+  // 유일한 경로다(글로도 안 보여줌).
+  const { data: speakingModules } = await client
+    .from("toefl_module")
+    .select("id")
+    .eq("form_id", form.id)
+    .eq("section", "speaking");
+  const speakingModuleIds = (speakingModules ?? []).map((m) => m.id);
+
+  if (speakingModuleIds.length > 0) {
+    const { data: speakingItems } = await client
+      .from("toefl_item")
+      .select("id, task_type, prompt, payload")
+      .in("module_id", speakingModuleIds)
+      .in("task_type", ["listen_and_repeat", "take_an_interview"]);
+
+    for (const item of speakingItems ?? []) {
+      if (item.task_type === "listen_and_repeat") {
+        const payload = (item.payload ?? {}) as { clip_path?: string | null; target_sentence?: string };
+        if (payload.clip_path && !force) {
+          log.push({ kind: "item", id: item.id, status: "skipped", message: "이미 오디오 있음" });
+          continue;
+        }
+        if (!payload.target_sentence) {
+          log.push({ kind: "item", id: item.id, status: "error", message: "target_sentence가 없습니다." });
+          continue;
+        }
+        const path = `demo/item-${item.id}.wav`;
+        const result = await generateAndUpload(client, payload.target_sentence, path);
+        if (!result.ok) {
+          log.push({ kind: "item", id: item.id, status: "error", message: result.message });
+          continue;
+        }
+        const { error: updateErr } = await client
+          .from("toefl_item")
+          .update({ payload: { ...payload, clip_path: path } })
+          .eq("id", item.id);
+        log.push(
+          updateErr
+            ? { kind: "item", id: item.id, status: "error", message: `DB 저장 실패: ${updateErr.message}` }
+            : { kind: "item", id: item.id, status: "generated", message: `${path} (${result.durationSec.toFixed(1)}s)` }
+        );
+      } else {
+        const payload = (item.payload ?? {}) as { question_audio_path?: string | null };
+        if (payload.question_audio_path && !force) {
+          log.push({ kind: "item", id: item.id, status: "skipped", message: "이미 오디오 있음" });
+          continue;
+        }
+        const path = `demo/item-${item.id}.wav`;
+        const result = await generateAndUpload(client, item.prompt, path);
+        if (!result.ok) {
+          log.push({ kind: "item", id: item.id, status: "error", message: result.message });
+          continue;
+        }
+        const { error: updateErr } = await client
+          .from("toefl_item")
+          .update({ payload: { ...payload, question_audio_path: path } })
+          .eq("id", item.id);
+        log.push(
+          updateErr
+            ? { kind: "item", id: item.id, status: "error", message: `DB 저장 실패: ${updateErr.message}` }
+            : { kind: "item", id: item.id, status: "generated", message: `${path} (${result.durationSec.toFixed(1)}s)` }
+        );
+      }
+    }
   }
 
   return Response.json({ ok: true, log });
