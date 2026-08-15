@@ -28,3 +28,14 @@ export async function requireToeflUser(req: Request): Promise<ToeflAuthResult> {
 export function jsonError(status: number, message: string) {
   return Response.json({ ok: false, message }, { status });
 }
+
+// 관리자 전용 라우트(문항/오디오 생성 등)용. 다른 admin API(generate-solution 등)와 같은 역할 판정.
+export async function requireToeflStaff(req: Request): Promise<ToeflAuthResult> {
+  const auth = await requireToeflUser(req);
+  if (!auth.ok) return auth;
+  const { data: me } = await auth.client.from("profiles").select("role").eq("id", auth.userId).maybeSingle();
+  if (!["owner", "admin", "teacher", "assistant"].includes(me?.role ?? "")) {
+    return { ok: false, status: 403, message: "권한이 없습니다." };
+  }
+  return auth;
+}

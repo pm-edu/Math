@@ -2,6 +2,11 @@ import { jsonError, requireToeflUser } from "@/lib/toefl/server/auth";
 import { createToeflServiceClient } from "@/lib/toefl/server/service-client";
 import { fetchBlueprint, resolveCurrentModule } from "@/lib/toefl/server/modules";
 import { aggregateRaw, applyRouteCap, rawToScaled, routeStage2, scaledToBand } from "@/lib/toefl/scoring";
+import type { ToeflSection } from "@/lib/toefl/types";
+
+// reading·listening만 Stage1→Stage2 적응형 구조다(§8: "Reading/Listening에만 적용").
+// speaking/writing은 블루프린트에 stage2 행이 아예 없어서(단일 stage1/base) 이 라우팅 로직이 안 맞는다.
+const ADAPTIVE_SECTIONS: ToeflSection[] = ["reading", "listening"];
 
 // 영역 종료 → 라우팅 or 다음 영역. docs/toefl-spec.md §8, §9, §11.
 // 두 단계 중 하나로 동작한다 (routed_to로 판정):
@@ -16,8 +21,11 @@ export async function POST(
 ) {
   const auth = await requireToeflUser(req);
   if (!auth.ok) return jsonError(auth.status, auth.message);
-  const { id: attemptId, section } = await params;
-  if (section !== "reading") return jsonError(400, "Reading 영역만 아직 지원합니다.");
+  const { id: attemptId, section: sectionParam } = await params;
+  if (!ADAPTIVE_SECTIONS.includes(sectionParam as ToeflSection)) {
+    return jsonError(400, "Reading/Listening 영역만 아직 지원합니다.");
+  }
+  const section = sectionParam as ToeflSection;
   const { client } = auth;
 
   const { data: attempt } = await client
@@ -32,9 +40,9 @@ export async function POST(
     .from("toefl_section_attempt")
     .select("id, deadline_at, finished_at, routed_to, raw_score, scaled_score, band")
     .eq("attempt_id", attemptId)
-    .eq("section", "reading")
+    .eq("section", section)
     .maybeSingle();
-  if (!sectionAttempt) return jsonError(404, "Reading 영역 응시 기록을 찾을 수 없습니다.");
+  if (!sectionAttempt) return jsonError(404, "해당 영역 응시 기록을 찾을 수 없습니다.");
 
   if (sectionAttempt.finished_at) {
     return Response.json({
@@ -58,7 +66,7 @@ export async function POST(
 
   if (!sectionAttempt.routed_to) {
     // ── stage1 종료: 라우팅 ──
-    const stage1Module = await resolveCurrentModule(service, attempt.form_id, "reading", null);
+    const stage1Module = await resolveCurrentModule(service, attempt.form_id, section, null);
     if (!stage1Module) return jsonError(500, "Stage1 모듈을 찾을 수 없습니다.");
 
     const { data: stage1Items } = await service.from("toefl_item").select("id").eq("module_id", stage1Module.id);
@@ -74,13 +82,13 @@ export async function POST(
 
     const stage1Raw = aggregateRaw(stage1Responses ?? []);
 
-    const blueprint = await fetchBlueprint(client, form.blueprint_version, "reading", "stage1", "base");
+    const blueprint = await fetchBlueprint(client, form.blueprint_version, section, "stage1", "base");
     const threshold = Number(blueprint?.task_mix?.routing_threshold ?? 0);
     const route = routeStage2(stage1Raw, threshold);
 
-    const stage2Module = await resolveCurrentModule(service, attempt.form_id, "reading", route);
+    const stage2Module = await resolveCurrentModule(service, attempt.form_id, section, route);
     if (!stage2Module) return jsonError(500, "Stage2 모듈을 찾을 수 없습니다.");
-    const stage2Blueprint = await fetchBlueprint(client, form.blueprint_version, "reading", "stage2", route);
+    const stage2Blueprint = await fetchBlueprint(client, form.blueprint_version, section, "stage2", route);
     if (!stage2Blueprint) return jsonError(500, "Stage2 블루프린트를 찾을 수 없습니다.");
 
     const deadlineAt = new Date(Date.now() + stage2Blueprint.time_limit_sec * 1000).toISOString();
@@ -96,8 +104,8 @@ export async function POST(
 
   // ── stage2 종료: 영역 최종 점수 산출 ──
   const routedTo = sectionAttempt.routed_to;
-  const stage1Module = await resolveCurrentModule(service, attempt.form_id, "reading", null);
-  const stage2Module = await resolveCurrentModule(service, attempt.form_id, "reading", routedTo);
+  const stage1Module = await resolveCurrentModule(service, attempt.form_id, section, null);
+  const stage2Module = await resolveCurrentModule(service, attempt.form_id, section, routedTo);
   if (!stage1Module || !stage2Module) return jsonError(500, "모듈을 찾을 수 없습니다.");
 
   const { data: allItems } = await service
@@ -122,7 +130,7 @@ export async function POST(
     .from("toefl_scale_conversion")
     .select("raw_min, raw_max, scaled")
     .eq("version", form.blueprint_version)
-    .eq("section", "reading")
+    .eq("section", section)
     .eq("route", routedTo);
   if (!conversionRows || conversionRows.length === 0) {
     return jsonError(500, "영역점수 변환표를 찾을 수 없습니다.");

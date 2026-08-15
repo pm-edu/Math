@@ -1,11 +1,17 @@
 "use client";
 
-import type { ReadingMcqPayload, ToeflItemPublic } from "@/lib/toefl/types";
+import type { McqOption, ToeflItemPublic } from "@/lib/toefl/types";
 
-// spec §6 daily_life/academic_passage 공용 렌더러(payload/answer_key 구조가 동일).
-// format: "mcq"(단일 선택) | "multi_select"(복수 선택) | "insert_text"(단일 선택, mcq와 동일 UI로 처리).
+// spec §6 공용 렌더러 — payload가 {options, format?, select_count?} 모양인 유형은 전부 이걸로 그린다:
+// Reading의 daily_life/academic_passage, Listening의 choose_a_response/conversation/
+// announcement/academic_talk. 전부 answer_key가 {correct:[...]}, response가 {selected:[...]}로
+// 구조가 같다(scoring/score-item.ts의 MCQ_LIKE_TASK_TYPES와 대응).
+// format: "mcq"(단일 선택, choose_a_response처럼 format 자체가 없는 경우도 단일 선택으로 취급) |
+// "multi_select"(복수 선택) | "insert_text"/"replay"(단일 선택, mcq와 동일 UI로 처리).
 
-export default function ReadingMcqRenderer({
+type OptionsPayload = { options: McqOption[]; format?: string; select_count?: number };
+
+export default function McqOptionsRenderer({
   item,
   value,
   onChange,
@@ -14,7 +20,7 @@ export default function ReadingMcqRenderer({
   value: { selected?: string[] } | undefined;
   onChange: (answer: { selected: string[] }) => void;
 }) {
-  const payload = item.payload as ReadingMcqPayload;
+  const payload = item.payload as OptionsPayload;
   const selected = value?.selected ?? [];
   const isMulti = payload.format === "multi_select";
 

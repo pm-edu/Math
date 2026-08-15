@@ -44,11 +44,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const { data: sectionAttempt } = await client
     .from("toefl_section_attempt")
-    .select("deadline_at, finished_at, routed_to")
+    .select("section, deadline_at, finished_at, routed_to")
     .eq("attempt_id", attemptId)
-    .eq("section", "reading")
+    .order("started_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
-  if (!sectionAttempt) return jsonError(404, "Reading 영역 응시 기록을 찾을 수 없습니다.");
+  if (!sectionAttempt) return jsonError(404, "응시 기록을 찾을 수 없습니다.");
   if (sectionAttempt.finished_at) return jsonError(409, "이미 제출된 영역입니다.");
 
   if (sectionAttempt.deadline_at) {
@@ -59,7 +60,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   const service = createToeflServiceClient();
-  const module = await resolveCurrentModule(service, attempt.form_id, "reading", sectionAttempt.routed_to);
+  const module = await resolveCurrentModule(service, attempt.form_id, sectionAttempt.section, sectionAttempt.routed_to);
   if (!module) return jsonError(500, "현재 모듈을 찾을 수 없습니다.");
 
   const requestedIds = responses.map((r) => r.item_id);

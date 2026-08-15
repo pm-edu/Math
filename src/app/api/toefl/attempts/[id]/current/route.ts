@@ -20,20 +20,24 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     .maybeSingle();
   if (!attempt || attempt.user_id !== auth.userId) return jsonError(404, "시험 응시 기록을 찾을 수 없습니다.");
 
+  // section_practice 모드는 attempt당 section_attempt가 정확히 1개라 attempt_id만으로 찾는다.
+  // (URL에 section이 없는 이유: 어느 영역이든 이 엔드포인트 하나로 "현재 상태"를 알려주기 위함)
   const { data: sectionAttempt } = await client
     .from("toefl_section_attempt")
     .select("id, section, deadline_at, finished_at, routed_to, raw_score, scaled_score, band")
     .eq("attempt_id", attemptId)
-    .eq("section", "reading")
+    .order("started_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
-  if (!sectionAttempt) return jsonError(404, "Reading 영역 응시 기록을 찾을 수 없습니다.");
+  if (!sectionAttempt) return jsonError(404, "응시 기록을 찾을 수 없습니다.");
+  const section = sectionAttempt.section;
 
   if (sectionAttempt.finished_at) {
     return Response.json({
       ok: true,
       attempt: { id: attempt.id, status: attempt.status },
       section: {
-        section: "reading",
+        section,
         finished: true,
         deadline_at: null,
         raw_score: sectionAttempt.raw_score,
@@ -48,7 +52,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   }
 
   const service = createToeflServiceClient();
-  const module = await resolveCurrentModule(service, attempt.form_id, "reading", sectionAttempt.routed_to);
+  const module = await resolveCurrentModule(service, attempt.form_id, section, sectionAttempt.routed_to);
   if (!module) return jsonError(500, "현재 모듈을 찾을 수 없습니다.");
 
   const [{ data: items }, { data: stimuli }] = await Promise.all([
@@ -70,19 +74,43 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     answers[r.item_id] = { answer: r.answer, time_spent_ms: r.time_spent_ms };
   }
 
+  // toefl-audio 버킷은 비공개(signed URL 전용, spec §5)라 학생 세션으로는 직접 못 읽는다.
+  // audio_path/payload.clip_path에 담긴 "Storage key"를 여기서 잠깐 유효한 signed URL로
+  // 바꿔치기해서 내려준다 — 원본 경로 문자열 자체는 응답에 남기지 않는다.
+  const AUDIO_URL_TTL_SEC = 3600;
+  const stimuliSigned = await Promise.all(
+    (stimuli ?? []).map(async (s) => {
+      if (!s.audio_path) return s;
+      const { data: signed } = await service.storage
+        .from("toefl-audio")
+        .createSignedUrl(s.audio_path, AUDIO_URL_TTL_SEC);
+      return signed?.signedUrl ? { ...s, audio_path: signed.signedUrl } : s;
+    })
+  );
+  const itemsSigned = await Promise.all(
+    (items ?? []).map(async (it) => {
+      const payload = it.payload as { clip_path?: string | null } | null;
+      if (!payload?.clip_path) return it;
+      const { data: signed } = await service.storage
+        .from("toefl-audio")
+        .createSignedUrl(payload.clip_path, AUDIO_URL_TTL_SEC);
+      return signed?.signedUrl ? { ...it, payload: { ...payload, clip_path: signed.signedUrl } } : it;
+    })
+  );
+
   return Response.json({
     ok: true,
     attempt: { id: attempt.id, status: attempt.status },
     section: {
-      section: "reading",
+      section,
       finished: false,
       deadline_at: sectionAttempt.deadline_at,
     },
     // route(easy/hard)는 절대 클라이언트에 노출하지 않는다(§8). stage(1/2)는 몇 단계인지만
     // 알려주는 정보라 난이도를 드러내지 않으므로 노출해도 무방하다 — "Part 1/2" 표시용.
     module: { id: module.id, position: module.position, stage: module.stage },
-    items: items ?? [],
-    stimuli: stimuli ?? [],
+    items: itemsSigned,
+    stimuli: stimuliSigned,
     answers,
   });
 }
