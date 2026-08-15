@@ -4,16 +4,19 @@
 -- Supabase 대시보드 > SQL Editor 에 붙여넣고 Run 하세요. 여러 번 실행해도 안전합니다.
 
 drop policy if exists "admins upload problem images" on storage.objects;
+drop policy if exists "staff upload problem images" on storage.objects;
 create policy "staff upload problem images" on storage.objects
   for insert to authenticated
   with check (bucket_id = 'problems' and is_staff());
 
 drop policy if exists "admins update problem images" on storage.objects;
+drop policy if exists "staff update problem images" on storage.objects;
 create policy "staff update problem images" on storage.objects
   for update to authenticated
   using (bucket_id = 'problems' and is_staff());
 
 drop policy if exists "admins delete problem images" on storage.objects;
+drop policy if exists "staff delete problem images" on storage.objects;
 create policy "staff delete problem images" on storage.objects
   for delete to authenticated
   using (bucket_id = 'problems' and is_staff());
