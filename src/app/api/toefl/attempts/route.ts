@@ -4,9 +4,9 @@ import { createToeflServiceClient } from "@/lib/toefl/server/service-client";
 import { fetchBlueprint, resolveCurrentModule } from "@/lib/toefl/server/modules";
 
 // 시험 시작. docs/toefl-spec.md §9.
-// P1~P2 범위: reading·listening 단독 연습만 실제로 동작한다(speaking/writing은 P3~P4에서 이어짐).
+// P1~P4 범위: reading·listening·writing 단독 연습이 동작한다(speaking은 P3에서 이어짐).
 // mode='full'이어도 지금은 reading부터 시작한다(§2: 고정 순서 R→L→S→W).
-const SUPPORTED_SECTIONS = ["reading", "listening"] as const;
+const SUPPORTED_SECTIONS = ["reading", "listening", "writing"] as const;
 const bodySchema = z.object({
   form_id: z.string().uuid(),
   mode: z.enum(["full", "section_practice"]),
@@ -23,7 +23,7 @@ export async function POST(req: Request) {
 
   const targetSection = mode === "section_practice" ? parsed.data.section ?? "reading" : "reading";
   if (!SUPPORTED_SECTIONS.includes(targetSection as (typeof SUPPORTED_SECTIONS)[number])) {
-    return jsonError(400, "Reading/Listening 영역만 아직 응시할 수 있습니다. (다른 영역은 준비 중입니다)");
+    return jsonError(400, "Reading/Listening/Writing 영역만 아직 응시할 수 있습니다. (다른 영역은 준비 중입니다)");
   }
 
   const { client } = auth;

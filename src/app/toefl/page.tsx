@@ -1,8 +1,8 @@
 "use client";
 
 // TOEFL 대시보드(최소 버전). spec §10 app/toefl/page.tsx.
-// P1~P2 범위: 응시 이력·밴드 추이는 아직 없음(P5) — 공개된 폼 목록에서 Reading/Listening 연습을
-// 시작하는 진입점만 제공한다. 학생 응시 화면은 spec §14대로 영어를 쓴다.
+// P1~P4 범위: 응시 이력·밴드 추이는 아직 없음(P5) — 공개된 폼 목록에서 Reading/Listening/Writing
+// 연습을 시작하는 진입점만 제공한다. 학생 응시 화면은 spec §14대로 영어를 쓴다.
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -19,6 +19,7 @@ export default function ToeflDashboardPage() {
   const SECTIONS = [
     { key: "reading", label: "Start Reading" },
     { key: "listening", label: "Start Listening" },
+    { key: "writing", label: "Start Writing" },
   ] as const;
 
   useEffect(() => {
@@ -40,7 +41,7 @@ export default function ToeflDashboardPage() {
     load();
   }, [router]);
 
-  async function startSection(formId: string, section: "reading" | "listening") {
+  async function startSection(formId: string, section: "reading" | "listening" | "writing") {
     setError(null);
     const key = `${formId}:${section}`;
     setStarting(key);

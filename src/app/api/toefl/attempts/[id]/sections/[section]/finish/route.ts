@@ -1,12 +1,16 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { jsonError, requireToeflUser } from "@/lib/toefl/server/auth";
 import { createToeflServiceClient } from "@/lib/toefl/server/service-client";
 import { fetchBlueprint, resolveCurrentModule } from "@/lib/toefl/server/modules";
-import { aggregateRaw, applyRouteCap, rawToScaled, routeStage2, scaledToBand } from "@/lib/toefl/scoring";
-import type { ToeflSection } from "@/lib/toefl/types";
+import { gradeWritingResponse } from "@/lib/toefl/server/ai-grading";
+import { aggregateRaw, aiRubricToPoints, applyRouteCap, rawToScaled, routeStage2, scaledToBand } from "@/lib/toefl/scoring";
+import type { AcademicDiscussionPayload, ToeflSection, WriteAnEmailPayload } from "@/lib/toefl/types";
 
 // reading·listening만 Stage1→Stage2 적응형 구조다(§8: "Reading/Listening에만 적용").
-// speaking/writing은 블루프린트에 stage2 행이 아예 없어서(단일 stage1/base) 이 라우팅 로직이 안 맞는다.
+// writing(그리고 나중에 speaking)은 블루프린트에 stage2 행이 아예 없어서(단일 stage1/base) 이
+// 라우팅 로직이 안 맞는다 — 아래에서 완전히 다른 분기(단일 종료)로 처리한다.
 const ADAPTIVE_SECTIONS: ToeflSection[] = ["reading", "listening"];
+const SUPPORTED_SECTIONS: ToeflSection[] = ["reading", "listening", "writing"];
 
 // 영역 종료 → 라우팅 or 다음 영역. docs/toefl-spec.md §8, §9, §11.
 // 두 단계 중 하나로 동작한다 (routed_to로 판정):
@@ -22,8 +26,8 @@ export async function POST(
   const auth = await requireToeflUser(req);
   if (!auth.ok) return jsonError(auth.status, auth.message);
   const { id: attemptId, section: sectionParam } = await params;
-  if (!ADAPTIVE_SECTIONS.includes(sectionParam as ToeflSection)) {
-    return jsonError(400, "Reading/Listening 영역만 아직 지원합니다.");
+  if (!SUPPORTED_SECTIONS.includes(sectionParam as ToeflSection)) {
+    return jsonError(400, "Reading/Listening/Writing 영역만 아직 지원합니다.");
   }
   const section = sectionParam as ToeflSection;
   const { client } = auth;
@@ -63,6 +67,10 @@ export async function POST(
   if (!form) return jsonError(500, "시험 폼 정보를 찾을 수 없습니다.");
 
   const service = createToeflServiceClient();
+
+  if (!ADAPTIVE_SECTIONS.includes(section)) {
+    return finishNonAdaptiveSection({ client, service, attempt, section, sectionAttempt, blueprintVersion: form.blueprint_version });
+  }
 
   if (!sectionAttempt.routed_to) {
     // ── stage1 종료: 라우팅 ──
@@ -151,4 +159,111 @@ export async function POST(
   if (finishErr) return jsonError(500, `채점 저장에 실패했습니다: ${finishErr.message}`);
 
   return Response.json({ ok: true, done: true, raw_score: totalRaw, scaled_score: scaled, band });
+}
+
+// ── writing(그리고 나중에 speaking) 같은 비적응형 단일 모듈 섹션 ──
+// stage1→stage2 라우팅이 없어 한 번의 finish 호출로 바로 끝난다. ai_rubric 문항(write_an_email/
+// academic_discussion)은 여기서 AI 채점을 실행한 뒤 그 결과(overall_band)를 aiRubricToPoints로
+// points_earned로 바꿔서, 자동채점 문항과 동일한 aggregateRaw→rawToScaled→scaledToBand
+// 파이프라인에 그대로 태운다. AI 채점이 실패해도(§12 "채점 실패가 리포트 전체를 막지 않는다")
+// warnings에만 담고 나머지 처리는 계속한다 — 실패한 문항은 0점으로 남는다.
+async function finishNonAdaptiveSection(params: {
+  client: SupabaseClient;
+  service: SupabaseClient;
+  attempt: { id: string; form_id: string };
+  section: ToeflSection;
+  sectionAttempt: { id: string };
+  blueprintVersion: string;
+}) {
+  const { client, service, attempt, section, sectionAttempt, blueprintVersion } = params;
+
+  const module = await resolveCurrentModule(service, attempt.form_id, section, null);
+  if (!module) return jsonError(500, "모듈을 찾을 수 없습니다.");
+
+  const { data: items } = await service
+    .from("toefl_item")
+    .select("id, task_type, scoring_mode, points, prompt, payload")
+    .eq("module_id", module.id);
+  const itemList = items ?? [];
+  const itemIds = itemList.map((i) => i.id);
+
+  const { data: responses } = itemIds.length
+    ? await client
+        .from("toefl_response")
+        .select("id, item_id, answer")
+        .eq("attempt_id", attempt.id)
+        .in("item_id", itemIds)
+    : { data: [] as { id: string; item_id: string; answer: unknown }[] };
+  const responseByItem = new Map((responses ?? []).map((r) => [r.item_id, r]));
+
+  const warnings: string[] = [];
+
+  for (const item of itemList) {
+    if (item.scoring_mode !== "ai_rubric") continue;
+    const response = responseByItem.get(item.id);
+    if (!response) continue; // 미응답 — 0점 그대로 둔다
+
+    const { data: existingScore } = await service
+      .from("toefl_ai_score")
+      .select("id")
+      .eq("response_id", response.id)
+      .maybeSingle();
+    if (existingScore) continue; // 이미 채점됨(재호출 idempotent)
+
+    const answerText = ((response.answer as { text?: string } | null)?.text ?? "").trim();
+    if (!answerText) continue;
+
+    const result = await gradeWritingResponse({
+      taskType: item.task_type as "write_an_email" | "academic_discussion",
+      prompt: item.prompt,
+      payload: item.payload as WriteAnEmailPayload | AcademicDiscussionPayload,
+      responseText: answerText,
+    });
+
+    if (!result.ok) {
+      warnings.push(`${item.task_type} 채점 실패: ${result.message}`);
+      continue;
+    }
+
+    const points = aiRubricToPoints(result.rubric.overall_band, Number(item.points));
+
+    await service.from("toefl_ai_score").insert({
+      response_id: response.id,
+      model: "gemini-flash-latest",
+      rubric: result.rubric,
+      overall: result.rubric.overall_band,
+      feedback_ko: result.rubric.feedback_ko,
+      raw_output: result.rubric,
+    });
+    await service.from("toefl_response").update({ points_earned: points }).eq("id", response.id);
+  }
+
+  const { data: finalResponses } = itemIds.length
+    ? await client.from("toefl_response").select("points_earned").eq("attempt_id", attempt.id).in("item_id", itemIds)
+    : { data: [] as { points_earned: number | null }[] };
+
+  const totalRaw = aggregateRaw(finalResponses ?? []);
+  const maxPoints = itemList.reduce((sum, i) => sum + Number(i.points), 0);
+  const rawPercent = maxPoints > 0 ? (totalRaw / maxPoints) * 100 : 0;
+
+  const { data: conversionRows } = await client
+    .from("toefl_scale_conversion")
+    .select("raw_min, raw_max, scaled")
+    .eq("version", blueprintVersion)
+    .eq("section", section)
+    .eq("route", "base");
+  if (!conversionRows || conversionRows.length === 0) {
+    return jsonError(500, "영역점수 변환표를 찾을 수 없습니다.");
+  }
+
+  const scaled = rawToScaled(rawPercent, conversionRows);
+  const band = scaledToBand(scaled);
+
+  const { error: finishErr } = await client
+    .from("toefl_section_attempt")
+    .update({ raw_score: totalRaw, scaled_score: scaled, band, finished_at: new Date().toISOString() })
+    .eq("id", sectionAttempt.id);
+  if (finishErr) return jsonError(500, `채점 저장에 실패했습니다: ${finishErr.message}`);
+
+  return Response.json({ ok: true, done: true, raw_score: totalRaw, scaled_score: scaled, band, warnings });
 }

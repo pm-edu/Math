@@ -7,3 +7,4 @@ export { routeStage2 } from "./routing";
 export { rawToScaled, scaledToBand, applyRouteCap } from "./scale";
 export type { ScaleConversionRow } from "./scale";
 export { round2 } from "./round";
+export { aiRubricToPoints } from "./ai-rubric";
