@@ -100,7 +100,7 @@ export default function StudentDetailPage() {
 
       const { data: target } = await supabase
         .from("profiles")
-        .select("id, name, email, role, created_at, class_id")
+        .select("id, name, email, role, created_at, class_id, grade_level")
         .eq("id", studentId)
         .maybeSingle();
       setStudent((target as Profile) ?? null);
@@ -167,6 +167,7 @@ export default function StudentDetailPage() {
         <p className="mt-2 text-sm text-[var(--secondary)]">
           {student?.email}
           {student?.role && ` · ${ROLE_LABELS[student.role as Role]}`}
+          {student?.grade_level && ` · ${student.grade_level}`}
           {className && ` · ${className}반`}
         </p>
 

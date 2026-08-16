@@ -10,6 +10,7 @@ import type { Profile, ClassRow } from "@/lib/profile";
 import { isStaff, canManageSite, canViewGrades, type Role } from "@/lib/roles";
 import { loadClasses, createClass, deleteClass, setClassTeacher, setStudentClass, loadStudentReports } from "@/lib/classes";
 import type { StudentReport } from "@/lib/classes";
+import { loadStudentCareStats, type StudentCareStats } from "@/lib/students";
 
 export default function ClassesPage() {
   const router = useRouter();
@@ -21,6 +22,11 @@ export default function ClassesPage() {
   const [classes, setClasses] = useState<ClassRow[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [reports, setReports] = useState<Map<string, StudentReport>>(new Map());
+  const [careStats, setCareStats] = useState<StudentCareStats>({
+    consultationsThisMonth: 0,
+    goalsTotal: 0,
+    goalsAchieved: 0,
+  });
   const [newName, setNewName] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
   const [addTarget, setAddTarget] = useState<Record<string, string>>({});
@@ -29,13 +35,14 @@ export default function ClassesPage() {
     const supabase = createClient();
     const [classList, { data: profileRows }] = await Promise.all([
       loadClasses(),
-      supabase.from("profiles").select("id, name, email, role, created_at, class_id").order("name"),
+      supabase.from("profiles").select("id, name, email, role, created_at, class_id, grade_level").order("name"),
     ]);
     setClasses(classList);
     const allProfiles = (profileRows ?? []) as Profile[];
     setProfiles(allProfiles);
     const studentIds = allProfiles.filter((p) => p.role === "student").map((p) => p.id);
     setReports(await loadStudentReports(studentIds));
+    setCareStats(await loadStudentCareStats(studentIds));
   }, []);
 
   useEffect(() => {
@@ -146,7 +153,7 @@ export default function ClassesPage() {
         {manage && students.length > 0 && (
           <>
             <h2 className="mt-8 text-lg font-medium text-[var(--foreground)]">사이트 전체 현황</h2>
-            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-4">
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-6">
               <div className="rounded-2xl border border-[var(--border-c)] bg-white p-5">
                 <p className="text-xs text-[var(--secondary)]">전체 학생</p>
                 <p className="mt-1 text-2xl font-semibold text-[var(--foreground)]">{students.length}명</p>
@@ -178,6 +185,63 @@ export default function ClassesPage() {
                   })()}
                 </p>
               </div>
+              <div className="rounded-2xl border border-[var(--border-c)] bg-white p-5">
+                <p className="text-xs text-[var(--secondary)]">이번달 상담 건수</p>
+                <p className="mt-1 text-2xl font-semibold text-[var(--foreground)]">
+                  {careStats.consultationsThisMonth}건
+                </p>
+              </div>
+              <div className="rounded-2xl border border-[var(--border-c)] bg-white p-5">
+                <p className="text-xs text-[var(--secondary)]">목표 달성률</p>
+                <p className="mt-1 text-2xl font-semibold text-[var(--foreground)]">
+                  {careStats.goalsTotal > 0
+                    ? `${Math.round((careStats.goalsAchieved / careStats.goalsTotal) * 100)}%`
+                    : "-"}
+                </p>
+              </div>
+            </div>
+
+            <h2 className="mt-8 text-lg font-medium text-[var(--foreground)]">과정별 현황</h2>
+            <div className="mt-3 overflow-x-auto rounded-2xl border border-[var(--border-c)] bg-white">
+              <table className="w-full min-w-[560px] text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--border-c)] text-left text-[var(--secondary)]">
+                    <th className="px-5 py-3 font-medium">과정</th>
+                    <th className="px-5 py-3 font-medium">학생 수</th>
+                    <th className="px-5 py-3 font-medium">평균 단어 마스터리</th>
+                    <th className="px-5 py-3 font-medium">문제지 제출률</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(
+                    students.reduce<Record<string, Profile[]>>((groups, s) => {
+                      const key = s.grade_level ?? "미지정";
+                      (groups[key] ??= []).push(s);
+                      return groups;
+                    }, {})
+                  ).map(([gradeLevel, group]) => {
+                    const assigned = group.reduce((sum, s) => sum + (reports.get(s.id)?.worksheetsAssigned ?? 0), 0);
+                    const submitted = group.reduce((sum, s) => sum + (reports.get(s.id)?.worksheetsSubmitted ?? 0), 0);
+                    return (
+                      <tr key={gradeLevel} className="border-b border-[var(--border-c)] last:border-0">
+                        <td className="px-5 py-3 text-[var(--foreground)]">{gradeLevel}</td>
+                        <td className="px-5 py-3 text-[var(--foreground)]">{group.length}명</td>
+                        <td className="px-5 py-3 text-[var(--foreground)]">
+                          {Math.round(
+                            (group.reduce((sum, s) => sum + (reports.get(s.id)?.wordAvgMastery ?? 0), 0) /
+                              group.length) *
+                              100
+                          )}
+                          %
+                        </td>
+                        <td className="px-5 py-3 text-[var(--foreground)]">
+                          {assigned > 0 ? `${Math.round((submitted / assigned) * 100)}%` : "-"}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </>
         )}

@@ -35,6 +35,18 @@ export async function setStudentClass(studentId: string, classId: string | null)
   return { error: error?.message ?? null };
 }
 
+export async function setStudentGradeLevel(
+  studentId: string,
+  gradeLevel: string | null
+): Promise<{ error: string | null }> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("set_student_grade_level", {
+    target_id: studentId,
+    new_grade_level: gradeLevel,
+  });
+  return { error: error?.message ?? null };
+}
+
 export type StudentReport = {
   wordUnitsAttempted: number;
   wordUnitsPassed: number;

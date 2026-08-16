@@ -19,7 +19,8 @@ import {
   ROLE_LABELS,
   type Role,
 } from "@/lib/roles";
-import { loadClasses, setStudentClass } from "@/lib/classes";
+import { loadClasses, setStudentClass, setStudentGradeLevel } from "@/lib/classes";
+import type { Category } from "@/lib/categories";
 import { useSubject, subjectLabel } from "@/lib/subject";
 import { useLang } from "@/lib/i18n";
 import { useAdminListQuery, type FilterFieldDef, type SortOptionDef } from "@/lib/admin/useAdminListQuery";
@@ -53,6 +54,7 @@ export default function AdminPage() {
   const [purchases, setPurchases] = useState<PurchaseRow[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [classes, setClasses] = useState<ClassRow[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
   const [bulkClassTarget, setBulkClassTarget] = useState("");
 
@@ -68,17 +70,19 @@ export default function AdminPage() {
   // 학생 목록 자체는 list(profiles)가 담당. 구매내역/문의/반 목록은 별도로 가볍게 불러온다.
   const loadSideData = useCallback(async () => {
     const supabase = createClient();
-    const [purchaseResult, contactResult, classList] = await Promise.all([
+    const [purchaseResult, contactResult, classList, categoryResult] = await Promise.all([
       supabase.from("purchases").select("user_id, status"),
       supabase
         .from("contacts")
         .select("id, name, email, message, created_at")
         .order("created_at", { ascending: false }),
       loadClasses(),
+      supabase.from("categories").select("id, name, name_en, position").order("position"),
     ]);
     setPurchases((purchaseResult.data ?? []) as PurchaseRow[]);
     setContacts((contactResult.data ?? []) as Contact[]);
     setClasses(classList);
+    setCategories((categoryResult.data ?? []) as Category[]);
   }, []);
 
   useEffect(() => {
@@ -155,6 +159,15 @@ export default function AdminPage() {
       return;
     }
     setNotice(`${target.name ?? target.email} 님을 ${ROLE_LABELS[newRole as Role]}(으)로 변경했습니다.`);
+    list.reload();
+  }
+
+  async function handleSetGradeLevel(student: Profile, gradeLevel: string) {
+    const { error } = await setStudentGradeLevel(student.id, gradeLevel || null);
+    if (error) {
+      setNotice(`과정 지정 실패: ${error}`);
+      return;
+    }
     list.reload();
   }
 
@@ -439,6 +452,7 @@ export default function AdminPage() {
                       <th className="px-5 py-3 font-medium">이름</th>
                       <th className="px-5 py-3 font-medium">이메일</th>
                       <th className="px-5 py-3 font-medium">권한</th>
+                      <th className="px-5 py-3 font-medium">과정</th>
                       <th className="px-5 py-3 font-medium">반</th>
                       <th className="px-5 py-3 font-medium">수강 강좌</th>
                       <th className="px-5 py-3 font-medium">가입일</th>
@@ -449,7 +463,7 @@ export default function AdminPage() {
                   <tbody>
                     {list.rows.length === 0 ? (
                       <tr>
-                        <td colSpan={9} className="px-5 py-10 text-center text-[var(--secondary)]">
+                        <td colSpan={10} className="px-5 py-10 text-center text-[var(--secondary)]">
                           조건에 맞는 가입자가 없습니다.
                         </td>
                       </tr>
@@ -488,6 +502,26 @@ export default function AdminPage() {
                               ) : (
                                 <span className="rounded-full bg-[var(--pink-light)] px-3 py-1 text-xs font-medium text-[var(--secondary)]">
                                   {ROLE_LABELS[student.role]}
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-5 py-4">
+                              {canManageSite(myRole) && (student.role === "student" || student.role === "assistant") ? (
+                                <select
+                                  value={student.grade_level ?? ""}
+                                  onChange={(e) => handleSetGradeLevel(student, e.target.value)}
+                                  className="rounded-lg border border-[var(--border-c)] bg-white px-2 py-1 text-xs"
+                                >
+                                  <option value="">미지정</option>
+                                  {categories.map((c) => (
+                                    <option key={c.id} value={c.name}>
+                                      {c.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <span className="text-xs text-[var(--secondary)]">
+                                  {student.grade_level ?? "-"}
                                 </span>
                               )}
                             </td>

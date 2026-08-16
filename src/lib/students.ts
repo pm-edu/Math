@@ -55,6 +55,38 @@ export type StudentNote = {
   created_at: string;
 };
 
+export type StudentCareStats = {
+  consultationsThisMonth: number;
+  goalsTotal: number;
+  goalsAchieved: number;
+};
+
+/** 사이트 전체 현황 카드용 — 이번달 상담 건수, 목표 달성률. */
+export async function loadStudentCareStats(userIds: string[]): Promise<StudentCareStats> {
+  const empty = { consultationsThisMonth: 0, goalsTotal: 0, goalsAchieved: 0 };
+  if (userIds.length === 0) return empty;
+
+  const supabase = createClient();
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+
+  const [{ data: consultations }, { data: goals }] = await Promise.all([
+    supabase
+      .from("consultations")
+      .select("student_id")
+      .in("student_id", userIds)
+      .gte("held_at", monthStart.toISOString()),
+    supabase.from("student_goals").select("achieved").in("student_id", userIds),
+  ]);
+
+  return {
+    consultationsThisMonth: consultations?.length ?? 0,
+    goalsTotal: goals?.length ?? 0,
+    goalsAchieved: (goals ?? []).filter((g) => g.achieved).length,
+  };
+}
+
 export async function loadGuardians(studentId: string): Promise<Guardian[]> {
   const { data } = await createClient()
     .from("student_guardians")

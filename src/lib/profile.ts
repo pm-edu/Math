@@ -7,6 +7,7 @@ export type Profile = {
   role: Role;
   created_at: string;
   class_id: string | null;
+  grade_level: string | null;
 };
 
 export type ClassRow = {
