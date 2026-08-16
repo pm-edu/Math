@@ -55,7 +55,7 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--border-c)] bg-[var(--background)]/90 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+      <div className="mx-auto flex max-w-6xl items-center gap-10 px-6 py-4">
         <Link href="/" className="text-lg font-medium text-[var(--foreground)]">
           {site.name}
         </Link>
@@ -72,7 +72,7 @@ export default function Header() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="ml-auto flex items-center gap-3">
           <div className="flex items-center rounded-full border border-[var(--border-c)] bg-white p-0.5 text-xs font-medium">
             {SUBJECTS.map((s) =>
               s === subject ? (
@@ -126,12 +126,6 @@ export default function Header() {
               {t("logout")}
             </button>
           )}
-          <Link
-            href="/courses"
-            className="rounded-full bg-[var(--pink)] px-5 py-2 text-sm font-medium text-[var(--pink-dark)] transition-transform hover:scale-[1.03]"
-          >
-            {t("viewCourses")}
-          </Link>
           <button
             type="button"
             onClick={() => setMobileOpen((v) => !v)}

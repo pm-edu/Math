@@ -16,7 +16,6 @@ const DICT = {
   admin: { ko: "관리", en: "Admin" },
   mypage: { ko: "마이페이지", en: "My Page" },
   login: { ko: "로그인", en: "Log in" },
-  viewCourses: { ko: "강좌 보기", en: "Browse" },
   quickLinks: { ko: "바로가기", en: "Links" },
   contactTitle: { ko: "문의", en: "Contact" },
   freeSample: { ko: "무료 샘플 보기", en: "Free Samples" },
