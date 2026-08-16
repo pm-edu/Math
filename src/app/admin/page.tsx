@@ -10,6 +10,7 @@ import type { Contact, Profile, ClassRow } from "@/lib/profile";
 import {
   isStaff,
   canManageSite,
+  canManageMaterials,
   canManageStudents,
   canViewGrades,
   canAssignRoles,
@@ -19,6 +20,8 @@ import {
   type Role,
 } from "@/lib/roles";
 import { loadClasses, setStudentClass } from "@/lib/classes";
+import { useSubject, subjectLabel } from "@/lib/subject";
+import { useLang } from "@/lib/i18n";
 import { useAdminListQuery, type FilterFieldDef, type SortOptionDef } from "@/lib/admin/useAdminListQuery";
 import type { StatusCountOption } from "@/lib/admin/list-query";
 import { SummaryCountBar, FilterBar, SortSelect, BulkActionBar, Pagination, SelectAllCheckbox } from "@/components/admin/ManagedList";
@@ -42,6 +45,8 @@ const SORT_OPTIONS: SortOptionDef[] = [
 
 export default function AdminPage() {
   const router = useRouter();
+  const { subject } = useSubject();
+  const { lang } = useLang();
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [myId, setMyId] = useState<string | null>(null);
   const [myRole, setMyRole] = useState<Role | null>(null);
@@ -243,10 +248,13 @@ export default function AdminPage() {
             {myRole && (
               <p className="mt-1 text-sm text-[var(--secondary)]">
                 내 권한: <span className="font-medium text-[var(--foreground)]">{ROLE_LABELS[myRole]}</span>
+                {" · "}지금 접속한 사이트:{" "}
+                <span className="font-medium text-[var(--foreground)]">{subjectLabel(subject, lang)}</span>
               </p>
             )}
           </div>
           <div className="flex flex-wrap gap-2">
+            {/* 자료 관리 — 문제은행·문제지는 두 과목 공용(직접 과목별 필터링함), 나머지는 지금 접속한 과목 전용 */}
             <Link
               href="/admin/problems"
               className="rounded-full bg-[var(--mint)] px-5 py-2.5 text-sm font-medium text-[var(--mint-dark)]"
@@ -259,24 +267,52 @@ export default function AdminPage() {
             >
               문제지 · 배포
             </Link>
-            <Link
-              href="/admin/sat"
-              className="rounded-full bg-[var(--pink)] px-5 py-2.5 text-sm font-medium text-[var(--pink-dark)]"
-            >
-              영어 SAT 생성
-            </Link>
-            <Link
-              href="/admin/words"
-              className="rounded-full bg-[var(--pink)] px-5 py-2.5 text-sm font-medium text-[var(--pink-dark)]"
-            >
-              영어 단어
-            </Link>
-            <Link
-              href="/admin/toefl-audio"
-              className="rounded-full bg-[var(--pink)] px-5 py-2.5 text-sm font-medium text-[var(--pink-dark)]"
-            >
-              TOEFL 데모 오디오 생성
-            </Link>
+            {canManageMaterials(myRole) && (
+              <>
+                <Link
+                  href="/admin/assemble"
+                  className="rounded-full bg-[var(--mint)] px-5 py-2.5 text-sm font-medium text-[var(--mint-dark)]"
+                >
+                  자동 출제
+                </Link>
+                <Link
+                  href="/admin/extract"
+                  className="rounded-full bg-[var(--mint)] px-5 py-2.5 text-sm font-medium text-[var(--mint-dark)]"
+                >
+                  문제 추출
+                </Link>
+              </>
+            )}
+            {subject === "math" && canManageMaterials(myRole) && (
+              <Link
+                href="/admin/generate"
+                className="rounded-full bg-[var(--mint)] px-5 py-2.5 text-sm font-medium text-[var(--mint-dark)]"
+              >
+                AI 문제 생성
+              </Link>
+            )}
+            {subject === "english" && (
+              <>
+                <Link
+                  href="/admin/sat"
+                  className="rounded-full bg-[var(--pink)] px-5 py-2.5 text-sm font-medium text-[var(--pink-dark)]"
+                >
+                  영어 SAT 생성
+                </Link>
+                <Link
+                  href="/admin/words"
+                  className="rounded-full bg-[var(--pink)] px-5 py-2.5 text-sm font-medium text-[var(--pink-dark)]"
+                >
+                  영어 단어
+                </Link>
+                <Link
+                  href="/admin/toefl-audio"
+                  className="rounded-full bg-[var(--pink)] px-5 py-2.5 text-sm font-medium text-[var(--pink-dark)]"
+                >
+                  TOEFL 데모 오디오 생성
+                </Link>
+              </>
+            )}
             {canViewGrades(myRole) && (
               <Link
                 href="/admin/classes"
@@ -285,7 +321,7 @@ export default function AdminPage() {
                 반 관리 · 리포트
               </Link>
             )}
-            {canManageSite(myRole) && (
+            {canManageSite(myRole) && subject === "math" && (
               <>
                 <Link
                   href="/admin/enrollments"
@@ -305,6 +341,16 @@ export default function AdminPage() {
                 >
                   강의 등록
                 </Link>
+                <Link
+                  href="/admin/categories"
+                  className="rounded-full bg-[var(--mint)] px-5 py-2.5 text-sm font-medium text-[var(--mint-dark)]"
+                >
+                  분류 관리
+                </Link>
+              </>
+            )}
+            {canManageSite(myRole) && (
+              <>
                 <Link
                   href="/admin/mail"
                   className="rounded-full bg-[var(--mint)] px-5 py-2.5 text-sm font-medium text-[var(--mint-dark)]"
