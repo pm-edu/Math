@@ -58,5 +58,9 @@ export async function logQuestionAttempts(
     source_id: worksheetId,
   }));
 
-  await supabase.from("question_attempts").insert(rows);
+  const { error } = await supabase.from("question_attempts").insert(rows);
+  if (error) {
+    // 메인 제출 흐름은 막지 않되, 콘솔에는 남겨서 나중에 원인을 알 수 있게 한다.
+    console.error("question_attempts 기록 실패:", error.message, error);
+  }
 }
