@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { site } from "@/lib/site";
 import { useLang } from "@/lib/i18n";
@@ -11,6 +12,7 @@ import { useSubject, subjectLabel, SUBJECTS, SITE_URL } from "@/lib/subject";
 export default function Header() {
   const { lang, setLang, t } = useLang();
   const { subject } = useSubject();
+  const pathname = usePathname();
   // null = 아직 확인 중. 확인 전에는 로그인/마이페이지 중 어느 쪽도 보여주지 않아
   // 화면이 깜빡이지 않게 한다.
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
@@ -85,7 +87,7 @@ export default function Header() {
               ) : (
                 <a
                   key={s}
-                  href={SITE_URL[s]}
+                  href={`${SITE_URL[s]}${pathname}`}
                   className="rounded-full px-3 py-1 text-[var(--secondary)] transition-colors hover:text-[var(--foreground)]"
                 >
                   {subjectLabel(s, lang)}
