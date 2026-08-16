@@ -400,6 +400,14 @@ export default function AdminPage() {
                     반 관리 · 리포트
                   </Link>
                 )}
+                {canViewGrades(myRole) && (
+                  <Link
+                    href="/admin/attendance"
+                    className="rounded-full bg-[var(--mint)] px-5 py-2.5 text-sm font-medium text-[var(--mint-dark)]"
+                  >
+                    출결 체크
+                  </Link>
+                )}
                 {canManageSite(myRole) && (
                   <>
                     <Link
