@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ProblemBody, MathText } from "@/components/ProblemBody";
 import type { Problem } from "@/lib/problems";
 import { normAnswer } from "@/lib/grading";
+import { logQuestionAttempts } from "@/lib/question-attempts";
 
 type Submission = {
   problem_id: string;
@@ -40,6 +41,7 @@ export default function WorksheetDetailPage({
   const [submitted, setSubmitted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [startedAt, setStartedAt] = useState<number | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -82,6 +84,8 @@ export default function WorksheetDetailPage({
         setAnswers(a);
         setResults(r);
         setSubmitted(true);
+      } else {
+        setStartedAt(Date.now());
       }
       setLoading(false);
     }
@@ -121,12 +125,21 @@ export default function WorksheetDetailPage({
     setResults(r);
     setSubmitted(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
+
+    // 문항별 시도 이력 기록(통계용, 실패해도 위 제출 결과에는 영향 없음).
+    // elapsed_seconds는 문제별 정밀 시간이 아니라 이 학습지를 연 뒤 제출까지 걸린 전체 시간이다.
+    const graded = problems
+      .map((p) => ({ problem: p, isCorrect: r[p.id] }))
+      .filter((g): g is { problem: Problem; isCorrect: boolean } => g.isCorrect !== null && g.isCorrect !== undefined);
+    const elapsedSeconds = startedAt ? Math.round((Date.now() - startedAt) / 1000) : 0;
+    logQuestionAttempts(userId, id, graded, elapsedSeconds).catch(() => {});
   }
 
   function retry() {
     if (!confirm("다시 풀면 이전 제출 결과가 지워집니다. 계속할까요?")) return;
     setSubmitted(false);
     setResults({});
+    setStartedAt(Date.now());
   }
 
   const gradable = problems.filter((p) => results[p.id] !== null && results[p.id] !== undefined);

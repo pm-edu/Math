@@ -190,6 +190,12 @@ drop policy if exists "staff manage curriculum_units" on curriculum_units;
 create policy "staff manage curriculum_units" on curriculum_units
   for all using (is_staff()) with check (is_staff());
 
+-- 문항 풀이 시 학생 클라이언트가 단원을 조회해 question_attempts.unit_id 를 채워야 해서 열람은 로그인 전원 허용.
+-- 민감정보 아님(단원명뿐, 정답/해설 없음).
+drop policy if exists "authenticated view curriculum_units" on curriculum_units;
+create policy "authenticated view curriculum_units" on curriculum_units
+  for select using (auth.role() = 'authenticated');
+
 drop policy if exists "staff manage question_attempts" on question_attempts;
 create policy "staff manage question_attempts" on question_attempts
   for all using (is_staff()) with check (is_staff());
