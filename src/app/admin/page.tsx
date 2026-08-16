@@ -442,13 +442,14 @@ export default function AdminPage() {
                       <th className="px-5 py-3 font-medium">반</th>
                       <th className="px-5 py-3 font-medium">수강 강좌</th>
                       <th className="px-5 py-3 font-medium">가입일</th>
+                      <th className="px-5 py-3 font-medium"></th>
                       <th className="px-5 py-3 font-medium">관리</th>
                     </tr>
                   </thead>
                   <tbody>
                     {list.rows.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="px-5 py-10 text-center text-[var(--secondary)]">
+                        <td colSpan={9} className="px-5 py-10 text-center text-[var(--secondary)]">
                           조건에 맞는 가입자가 없습니다.
                         </td>
                       </tr>
@@ -513,6 +514,14 @@ export default function AdminPage() {
                             <td className="px-5 py-4 text-[var(--foreground)]">{purchaseCount(student.id)}개</td>
                             <td className="px-5 py-4 text-[var(--secondary)]">
                               {new Date(student.created_at).toLocaleDateString("ko-KR")}
+                            </td>
+                            <td className="px-5 py-4">
+                              <Link
+                                href={`/admin/students/${student.id}`}
+                                className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]"
+                              >
+                                상세
+                              </Link>
                             </td>
                             <td className="px-5 py-4">
                               {canRemove(student) && (
