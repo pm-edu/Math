@@ -5,6 +5,7 @@
 // 입력된 언어 그대로 표시된다.
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { sharedCookieDomain } from "@/lib/cookie-domain";
 
 export type Lang = "ko" | "en";
 
@@ -202,8 +203,10 @@ export function LanguageProvider({
     setLangState(next);
     // <html lang> 을 즉시 바꿔 영문/한글 폰트 전환이 바로 반영되게 한다.
     document.documentElement.lang = next;
-    // 쿠키(서버가 읽음) + localStorage(안전망) 둘 다 저장
-    document.cookie = `lang=${next}; path=/; max-age=31536000; samesite=lax`;
+    // 쿠키(서버가 읽음) + localStorage(안전망) 둘 다 저장.
+    // 도메인을 지정해 pmedu4u.com/english.pmedu4u.com 두 사이트가 언어 설정을 공유한다.
+    const domain = sharedCookieDomain();
+    document.cookie = `lang=${next}; path=/; max-age=31536000; samesite=lax${domain ? `; domain=${domain}` : ""}`;
     window.localStorage.setItem("lang", next);
   }
 

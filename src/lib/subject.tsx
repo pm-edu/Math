@@ -1,10 +1,10 @@
 "use client";
 
-// 과목(수학/영어) 전환. 헤더의 [수학|영어] 탭으로 바꾸며,
-// 문제은행·문제지·학생 학습지가 선택한 과목만 보이도록 필터한다.
-// 언어 전환(i18n)과 같은 방식: 쿠키 + localStorage 저장.
+// 과목(수학/영어) 값을 화면에서 읽는다. 값 자체는 접속 도메인이 정한다
+// (src/middleware.ts가 subject 쿠키를 세팅, src/app/layout.tsx가 서버에서 읽어 Provider 초기값으로 전달).
+// 문제은행·문제지·학생 학습지가 선택한 과목만 보이도록 이 값으로 필터한다.
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext } from "react";
 import type { Lang } from "@/lib/i18n";
 
 export type Subject = "math" | "english";
@@ -26,15 +26,7 @@ export const SITE_URL: Record<Subject, string> = {
   english: "https://english.pmedu4u.com",
 };
 
-type SubjectContextValue = {
-  subject: Subject;
-  setSubject: (s: Subject) => void;
-};
-
-const SubjectContext = createContext<SubjectContextValue>({
-  subject: "math",
-  setSubject: () => {},
-});
+const SubjectContext = createContext<Subject>("math");
 
 export function SubjectProvider({
   children,
@@ -43,21 +35,9 @@ export function SubjectProvider({
   children: React.ReactNode;
   initialSubject?: Subject;
 }) {
-  const [subject, setSubjectState] = useState<Subject>(initialSubject);
-
-  function setSubject(next: Subject) {
-    setSubjectState(next);
-    document.cookie = `subject=${next}; path=/; max-age=31536000; samesite=lax`;
-    window.localStorage.setItem("subject", next);
-  }
-
-  return (
-    <SubjectContext.Provider value={{ subject, setSubject }}>
-      {children}
-    </SubjectContext.Provider>
-  );
+  return <SubjectContext.Provider value={initialSubject}>{children}</SubjectContext.Provider>;
 }
 
 export function useSubject() {
-  return useContext(SubjectContext);
+  return { subject: useContext(SubjectContext) };
 }
