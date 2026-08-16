@@ -35,6 +35,12 @@ export async function setStudentClass(studentId: string, classId: string | null)
   return { error: error?.message ?? null };
 }
 
+export async function setStudentUnpaid(studentId: string, unpaid: boolean): Promise<{ error: string | null }> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("set_student_unpaid", { target_id: studentId, new_value: unpaid });
+  return { error: error?.message ?? null };
+}
+
 export async function setStudentGradeLevel(
   studentId: string,
   gradeLevel: string | null

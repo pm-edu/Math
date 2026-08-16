@@ -19,7 +19,7 @@ import {
   ROLE_LABELS,
   type Role,
 } from "@/lib/roles";
-import { loadClasses, setStudentClass, setStudentGradeLevel } from "@/lib/classes";
+import { loadClasses, setStudentClass, setStudentGradeLevel, setStudentUnpaid } from "@/lib/classes";
 import type { Category } from "@/lib/categories";
 import { useSubject, subjectLabel } from "@/lib/subject";
 import { useLang } from "@/lib/i18n";
@@ -159,6 +159,15 @@ export default function AdminPage() {
       return;
     }
     setNotice(`${target.name ?? target.email} 님을 ${ROLE_LABELS[newRole as Role]}(으)로 변경했습니다.`);
+    list.reload();
+  }
+
+  async function handleToggleUnpaid(student: Profile) {
+    const { error } = await setStudentUnpaid(student.id, !student.unpaid);
+    if (error) {
+      setNotice(`미납 상태 변경 실패: ${error}`);
+      return;
+    }
     list.reload();
   }
 
@@ -456,6 +465,7 @@ export default function AdminPage() {
                       <th className="px-5 py-3 font-medium">반</th>
                       <th className="px-5 py-3 font-medium">수강 강좌</th>
                       <th className="px-5 py-3 font-medium">가입일</th>
+                      <th className="px-5 py-3 font-medium">미납</th>
                       <th className="px-5 py-3 font-medium"></th>
                       <th className="px-5 py-3 font-medium">관리</th>
                     </tr>
@@ -463,7 +473,7 @@ export default function AdminPage() {
                   <tbody>
                     {list.rows.length === 0 ? (
                       <tr>
-                        <td colSpan={10} className="px-5 py-10 text-center text-[var(--secondary)]">
+                        <td colSpan={11} className="px-5 py-10 text-center text-[var(--secondary)]">
                           조건에 맞는 가입자가 없습니다.
                         </td>
                       </tr>
@@ -475,7 +485,12 @@ export default function AdminPage() {
                           assignChoices.includes(student.role) &&
                           !(myRole === "admin" && (student.role === "owner" || student.role === "admin"));
                         return (
-                          <tr key={student.id} className="border-b border-[var(--border-c)] last:border-0">
+                          <tr
+                            key={student.id}
+                            className={`border-b border-[var(--border-c)] last:border-0 ${
+                              student.unpaid ? "bg-red-50" : ""
+                            }`}
+                          >
                             <td className="px-3 py-4">
                               <input
                                 type="checkbox"
@@ -548,6 +563,24 @@ export default function AdminPage() {
                             <td className="px-5 py-4 text-[var(--foreground)]">{purchaseCount(student.id)}개</td>
                             <td className="px-5 py-4 text-[var(--secondary)]">
                               {new Date(student.created_at).toLocaleDateString("ko-KR")}
+                            </td>
+                            <td className="px-5 py-4">
+                              {canManageSite(myRole) ? (
+                                <button
+                                  onClick={() => handleToggleUnpaid(student)}
+                                  className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                                    student.unpaid
+                                      ? "bg-red-100 text-red-700"
+                                      : "border border-[var(--border-c)] text-[var(--secondary)]"
+                                  }`}
+                                >
+                                  {student.unpaid ? "미납" : "완납"}
+                                </button>
+                              ) : (
+                                <span className="text-xs text-[var(--secondary)]">
+                                  {student.unpaid ? "미납" : "-"}
+                                </span>
+                              )}
                             </td>
                             <td className="px-5 py-4">
                               <Link

@@ -8,6 +8,7 @@ export type Profile = {
   created_at: string;
   class_id: string | null;
   grade_level: string | null;
+  unpaid: boolean;
 };
 
 export type ClassRow = {

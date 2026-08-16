@@ -6,7 +6,8 @@ import { useParams, useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/client";
-import { canManageStudents, ROLE_LABELS, type Role } from "@/lib/roles";
+import { canManageStudents, canManageSite, ROLE_LABELS, type Role } from "@/lib/roles";
+import { setStudentUnpaid } from "@/lib/classes";
 import type { Profile, ClassRow } from "@/lib/profile";
 import {
   loadGuardians,
@@ -53,6 +54,7 @@ export default function StudentDetailPage() {
   const studentId = params.id;
 
   const [allowed, setAllowed] = useState<boolean | null>(null);
+  const [myRole, setMyRole] = useState<Role | null>(null);
   const [student, setStudent] = useState<Profile | null>(null);
   const [className, setClassName] = useState<string | null>(null);
 
@@ -97,10 +99,11 @@ export default function StudentDetailPage() {
         return;
       }
       setAllowed(true);
+      setMyRole((me?.role ?? null) as Role | null);
 
       const { data: target } = await supabase
         .from("profiles")
-        .select("id, name, email, role, created_at, class_id, grade_level")
+        .select("id, name, email, role, created_at, class_id, grade_level, unpaid")
         .eq("id", studentId)
         .maybeSingle();
       setStudent((target as Profile) ?? null);
@@ -119,6 +122,14 @@ export default function StudentDetailPage() {
 
     init();
   }, [router, studentId, loadAll]);
+
+  async function handleToggleUnpaid() {
+    if (!student) return;
+    const { error } = await setStudentUnpaid(student.id, !student.unpaid);
+    if (error) return setError(error);
+    setStudent({ ...student, unpaid: !student.unpaid });
+    setMessage(student.unpaid ? "완납으로 표시했습니다." : "미납으로 표시했습니다.");
+  }
 
   if (allowed === null) {
     return (
@@ -161,9 +172,25 @@ export default function StudentDetailPage() {
           ← 학생 관리로
         </Link>
 
-        <h1 className="mt-4 text-3xl font-medium text-[var(--foreground)]">
-          {student?.name || "이름 없음"}
-        </h1>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <h1 className="text-3xl font-medium text-[var(--foreground)]">
+            {student?.name || "이름 없음"}
+          </h1>
+          {student?.unpaid && (
+            <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700">
+              미납
+            </span>
+          )}
+          {student && canManageSite(myRole) && (
+            <button
+              type="button"
+              onClick={handleToggleUnpaid}
+              className="rounded-full border border-[var(--border-c)] px-3 py-1 text-xs text-[var(--secondary)] hover:text-[var(--foreground)]"
+            >
+              {student.unpaid ? "완납으로 표시" : "미납으로 표시"}
+            </button>
+          )}
+        </div>
         <p className="mt-2 text-sm text-[var(--secondary)]">
           {student?.email}
           {student?.role && ` · ${ROLE_LABELS[student.role as Role]}`}
