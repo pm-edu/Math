@@ -1,19 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { site } from "@/lib/site";
 import { useLang } from "@/lib/i18n";
+import { useSubject, subjectLabel } from "@/lib/subject";
 import type { Course } from "@/lib/courses";
 
 export default function Hero({ featured }: { featured?: Course | null }) {
   const { lang, t } = useLang();
+  const { subject } = useSubject();
+  const subjectWord = subjectLabel(subject, lang);
 
-  const tagline = lang === "en" ? site.taglineEn : site.tagline;
+  const tagline =
+    lang === "en"
+      ? `From concepts to real exams,\nmaster ${subjectWord} in one place`
+      : `개념부터 실전까지,\n한번에 잡는 ${subjectWord}`;
   const taglineLines = tagline.split("\n");
   const subLines = (
     lang === "en"
-      ? site.heroSubEn
-      : `동영상 강의와 학습자료를 함께 제공하는 온라인 ${site.subject} 클래스.\n학년과 과정에 맞춘 커리큘럼으로 시작하세요.`
+      ? `Video lessons and study materials in one online ${subjectWord} class.\nStart with a curriculum built for your grade and course.`
+      : `동영상 강의와 학습자료를 함께 제공하는 온라인 ${subjectWord} 클래스.\n학년과 과정에 맞춘 커리큘럼으로 시작하세요.`
   ).split("\n");
 
   return (
@@ -21,7 +26,9 @@ export default function Hero({ featured }: { featured?: Course | null }) {
       <div className="grid items-center gap-12 md:grid-cols-2">
         <div>
           <span className="inline-block rounded-full bg-[var(--mint)] px-4 py-1.5 text-xs font-medium text-[var(--mint-dark)]">
-            {lang === "en" ? site.badgeEn : site.badge}
+            {lang === "en"
+              ? `Elementary · Middle · High · IB ${subjectWord}`
+              : `초 · 중 · 고 · IB ${subjectWord} 전문`}
           </span>
 
           <h1 className="mt-5 text-4xl font-medium leading-tight text-[var(--foreground)] md:text-5xl">

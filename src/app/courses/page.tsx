@@ -4,12 +4,14 @@ import Footer from "@/components/Footer";
 import Price from "@/components/Price";
 import { T, CategoryLabel, L } from "@/components/T";
 import { getCourses } from "@/lib/courses";
+import { getSubject } from "@/lib/subject-server";
 
 // DB에서 강좌를 수정하면 최대 1분 뒤 사이트에 반영된다.
 export const revalidate = 60;
 
 export default async function CoursesPage() {
-  const courses = await getCourses();
+  const subject = await getSubject();
+  const courses = await getCourses(subject);
 
   return (
     <>

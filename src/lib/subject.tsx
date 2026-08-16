@@ -20,6 +20,12 @@ export function subjectLabel(subject: Subject, lang: Lang): string {
   return LABEL[subject][lang];
 }
 
+/** 과목별 사이트 주소. 헤더/푸터의 "다른 과목 사이트로" 링크가 쓴다. */
+export const SITE_URL: Record<Subject, string> = {
+  math: "https://pmedu4u.com",
+  english: "https://english.pmedu4u.com",
+};
+
 type SubjectContextValue = {
   subject: Subject;
   setSubject: (s: Subject) => void;

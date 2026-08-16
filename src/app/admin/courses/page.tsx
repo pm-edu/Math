@@ -7,6 +7,8 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/client";
 import type { Category } from "@/lib/categories";
+import { useSubject, subjectLabel } from "@/lib/subject";
+import { useLang } from "@/lib/i18n";
 
 // 주소 이름 자동 생성용 분류 접두어 (알려진 분류만. 없으면 course 로 대체)
 const CATEGORY_SLUG: Record<string, string> = {
@@ -19,6 +21,7 @@ const CATEGORY_SLUG: Record<string, string> = {
 type CourseRow = {
   id: string;
   slug: string;
+  subject: string;
   category: string;
   title: string;
   title_en: string | null;
@@ -50,6 +53,8 @@ const EMPTY_FORM = {
 
 export default function AdminCoursesPage() {
   const router = useRouter();
+  const { subject } = useSubject();
+  const { lang } = useLang();
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [courses, setCourses] = useState<CourseRow[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -64,11 +69,14 @@ export default function AdminCoursesPage() {
   const loadCourses = useCallback(async () => {
     const { data } = await createClient()
       .from("courses")
-      .select("id, slug, category, title, title_en, description, description_en, price, price_inr, includes, includes_en")
+      .select(
+        "id, slug, subject, category, title, title_en, description, description_en, price, price_inr, includes, includes_en"
+      )
+      .eq("subject", subject)
       .order("category")
       .order("price");
     setCourses((data ?? []) as CourseRow[]);
-  }, []);
+  }, [subject]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -145,6 +153,7 @@ export default function AdminCoursesPage() {
       title: form.title.trim(),
       title_en: form.title_en.trim() || null,
       slug,
+      subject,
       category,
       price: Number(form.price),
       price_inr: form.price_inr.trim() ? Number(form.price_inr) : null,
@@ -282,7 +291,9 @@ export default function AdminCoursesPage() {
 
         <h1 className="mt-4 text-3xl font-medium text-[var(--foreground)]">강좌 관리</h1>
         <p className="mt-2 text-[var(--secondary)]">
-          강좌를 만들면 사이트 강좌 목록에 1분 안에 나타납니다.
+          강좌를 만들면 사이트 강좌 목록에 1분 안에 나타납니다. 지금 접속한 도메인 기준으로{" "}
+          <span className="font-medium text-[var(--foreground)]">{subjectLabel(subject, lang)}</span>{" "}
+          강좌만 보이고 만들어집니다.
         </p>
 
         <form

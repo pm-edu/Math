@@ -11,8 +11,9 @@ import { getCourse, getCourses } from "@/lib/courses";
 export const revalidate = 60;
 
 export async function generateStaticParams() {
-  const courses = await getCourses();
-  return courses.map((course) => ({ slug: course.slug }));
+  // 두 과목 강좌 주소를 모두 미리 만들어 둔다 (실제 접근 도메인과 무관하게).
+  const [math, english] = await Promise.all([getCourses("math"), getCourses("english")]);
+  return [...math, ...english].map((course) => ({ slug: course.slug }));
 }
 
 export default async function CourseDetailPage({

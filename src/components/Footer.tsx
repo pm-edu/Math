@@ -3,9 +3,17 @@
 import Link from "next/link";
 import { site } from "@/lib/site";
 import { useLang } from "@/lib/i18n";
+import { useSubject, subjectLabel, SUBJECTS, SITE_URL } from "@/lib/subject";
 
 export default function Footer() {
   const { lang, t } = useLang();
+  const { subject } = useSubject();
+  const subjectWord = subjectLabel(subject, lang);
+  const blurb =
+    lang === "en"
+      ? `Online ${subjectWord} classes · Elementary to IB`
+      : `초 · 중 · 고 · IB ${subjectWord} 온라인 클래스`;
+  const otherSubject = SUBJECTS.find((s) => s !== subject)!;
 
   return (
     <footer className="border-t border-[var(--border-c)] bg-[var(--background)]">
@@ -13,9 +21,7 @@ export default function Footer() {
         <div className="grid gap-8 md:grid-cols-3">
           <div>
             <p className="text-lg font-medium text-[var(--foreground)]">{site.name}</p>
-            <p className="mt-2 text-sm text-[var(--secondary)]">
-              {lang === "en" ? site.blurbEn : site.blurb}
-            </p>
+            <p className="mt-2 text-sm text-[var(--secondary)]">{blurb}</p>
           </div>
 
           <div>
@@ -28,13 +34,11 @@ export default function Footer() {
                   </Link>
                 </li>
               ))}
-              {site.partner && (
-                <li>
-                  <a href={site.partner.url} className="hover:text-[var(--foreground)]">
-                    {site.partner.label}
-                  </a>
-                </li>
-              )}
+              <li>
+                <a href={SITE_URL[otherSubject]} className="hover:text-[var(--foreground)]">
+                  {subjectLabel(otherSubject, lang)} →
+                </a>
+              </li>
             </ul>
           </div>
 

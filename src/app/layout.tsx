@@ -3,7 +3,8 @@ import { cookies } from "next/headers";
 import { Inter } from "next/font/google";
 import { site } from "@/lib/site";
 import { LanguageProvider, type Lang } from "@/lib/i18n";
-import { SubjectProvider, type Subject } from "@/lib/subject";
+import { SubjectProvider } from "@/lib/subject";
+import { getSubject } from "@/lib/subject-server";
 import "./globals.css";
 
 // 영어 화면용 영문 폰트. CSS 변수로 노출해 lang=en 일 때만 쓴다.
@@ -12,8 +13,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-en", display: "swap"
 // 접속 도메인(미들웨어가 세팅한 subject 쿠키)에 따라 탭 제목·설명이 달라진다.
 // pmedu4u.com=수학, english.pmedu4u.com=영어.
 export async function generateMetadata(): Promise<Metadata> {
-  const cookieStore = await cookies();
-  const subject: Subject = cookieStore.get("subject")?.value === "english" ? "english" : "math";
+  const subject = await getSubject();
   const subjectLabel = subject === "english" ? "영어" : "수학";
   return {
     title: `${site.name} | 초중고 IB ${subjectLabel} 온라인 클래스`,
@@ -27,8 +27,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const cookieStore = await cookies();
   const saved = cookieStore.get("lang")?.value;
   const initialLang: Lang = saved === "en" ? "en" : "ko";
-  const savedSubject = cookieStore.get("subject")?.value;
-  const initialSubject: Subject = savedSubject === "english" ? "english" : "math";
+  const initialSubject = await getSubject();
 
   return (
     <html lang={initialLang} className={`h-full antialiased ${inter.variable}`}>
