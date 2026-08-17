@@ -56,7 +56,7 @@ export default function ToeflAudioAdminPage() {
   return (
     <>
       <Header />
-      <main className="mx-auto max-w-3xl px-6 py-16">
+      <main data-theme="en" className="mx-auto max-w-3xl bg-[var(--background)] px-6 py-16">
         <h1 className="text-3xl font-medium text-[var(--foreground)]">TOEFL Listening 데모 오디오 생성</h1>
         <p className="mt-2 text-sm text-[var(--secondary)]">
           TOEFL_DEMO_001의 Listening 지문·문항에 Gemini TTS로 실제 음성을 만들어 채웁니다. 이미 있는 항목은

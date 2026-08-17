@@ -193,7 +193,10 @@ export default function AdminWorksheetsPage() {
   return (
     <>
       <Header />
-      <main className="mx-auto max-w-5xl px-6 py-16">
+      <main
+        data-theme={isMath ? undefined : "en"}
+        className="mx-auto max-w-5xl bg-[var(--background)] px-6 py-16"
+      >
         <Link href="/admin/problems" className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]">← 문제은행으로</Link>
         <h1 className="mt-4 text-3xl font-medium text-[var(--foreground)]">문제지 만들기 · 배포</h1>
 

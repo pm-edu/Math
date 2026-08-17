@@ -74,7 +74,7 @@ export default function ToeflReportPage({ params }: { params: Promise<{ attemptI
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center">
+      <main data-theme="en" className="flex min-h-screen items-center justify-center bg-[var(--background)]">
         <p className="text-sm text-[var(--secondary)]">Loading...</p>
       </main>
     );
@@ -82,7 +82,7 @@ export default function ToeflReportPage({ params }: { params: Promise<{ attemptI
 
   if (notFound) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center gap-3 px-6 text-center">
+      <main data-theme="en" className="flex min-h-screen flex-col items-center justify-center gap-3 px-6 text-center bg-[var(--background)]">
         <p className="text-sm text-red-600">Report not found.</p>
         <button onClick={() => router.push("/toefl")} className="text-sm text-[var(--secondary)] underline">
           ← Back to TOEFL home
@@ -102,7 +102,7 @@ export default function ToeflReportPage({ params }: { params: Promise<{ attemptI
   const cefr = bandToCefr(overallBand);
 
   return (
-    <main className="mx-auto max-w-2xl px-6 py-16">
+    <main data-theme="en" className="min-h-screen bg-[var(--background)] mx-auto max-w-2xl px-6 py-16">
       <h1 className="text-3xl font-medium text-[var(--foreground)]">TOEFL Report</h1>
       <p className="mt-1 text-sm text-[var(--secondary)]">{mode === "full" ? "Full practice test" : "Section practice"}</p>
 

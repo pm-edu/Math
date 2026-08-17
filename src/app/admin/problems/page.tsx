@@ -401,7 +401,10 @@ export default function AdminProblemsPage() {
   return (
     <>
       <Header />
-      <main className="mx-auto max-w-5xl px-6 py-16">
+      <main
+        data-theme={isMath ? undefined : "en"}
+        className="mx-auto max-w-5xl bg-[var(--background)] px-6 py-16"
+      >
         <Link href="/admin" className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]">← 학생 관리로</Link>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-3xl font-medium text-[var(--foreground)]">문제은행</h1>

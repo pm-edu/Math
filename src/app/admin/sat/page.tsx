@@ -157,7 +157,7 @@ export default function AdminSatPage() {
   return (
     <>
       <Header />
-      <main className="mx-auto max-w-5xl px-6 py-16">
+      <main data-theme="en" className="mx-auto max-w-5xl bg-[var(--background)] px-6 py-16">
         <Link href="/admin/problems" className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]">← 문제은행으로</Link>
         <h1 className="mt-4 text-3xl font-medium text-[var(--foreground)]">영어 SAT 문제 생성</h1>
         <p className="mt-2 text-[var(--secondary)]">
@@ -279,7 +279,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Header />
-      <main className="mx-auto max-w-md px-6 py-24 text-center">{children}</main>
+      <main data-theme="en" className="mx-auto max-w-md bg-[var(--background)] px-6 py-24 text-center">{children}</main>
       <Footer />
     </>
   );

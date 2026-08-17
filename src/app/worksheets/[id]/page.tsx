@@ -33,6 +33,7 @@ export default function WorksheetDetailPage({
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
+  const [worksheetSubject, setWorksheetSubject] = useState<string | null>(null);
   const [problems, setProblems] = useState<Problem[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
 
@@ -50,9 +51,10 @@ export default function WorksheetDetailPage({
       if (!auth.user) { router.replace("/login"); return; }
       setUserId(auth.user.id);
 
-      const { data: ws } = await supabase.from("worksheets").select("title").eq("id", id).maybeSingle();
+      const { data: ws } = await supabase.from("worksheets").select("title, subject").eq("id", id).maybeSingle();
       if (!ws) { setLoading(false); return; }
       setTitle(ws.title);
+      setWorksheetSubject(ws.subject);
 
       const { data } = await supabase
         .from("worksheet_problems")
@@ -148,7 +150,10 @@ export default function WorksheetDetailPage({
   return (
     <>
       <Header />
-      <main className="mx-auto max-w-3xl px-6 py-16">
+      <main
+        data-theme={worksheetSubject === "english" ? "en" : undefined}
+        className="mx-auto max-w-3xl bg-[var(--background)] px-6 py-16"
+      >
         <Link href="/worksheets" className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]">
           ← 내 학습지로
         </Link>

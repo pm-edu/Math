@@ -200,7 +200,7 @@ export default function ToeflSpeakingTestPage({ params }: { params: Promise<{ at
 
   if (phase === "loading") {
     return (
-      <main className="flex min-h-screen items-center justify-center">
+      <main data-theme="en" className="flex min-h-screen items-center justify-center bg-[var(--background)]">
         <p className="text-sm text-[var(--secondary)]">Loading...</p>
       </main>
     );
@@ -208,7 +208,7 @@ export default function ToeflSpeakingTestPage({ params }: { params: Promise<{ at
 
   if (phase === "error") {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center gap-3 px-6 text-center">
+      <main data-theme="en" className="flex min-h-screen flex-col items-center justify-center gap-3 px-6 text-center bg-[var(--background)]">
         <p className="text-sm text-red-600">{errorMsg}</p>
         <button onClick={() => router.push("/toefl")} className="text-sm text-[var(--secondary)] underline">
           ← Back to TOEFL home
@@ -219,7 +219,7 @@ export default function ToeflSpeakingTestPage({ params }: { params: Promise<{ at
 
   if (phase === "section_done") {
     return (
-      <main className="mx-auto flex min-h-screen max-w-xl flex-col items-center justify-center gap-4 px-6 text-center">
+      <main data-theme="en" className="mx-auto flex min-h-screen max-w-xl flex-col items-center justify-center gap-4 px-6 text-center bg-[var(--background)]">
         <h1 className="text-2xl font-medium text-[var(--foreground)]">Speaking section complete</h1>
         <div className="w-full rounded-2xl border border-[var(--mint-dark)]/30 bg-[var(--mint)]/30 px-6 py-6">
           <p className="text-sm text-[var(--secondary)]">Speaking band</p>
@@ -248,7 +248,7 @@ export default function ToeflSpeakingTestPage({ params }: { params: Promise<{ at
 
   if (grading) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center gap-2 px-6 text-center">
+      <main data-theme="en" className="flex min-h-screen flex-col items-center justify-center gap-2 px-6 text-center bg-[var(--background)]">
         <p className="text-sm font-medium text-[var(--foreground)]">Grading your speaking…</p>
         <p className="text-xs text-[var(--secondary)]">This can take up to a couple of minutes. Please don't close this tab.</p>
       </main>
@@ -256,7 +256,7 @@ export default function ToeflSpeakingTestPage({ params }: { params: Promise<{ at
   }
 
   return (
-    <main className="min-h-screen bg-[var(--background)]">
+    <main data-theme="en" className="min-h-screen bg-[var(--background)]">
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-[var(--border-c)] bg-white px-6 py-3">
         <p className="text-sm font-medium text-[var(--foreground)]">TOEFL Speaking</p>
         <p

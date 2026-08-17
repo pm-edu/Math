@@ -89,7 +89,7 @@ export default function ToeflDashboardPage() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-16">
+    <main data-theme="en" className="min-h-screen bg-[var(--background)] mx-auto max-w-3xl px-6 py-16">
       <h1 className="text-3xl font-medium text-[var(--foreground)]">TOEFL Practice</h1>
       <p className="mt-2 text-sm text-[var(--secondary)]">2026 format · Reading section (P1)</p>
 

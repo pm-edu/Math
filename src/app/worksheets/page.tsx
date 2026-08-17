@@ -44,7 +44,10 @@ export default function MyWorksheetsPage() {
   return (
     <>
       <Header />
-      <main className="mx-auto max-w-3xl px-6 py-16">
+      <main
+        data-theme={subject === "english" ? "en" : undefined}
+        className="mx-auto max-w-3xl bg-[var(--background)] px-6 py-16"
+      >
         <h1 className="text-3xl font-medium text-[var(--foreground)]">내 학습지</h1>
         <p className="mt-2 text-[var(--secondary)]">선생님이 배포한 문제지입니다.</p>
 

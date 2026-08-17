@@ -228,7 +228,7 @@ export default function ToeflReadingTestPage({ params }: { params: Promise<{ att
 
   if (phase === "loading") {
     return (
-      <main className="flex min-h-screen items-center justify-center">
+      <main data-theme="en" className="flex min-h-screen items-center justify-center bg-[var(--background)]">
         <p className="text-sm text-[var(--secondary)]">Loading...</p>
       </main>
     );
@@ -236,7 +236,7 @@ export default function ToeflReadingTestPage({ params }: { params: Promise<{ att
 
   if (phase === "error") {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center gap-3 px-6 text-center">
+      <main data-theme="en" className="flex min-h-screen flex-col items-center justify-center gap-3 px-6 text-center bg-[var(--background)]">
         <p className="text-sm text-red-600">{errorMsg}</p>
         <button onClick={() => router.push("/toefl")} className="text-sm text-[var(--secondary)] underline">
           ← Back to TOEFL home
@@ -247,7 +247,7 @@ export default function ToeflReadingTestPage({ params }: { params: Promise<{ att
 
   if (phase === "section_done") {
     return (
-      <main className="mx-auto flex min-h-screen max-w-xl flex-col items-center justify-center gap-4 px-6 text-center">
+      <main data-theme="en" className="mx-auto flex min-h-screen max-w-xl flex-col items-center justify-center gap-4 px-6 text-center bg-[var(--background)]">
         <h1 className="text-2xl font-medium text-[var(--foreground)]">Reading section complete</h1>
         <div className="w-full rounded-2xl border border-[var(--mint-dark)]/30 bg-[var(--mint)]/30 px-6 py-6">
           <p className="text-sm text-[var(--secondary)]">Reading band</p>
@@ -271,7 +271,7 @@ export default function ToeflReadingTestPage({ params }: { params: Promise<{ att
   const timeLow = remainingMs !== null && remainingMs <= 5 * 60 * 1000;
 
   return (
-    <main className="min-h-screen bg-[var(--background)]">
+    <main data-theme="en" className="min-h-screen bg-[var(--background)]">
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-[var(--border-c)] bg-white px-6 py-3">
         <div className="flex items-center gap-2">
           <p className="text-sm font-medium text-[var(--foreground)]">TOEFL Reading</p>

@@ -11,6 +11,39 @@
   --mint: #E3F3EA;
   --mint-dark: #04342C;
   --border-c: #E8E0CC;
+
+  /* TOEFL·SAT 전용 팔레트 (잉크 네이비 + 브라스 골드). [data-theme="en"] 아래에서만 쓰인다. */
+  --en-paper: #EDF0EF;
+  --en-surface: #FFFFFF;
+  --en-ink: #1C2B39;
+  --en-ink-soft: #4B5C6B;
+  --en-line: #E1E5E4;
+  --en-accent: #B8862E;
+  --en-accent-ink: #6B4E17;
+  --en-accent-soft: #F3E7D3;
+  --en-success-soft: #DCEEE6;
+  --en-success-ink: #1F5C46;
+  --en-font-display: Georgia, "Iowan Old Style", "Nanum Myeongjo", "Noto Serif KR", serif;
+}
+
+/* TOEFL·SAT 영역 전용 테마. 기존 토큰 이름을 이 스코프 안에서만 새 값으로 바꿔치기 하므로
+   컴포넌트 코드(var(--pink) 등)는 그대로 두고 이 속성 하나만 루트에 걸면 된다. */
+[data-theme="en"] {
+  --background: var(--en-paper);
+  --foreground: var(--en-ink);
+  --secondary: var(--en-ink-soft);
+  --pink: var(--en-accent);
+  --pink-dark: var(--en-accent-ink);
+  --pink-light: var(--en-accent-soft);
+  --mint: var(--en-success-soft);
+  --mint-dark: var(--en-success-ink);
+  --border-c: var(--en-line);
+}
+[data-theme="en"] h1,
+[data-theme="en"] h2,
+[data-theme="en"] h3 {
+  font-family: var(--en-font-display);
+  font-weight: 400;
 }
 
 @theme inline {
