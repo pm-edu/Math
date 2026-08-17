@@ -26,6 +26,33 @@ import {
   type ConsultationKind,
   type StudentNote,
 } from "@/lib/students";
+import {
+  loadStudentCore,
+  loadStudentUnits,
+  loadStudentErrors,
+  loadWeeklyTrend,
+  type StudentCore,
+  type UnitStat,
+  type ErrorStat,
+  type WeeklyTrend,
+} from "@/lib/student-stats";
+import {
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+} from "recharts";
 
 const RELATION_LABELS: Record<GuardianRelation, string> = {
   father: "아버지",
@@ -63,6 +90,12 @@ export default function StudentDetailPage() {
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [notes, setNotes] = useState<StudentNote[]>([]);
 
+  const [core, setCore] = useState<StudentCore | null>(null);
+  const [units, setUnits] = useState<UnitStat[]>([]);
+  const [errorStats, setErrorStats] = useState<ErrorStat[]>([]);
+  const [trend, setTrend] = useState<WeeklyTrend[]>([]);
+  const [statsLoaded, setStatsLoaded] = useState(false);
+
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -77,6 +110,20 @@ export default function StudentDetailPage() {
     setGoals(goalList);
     setConsultations(c);
     setNotes(n);
+  }, [studentId]);
+
+  const loadStats = useCallback(async () => {
+    const [coreData, unitData, errorData, trendData] = await Promise.all([
+      loadStudentCore(studentId),
+      loadStudentUnits(studentId),
+      loadStudentErrors(studentId),
+      loadWeeklyTrend(studentId),
+    ]);
+    setCore(coreData);
+    setUnits(unitData);
+    setErrorStats(errorData);
+    setTrend(trendData);
+    setStatsLoaded(true);
   }, [studentId]);
 
   useEffect(() => {
@@ -118,10 +165,11 @@ export default function StudentDetailPage() {
       }
 
       loadAll();
+      loadStats();
     }
 
     init();
-  }, [router, studentId, loadAll]);
+  }, [router, studentId, loadAll, loadStats]);
 
   async function handleToggleUnpaid() {
     if (!student) return;
@@ -164,7 +212,7 @@ export default function StudentDetailPage() {
   return (
     <>
       <Header />
-      <main className="mx-auto max-w-4xl px-6 py-16">
+      <main className="mx-auto max-w-5xl px-6 py-16">
         <Link
           href="/admin"
           className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]"
@@ -202,6 +250,7 @@ export default function StudentDetailPage() {
         {message && <p className="mt-4 text-sm text-[var(--mint-dark)]">{message}</p>}
 
         <div className="mt-8 space-y-8">
+          <OverviewSection core={core} units={units} errorStats={errorStats} trend={trend} loaded={statsLoaded} />
           <GuardiansSection
             studentId={studentId}
             guardians={guardians}
@@ -675,6 +724,178 @@ function NotesSection({ studentId, notes, onAdded, onError }: SectionProps<Stude
           {saving ? "저장 중..." : "관찰노트 추가"}
         </button>
       </form>
+    </section>
+  );
+}
+
+const ERROR_CATEGORY_LABELS: Record<string, string> = {
+  concept: "개념",
+  calculation: "계산",
+  interpretation: "해석",
+  time: "시간",
+};
+
+const CHART_COLORS = ["var(--pink-dark)", "var(--mint-dark)", "#C99A3E", "#5B87C9"];
+
+function KpiCard({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
+  return (
+    <div
+      className={`rounded-2xl border p-4 ${
+        warn ? "border-red-200 bg-red-50" : "border-[var(--border-c)] bg-white"
+      }`}
+    >
+      <p className="text-xs text-[var(--secondary)]">{label}</p>
+      <p className={`mt-1 text-2xl font-semibold ${warn ? "text-red-600" : "text-[var(--foreground)]"}`}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function OverviewSection({
+  core,
+  units,
+  errorStats,
+  trend,
+  loaded,
+}: {
+  core: StudentCore | null;
+  units: UnitStat[];
+  errorStats: ErrorStat[];
+  trend: WeeklyTrend[];
+  loaded: boolean;
+}) {
+  const radarUnits = [...units].sort((a, b) => b.attempts - a.attempts).slice(0, 6);
+  const weakUnits = units
+    .filter((u) => u.attempts >= 3)
+    .sort((a, b) => a.accuracy - b.accuracy)
+    .slice(0, 5);
+  const trendData = trend.map((t) => ({
+    week: new Date(t.week_start).toLocaleDateString("ko-KR", { month: "numeric", day: "numeric" }),
+    accuracy: t.accuracy,
+  }));
+  const errorData = errorStats.map((e) => ({
+    name: ERROR_CATEGORY_LABELS[e.error_category] ?? e.error_category,
+    value: e.cnt,
+  }));
+
+  if (loaded && !core && units.length === 0 && trend.length === 0) {
+    return (
+      <section className={cardClass}>
+        <h2 className="text-lg font-medium text-[var(--foreground)]">개요</h2>
+        <p className="mt-3 text-sm text-[var(--secondary)]">
+          아직 이 학생의 학습 기록(출결·문제풀이·과제)이 없어 통계를 보여드릴 수 없습니다.
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <section className={cardClass}>
+      <h2 className="text-lg font-medium text-[var(--foreground)]">개요</h2>
+
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
+        <KpiCard
+          label="출석률"
+          value={core?.attendance_rate != null ? `${core.attendance_rate}%` : "-"}
+          warn={core?.attendance_rate != null && core.attendance_rate < 85}
+        />
+        <KpiCard
+          label="제출률"
+          value={core?.submission_rate != null ? `${core.submission_rate}%` : "-"}
+          warn={core?.submission_rate != null && core.submission_rate < 80}
+        />
+        <KpiCard
+          label="최초시도 정답률"
+          value={core?.first_try_accuracy != null ? `${core.first_try_accuracy}%` : "-"}
+        />
+        <KpiCard
+          label="성장 Δ (28일)"
+          value={core?.growth_delta != null ? `${core.growth_delta > 0 ? "+" : ""}${core.growth_delta}%p` : "-"}
+          warn={core?.growth_delta != null && core.growth_delta < 0}
+        />
+        <KpiCard label="리스크 점수" value={core ? `${core.risk_score}` : "-"} warn={!!core && core.risk_score >= 55} />
+      </div>
+
+      <div className="mt-6 grid gap-6 sm:grid-cols-2">
+        <div>
+          <p className="text-xs font-medium text-[var(--secondary)]">단원별 정답률</p>
+          {radarUnits.length === 0 ? (
+            <p className="mt-3 text-sm text-[var(--secondary)]">아직 단원별 풀이 기록이 없습니다.</p>
+          ) : (
+            <div style={{ width: "100%", height: 240 }}>
+              <ResponsiveContainer>
+                <RadarChart data={radarUnits} outerRadius="75%">
+                  <PolarGrid stroke="var(--border-c)" />
+                  <PolarAngleAxis dataKey="unit_name" tick={{ fontSize: 11, fill: "var(--secondary)" }} />
+                  <PolarRadiusAxis domain={[0, 100]} tick={{ fontSize: 10, fill: "var(--secondary)" }} />
+                  <Radar dataKey="accuracy" stroke="var(--pink-dark)" fill="var(--pink)" fillOpacity={0.5} />
+                  <Tooltip formatter={(v) => `${v}%`} />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+
+        <div>
+          <p className="text-xs font-medium text-[var(--secondary)]">최근 8주 정답률 추이</p>
+          {trendData.length === 0 ? (
+            <p className="mt-3 text-sm text-[var(--secondary)]">아직 추이를 보여줄 만큼 데이터가 없습니다.</p>
+          ) : (
+            <div style={{ width: "100%", height: 240 }}>
+              <ResponsiveContainer>
+                <LineChart data={trendData}>
+                  <CartesianGrid stroke="var(--border-c)" strokeDasharray="3 3" />
+                  <XAxis dataKey="week" tick={{ fontSize: 11, fill: "var(--secondary)" }} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "var(--secondary)" }} />
+                  <Tooltip formatter={(v) => `${v}%`} />
+                  <Line type="monotone" dataKey="accuracy" stroke="var(--mint-dark)" strokeWidth={2} dot={{ r: 3 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-6 grid gap-6 sm:grid-cols-2">
+        <div>
+          <p className="text-xs font-medium text-[var(--secondary)]">오답 유형</p>
+          {errorData.length === 0 ? (
+            <p className="mt-3 text-sm text-[var(--secondary)]">오답 유형 기록이 아직 없습니다.</p>
+          ) : (
+            <div style={{ width: "100%", height: 200 }}>
+              <ResponsiveContainer>
+                <PieChart>
+                  <Pie data={errorData} dataKey="value" nameKey="name" innerRadius={45} outerRadius={75}>
+                    {errorData.map((_, i) => (
+                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+
+        <div>
+          <p className="text-xs font-medium text-[var(--secondary)]">취약 단원 Top 5</p>
+          {weakUnits.length === 0 ? (
+            <p className="mt-3 text-sm text-[var(--secondary)]">아직 판단할 만큼 풀이 기록이 없습니다.</p>
+          ) : (
+            <ul className="mt-3 space-y-2">
+              {weakUnits.map((u) => (
+                <li key={u.unit_id} className="flex items-center justify-between text-sm">
+                  <span className="text-[var(--foreground)]">{u.unit_name}</span>
+                  <span className="text-[var(--secondary)]">
+                    {u.accuracy}% · {u.attempts}회
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
     </section>
   );
 }
