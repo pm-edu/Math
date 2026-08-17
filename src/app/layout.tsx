@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { Inter } from "next/font/google";
 import { site } from "@/lib/site";
 import { LanguageProvider, type Lang } from "@/lib/i18n";
@@ -11,8 +11,17 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-en", display: "swap" });
 
 // 접속 도메인(미들웨어가 세팅한 subject 쿠키)에 따라 탭 제목·설명이 달라진다.
-// pmedu4u.com=수학, english.pmedu4u.com=영어.
+// pmedu4u.com=수학, english.pmedu4u.com=영어, toefl.pmedu4u.com=독립 사이트처럼 별도 문구.
 export async function generateMetadata(): Promise<Metadata> {
+  const headerList = await headers();
+  const hostname = headerList.get("host") ?? "";
+  if (hostname.startsWith("toefl.")) {
+    return {
+      title: "TOEFL Practice | PM EDU",
+      description: "Reading, Listening, Speaking, Writing practice and full-length mock tests for the 2026 TOEFL format.",
+    };
+  }
+
   const subject = await getSubject();
   const subjectLabel = subject === "english" ? "영어" : "수학";
   return {
