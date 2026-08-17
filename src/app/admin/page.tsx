@@ -408,6 +408,14 @@ export default function AdminPage() {
                     출결 체크
                   </Link>
                 )}
+                {canViewGrades(myRole) && (
+                  <Link
+                    href="/admin/dashboard"
+                    className="rounded-full bg-[var(--mint)] px-5 py-2.5 text-sm font-medium text-[var(--mint-dark)]"
+                  >
+                    전체 대시보드
+                  </Link>
+                )}
                 {canManageSite(myRole) && (
                   <>
                     <Link
