@@ -19,12 +19,15 @@ import {
   addConsultation,
   loadStudentNotes,
   addStudentNote,
+  loadParentReportTokens,
+  createParentReportToken,
   type Guardian,
   type GuardianRelation,
   type StudentGoal,
   type Consultation,
   type ConsultationKind,
   type StudentNote,
+  type ParentReportToken,
 } from "@/lib/students";
 import {
   loadStudentCore,
@@ -96,20 +99,25 @@ export default function StudentDetailPage() {
   const [trend, setTrend] = useState<WeeklyTrend[]>([]);
   const [statsLoaded, setStatsLoaded] = useState(false);
 
+  const [myId, setMyId] = useState<string | null>(null);
+  const [reportTokens, setReportTokens] = useState<ParentReportToken[]>([]);
+
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   const loadAll = useCallback(async () => {
-    const [g, goalList, c, n] = await Promise.all([
+    const [g, goalList, c, n, tokens] = await Promise.all([
       loadGuardians(studentId),
       loadStudentGoals(studentId),
       loadConsultations(studentId),
       loadStudentNotes(studentId),
+      loadParentReportTokens(studentId),
     ]);
     setGuardians(g);
     setGoals(goalList);
     setConsultations(c);
     setNotes(n);
+    setReportTokens(tokens);
   }, [studentId]);
 
   const loadStats = useCallback(async () => {
@@ -147,6 +155,7 @@ export default function StudentDetailPage() {
       }
       setAllowed(true);
       setMyRole((me?.role ?? null) as Role | null);
+      setMyId(auth.user.id);
 
       const { data: target } = await supabase
         .from("profiles")
@@ -251,6 +260,22 @@ export default function StudentDetailPage() {
 
         <div className="mt-8 space-y-8">
           <OverviewSection core={core} units={units} errorStats={errorStats} trend={trend} loaded={statsLoaded} />
+          {myId && (
+            <ParentReportSection
+              studentId={studentId}
+              tokens={reportTokens}
+              createdBy={myId}
+              onAdded={(msg) => {
+                setMessage(msg);
+                setError(null);
+                loadAll();
+              }}
+              onError={(msg) => {
+                setError(msg);
+                setMessage(null);
+              }}
+            />
+          )}
           <GuardiansSection
             studentId={studentId}
             guardians={guardians}
@@ -896,6 +921,74 @@ function OverviewSection({
           )}
         </div>
       </div>
+    </section>
+  );
+}
+
+function ParentReportSection({
+  studentId,
+  tokens,
+  createdBy,
+  onAdded,
+  onError,
+}: {
+  studentId: string;
+  tokens: ParentReportToken[];
+  createdBy: string;
+  onAdded: (message: string) => void;
+  onError: (message: string) => void;
+}) {
+  const [creating, setCreating] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  async function handleCreate() {
+    setCreating(true);
+    const { token, error } = await createParentReportToken(studentId, createdBy);
+    setCreating(false);
+    if (error || !token) return onError(error ?? "링크 생성에 실패했습니다.");
+    onAdded("학부모 리포트 링크를 만들었습니다. 30일간 유효합니다.");
+  }
+
+  async function handleCopy(token: ParentReportToken) {
+    const url = `${window.location.origin}/report/${token.token}`;
+    await navigator.clipboard.writeText(url);
+    setCopiedId(token.id);
+    setTimeout(() => setCopiedId(null), 2000);
+  }
+
+  return (
+    <section className={cardClass}>
+      <h2 className="text-lg font-medium text-[var(--foreground)]">학부모 리포트 링크</h2>
+      <p className="mt-1 text-xs text-[var(--secondary)]">
+        로그인 없이 열람 가능한 읽기 전용 링크입니다(출결·제출률·성적 추이·공개 코멘트만 보이고, 리스크 점수나 다른 학생 비교는 안 보여요). 30일 후 자동 만료됩니다.
+      </p>
+
+      <ul className="mt-4 space-y-2">
+        {tokens.length === 0 && <p className="text-sm text-[var(--secondary)]">유효한 링크가 없습니다.</p>}
+        {tokens.map((t) => (
+          <li key={t.id} className="flex items-center justify-between gap-3 rounded-lg border border-[var(--border-c)] px-4 py-2.5 text-sm">
+            <span className="text-[var(--secondary)]">
+              {new Date(t.expires_at).toLocaleDateString("ko-KR")}까지 유효
+            </span>
+            <button
+              type="button"
+              onClick={() => handleCopy(t)}
+              className="rounded-full border border-[var(--border-c)] px-3 py-1 text-xs text-[var(--foreground)] hover:bg-[var(--mint)]/40"
+            >
+              {copiedId === t.id ? "복사됨" : "링크 복사"}
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      <button
+        type="button"
+        onClick={handleCreate}
+        disabled={creating}
+        className="mt-4 rounded-full bg-[var(--pink)] px-5 py-2.5 text-sm font-medium text-[var(--pink-dark)] disabled:opacity-60"
+      >
+        {creating ? "만드는 중..." : "새 링크 만들기"}
+      </button>
     </section>
   );
 }

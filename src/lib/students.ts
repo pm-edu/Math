@@ -55,6 +55,41 @@ export type StudentNote = {
   created_at: string;
 };
 
+export type ParentReportToken = {
+  id: string;
+  token: string;
+  expires_at: string;
+  created_at: string;
+};
+
+function randomToken(): string {
+  return crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
+}
+
+export async function loadParentReportTokens(studentId: string): Promise<ParentReportToken[]> {
+  const { data } = await createClient()
+    .from("parent_report_tokens")
+    .select("id, token, expires_at, created_at")
+    .eq("student_id", studentId)
+    .gt("expires_at", new Date().toISOString())
+    .order("created_at", { ascending: false });
+  return (data as ParentReportToken[]) ?? [];
+}
+
+export async function createParentReportToken(
+  studentId: string,
+  createdBy: string
+): Promise<{ token: ParentReportToken | null; error: string | null }> {
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+  const { data, error } = await createClient()
+    .from("parent_report_tokens")
+    .insert({ student_id: studentId, token: randomToken(), expires_at: expiresAt, created_by: createdBy })
+    .select("id, token, expires_at, created_at")
+    .single();
+  if (error || !data) return { token: null, error: error?.message ?? "링크 생성에 실패했습니다." };
+  return { token: data as ParentReportToken, error: null };
+}
+
 export type StudentCareStats = {
   consultationsThisMonth: number;
   goalsTotal: number;
