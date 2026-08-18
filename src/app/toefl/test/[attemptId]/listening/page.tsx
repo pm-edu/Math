@@ -5,7 +5,9 @@
 // 상당히 겹친다 — 다만 지금은 페이지가 2개뿐이라 공용 훅으로 뽑지 않았다(세 번째 영역이 생기는 P3/P4에서
 // 반복이 뚜렷해지면 그때 추출하는 게 낫다고 판단, "규칙의 3법칙").
 // Listening 고유 규칙(§6, §10):
-// - 재생 완료 전 문항 노출 금지 → AudioPlayer가 끝나야 TaskRenderer가 나타난다.
+// - 재생 완료 전 문항 노출 금지 → 이제 각 Listening 태스크 컴포넌트가 스스로 지킨다(2026-08-18
+//   재작업 전엔 이 페이지가 AudioPlayer+hasPlayed를 직접 들고 있었음). 페이지는 onAudioEnded
+//   콜백으로 "다음/제출" 버튼을 언제 풀지만 안다.
 // - 재생은 1회 → AudioPlayer 자체가 재생 버튼을 1번만 허용(재생 컨트롤 없음).
 // - 뒤로 가기 불가 → Reading과 달리 문항 네비게이터가 클릭 불가(진행 표시만), Previous 버튼 없음.
 // - 학생 응시 화면은 영어만 사용한다(§14).
@@ -14,7 +16,6 @@ import { use, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import TaskRenderer from "@/components/toefl/TaskRenderer";
-import AudioPlayer from "@/components/toefl/AudioPlayer";
 import SectionDoneActions from "@/components/toefl/SectionDoneActions";
 import ExitTestButton from "@/components/toefl/ExitTestButton";
 import type { ToeflItemPublic, ToeflStimulusPublic } from "@/lib/toefl/types";
@@ -41,17 +42,6 @@ type Phase = "loading" | "in_module" | "section_done" | "error";
 // 뒤로가기 방지(reading/page.tsx의 PAGE_SECTION 주석 참고).
 const PAGE_SECTION = "listening";
 
-function audioUrlFor(item: ToeflItemPublic, stimuli: ToeflStimulusPublic[]): string | null {
-  if (item.task_type === "choose_a_response") {
-    const payload = item.payload as { clip_path?: string | null };
-    return payload.clip_path ?? null;
-  }
-  if (item.stimulus_id) {
-    return stimuli.find((s) => s.id === item.stimulus_id)?.audio_path ?? null;
-  }
-  return null;
-}
-
 export default function ToeflListeningTestPage({ params }: { params: Promise<{ attemptId: string }> }) {
   const { attemptId } = use(params);
   const router = useRouter();
@@ -62,7 +52,10 @@ export default function ToeflListeningTestPage({ params }: { params: Promise<{ a
   const [stimuli, setStimuli] = useState<ToeflStimulusPublic[]>([]);
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
-  const [playedIds, setPlayedIds] = useState<Set<string>>(new Set());
+  // 오디오 재생 게이트는 이제 각 태스크 컴포넌트가 스스로 관리한다 — 페이지는 "현재 문항의
+  // 오디오가 끝났는지"만 알면 되므로 Set이 아니라 문항 하나짜리 플래그로 충분하다(전엔
+  // playedIds: Set<string>으로 전체 문항을 추적했음).
+  const [audioEnded, setAudioEnded] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [deadlineAt, setDeadlineAt] = useState<string | null>(null);
   const [stage, setStage] = useState<"stage1" | "stage2" | null>(null);
@@ -129,19 +122,19 @@ export default function ToeflListeningTestPage({ params }: { params: Promise<{ a
     setStimuli(data.stimuli);
     const restored: Record<string, unknown> = {};
     const restoredSaved = new Set<string>();
-    const restoredPlayed = new Set<string>();
     for (const [itemId, r] of Object.entries(data.answers)) {
       restored[itemId] = r.answer;
       restoredSaved.add(itemId);
-      restoredPlayed.add(itemId); // 이미 답한 문항은 재생도 끝난 상태였을 것 — 새로고침 복구용
     }
     setAnswers(restored);
     setSavedIds(restoredSaved);
-    setPlayedIds(restoredPlayed);
     setDeadlineAt(data.section.deadline_at);
     setStage(data.module?.stage ?? null);
     setMode(data.attempt.mode);
     setActiveIndex(0);
+    // 이미 답한 문항으로 새로고침 복구된 거라면 재생도 끝난 상태였을 것이다 — 첫 문항(0번,
+    // 항상 여기서 복구 시작함) 기준으로 판단한다.
+    setAudioEnded(data.items[0] ? data.items[0].id in restored : false);
     autoFinishedRef.current = false;
     itemStartRef.current = Date.now();
     setPhase("in_module");
@@ -215,6 +208,10 @@ export default function ToeflListeningTestPage({ params }: { params: Promise<{ a
     if (current) await flushPending(current.id);
     itemStartRef.current = Date.now();
     setActiveIndex((i) => i + 1);
+    // 다음 문항은 아직 안 들었으니 다시 잠근다. 이미 답이 있다면(드물게 재방문 등) 이미
+    // 들은 것으로 본다 — restore 로직과 같은 판단 기준.
+    const next = items[activeIndex + 1];
+    setAudioEnded(next ? next.id in answers : false);
   }
 
   // try/catch 없이 fetch가 실패하면 busy가 안 풀려서 화면이 멈춘다(실사용 중 writing 페이지에서
@@ -287,8 +284,6 @@ export default function ToeflListeningTestPage({ params }: { params: Promise<{ a
 
   const activeItem = items[activeIndex];
   const activeStimulus = activeItem?.stimulus_id ? stimuli.find((s) => s.id === activeItem.stimulus_id) : null;
-  const audioUrl = activeItem ? audioUrlFor(activeItem, stimuli) : null;
-  const hasPlayed = activeItem ? playedIds.has(activeItem.id) || !audioUrl : false;
   const minutes = remainingMs !== null ? Math.max(0, Math.floor(remainingMs / 60000)) : null;
   const seconds = remainingMs !== null ? Math.max(0, Math.floor((remainingMs % 60000) / 1000)) : null;
   const timeLow = remainingMs !== null && remainingMs <= 5 * 60 * 1000;
@@ -335,34 +330,20 @@ export default function ToeflListeningTestPage({ params }: { params: Promise<{ a
 
       {errorMsg && <p className="mx-auto max-w-2xl px-6 text-sm text-red-600">{errorMsg}</p>}
 
-      <div className="mx-auto max-w-2xl px-6 pb-24 pt-2">
-        {activeStimulus?.title && (
-          <p className="mb-2 text-sm font-semibold text-[var(--foreground)]">{activeStimulus.title}</p>
-        )}
-
-        {audioUrl && !hasPlayed && (
-          <AudioPlayer
-            src={audioUrl}
-            onComplete={() => setPlayedIds((prev) => new Set(prev).add(activeItem.id))}
-          />
-        )}
-
-        {audioUrl && hasPlayed && (
-          <div className="mb-4 rounded-2xl border border-[var(--mint-dark)]/30 bg-[var(--mint)]/20 px-5 py-3 text-sm text-[var(--mint-dark)]">
-            ✓ Audio finished
-          </div>
-        )}
-
-        {hasPlayed && activeItem ? (
+      <div className="mx-auto max-w-3xl px-6 pb-24 pt-2">
+        {/* 지문·오디오·재생게이트·화자아이콘·노트패널 전부 이제 태스크 컴포넌트가 스스로
+            그린다(2026-08-18 재작업) — 여기선 안 그린다. onAudioEnded가 오면 다음/제출
+            버튼을 풀어준다. */}
+        {activeItem && (
           <TaskRenderer
             key={activeItem.id}
             item={activeItem}
             attemptId={attemptId}
+            stimulus={activeStimulus}
             value={answers[activeItem.id]}
             onChange={(answer) => handleAnswerChange(activeItem.id, answer)}
+            onAudioEnded={() => setAudioEnded(true)}
           />
-        ) : (
-          <p className="text-sm text-[var(--secondary)]">Listen to the audio above to see the question.</p>
         )}
       </div>
 
@@ -370,7 +351,7 @@ export default function ToeflListeningTestPage({ params }: { params: Promise<{ a
         {!isLast ? (
           <button
             onClick={goNext}
-            disabled={!hasPlayed}
+            disabled={!audioEnded}
             className="rounded-full bg-[var(--pink)] px-6 py-2 text-sm font-medium text-[var(--pink-dark)] disabled:opacity-40"
           >
             Next →
@@ -378,7 +359,7 @@ export default function ToeflListeningTestPage({ params }: { params: Promise<{ a
         ) : (
           <button
             onClick={finishModule}
-            disabled={!hasPlayed || busy}
+            disabled={!audioEnded || busy}
             className="rounded-full bg-[var(--pink)] px-6 py-2 text-sm font-medium text-[var(--pink-dark)] disabled:opacity-40"
           >
             {busy ? "Submitting..." : "Finish this part"}

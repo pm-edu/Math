@@ -4,7 +4,10 @@ import type { ToeflItemPublic, ToeflStimulusPublic } from "@/lib/toefl/types";
 import CompleteTheWords from "./tasks/CompleteTheWords";
 import DailyLifeReading from "./tasks/DailyLifeReading";
 import AcademicPassage from "./tasks/AcademicPassage";
-import McqOptionsRenderer from "./McqOptionsRenderer";
+import ChooseAResponse from "./tasks/ChooseAResponse";
+import ConversationTask from "./tasks/ConversationTask";
+import AnnouncementTask from "./tasks/AnnouncementTask";
+import AcademicTalkTask from "./tasks/AcademicTalkTask";
 import BuildASentenceRenderer from "./BuildASentenceRenderer";
 import EssayRenderer from "./EssayRenderer";
 import ListenAndRepeatRenderer from "./ListenAndRepeatRenderer";
@@ -13,13 +16,14 @@ import TakeAnInterviewRenderer from "./TakeAnInterviewRenderer";
 // task_type별 문항 렌더러 디스패처. spec §10: "유형별 if문을 페이지에 흩뿌리지 않는다" —
 // 페이지는 이 컴포넌트 하나만 쓰고, 유형 추가는 여기 switch 한 곳만 늘리면 된다.
 // P1(Reading)+P2(Listening)+P3(Speaking)+P4(Writing) 전체 12종 구현 완료.
-// Listening 문항의 오디오 재생 게이트(§6: "재생 완료 전 문항 노출 금지")는 이 컴포넌트가 아니라
-// 페이지(listening/page.tsx)가 담당한다 — TaskRenderer는 "이미 재생 끝난 뒤 무엇을 보여줄지"만 안다.
-// attemptId는 Speaking 두 유형(녹음 업로드 경로 구성용)에만 쓰인다.
-// stimulus는 Reading 3종(2026-08-18 재작업)에만 쓰인다 — 이 유형들은 이제 지문 표시까지
-// 스스로 책임져서 "셸의 슬롯에 꽂히는" 컴포넌트가 됐다(전엔 페이지가 지문을 따로 그렸음).
-// Listening 4종은 여전히 McqOptionsRenderer 공용(지문=오디오라 표시 방식이 다름, 이번 작업
-// 범위 밖 — 페이지가 계속 오디오 재생을 별도로 담당).
+// attemptId는 Speaking 두 유형(녹음 업로드 경로 구성용)과 Listening 노트패널(섹션 전체
+// 메모 저장 경로)에 쓰인다.
+// stimulus는 Reading 3종 + Listening의 conversation/announcement/academic_talk 3종에 쓰인다
+// (2026-08-18 재작업) — 이 유형들은 지문/오디오 표시까지 스스로 책임져서 "셸의 슬롯에
+// 꽂히는" 컴포넌트가 됐다(전엔 페이지가 따로 그렸음).
+// onAudioEnded는 Listening 4종에서만 쓰인다 — 오디오 재생 게이트(§6: "재생 완료 전 문항
+// 노출 금지")를 이제 각 컴포넌트가 스스로 갖고 있고, "언제 다음/제출 버튼을 활성화할지"만
+// 페이지에 알려주면 되므로 이 콜백 하나로 충분하다.
 
 export default function TaskRenderer({
   item,
@@ -27,12 +31,14 @@ export default function TaskRenderer({
   stimulus,
   value,
   onChange,
+  onAudioEnded,
 }: {
   item: ToeflItemPublic;
   attemptId: string;
   stimulus?: ToeflStimulusPublic | null;
   value: unknown;
   onChange: (answer: unknown) => void;
+  onAudioEnded?: () => void;
 }) {
   switch (item.task_type) {
     case "complete_the_words":
@@ -62,14 +68,45 @@ export default function TaskRenderer({
         />
       );
     case "choose_a_response":
-    case "conversation":
-    case "announcement":
-    case "academic_talk":
       return (
-        <McqOptionsRenderer
+        <ChooseAResponse
           item={item}
           value={value as { selected?: string[] } | undefined}
           onChange={onChange as (answer: { selected: string[] }) => void}
+          onAudioEnded={onAudioEnded ?? (() => {})}
+        />
+      );
+    case "conversation":
+      return (
+        <ConversationTask
+          item={item}
+          stimulus={stimulus ?? null}
+          attemptId={attemptId}
+          value={value as { selected?: string[] } | undefined}
+          onChange={onChange as (answer: { selected: string[] }) => void}
+          onAudioEnded={onAudioEnded ?? (() => {})}
+        />
+      );
+    case "announcement":
+      return (
+        <AnnouncementTask
+          item={item}
+          stimulus={stimulus ?? null}
+          attemptId={attemptId}
+          value={value as { selected?: string[] } | undefined}
+          onChange={onChange as (answer: { selected: string[] }) => void}
+          onAudioEnded={onAudioEnded ?? (() => {})}
+        />
+      );
+    case "academic_talk":
+      return (
+        <AcademicTalkTask
+          item={item}
+          stimulus={stimulus ?? null}
+          attemptId={attemptId}
+          value={value as { selected?: string[] } | undefined}
+          onChange={onChange as (answer: { selected: string[] }) => void}
+          onAudioEnded={onAudioEnded ?? (() => {})}
         />
       );
     case "build_a_sentence":
