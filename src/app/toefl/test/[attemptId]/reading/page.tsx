@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import TaskRenderer from "@/components/toefl/TaskRenderer";
 import SectionDoneActions from "@/components/toefl/SectionDoneActions";
+import ExitTestButton from "@/components/toefl/ExitTestButton";
 import type { ToeflItemPublic, ToeflStimulusPublic } from "@/lib/toefl/types";
 
 type CurrentResponse = {
@@ -283,7 +284,8 @@ export default function ToeflReadingTestPage({ params }: { params: Promise<{ att
   return (
     <main data-theme="en" className="min-h-screen bg-[var(--background)]">
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-[var(--border-c)] bg-white px-6 py-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <ExitTestButton />
           <p className="text-sm font-medium text-[var(--foreground)]">TOEFL Reading</p>
           {stage && (
             <span className="rounded-full bg-[var(--mint)]/40 px-2.5 py-0.5 text-xs font-medium text-[var(--mint-dark)]">

@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import TaskRenderer from "@/components/toefl/TaskRenderer";
 import SectionDoneActions from "@/components/toefl/SectionDoneActions";
+import ExitTestButton from "@/components/toefl/ExitTestButton";
 import type { ToeflItemPublic, ToeflStimulusPublic } from "@/lib/toefl/types";
 
 type CurrentResponse = {
@@ -302,7 +303,10 @@ export default function ToeflWritingTestPage({ params }: { params: Promise<{ att
   return (
     <main data-theme="en" className="min-h-screen bg-[var(--background)]">
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-[var(--border-c)] bg-white px-6 py-3">
-        <p className="text-sm font-medium text-[var(--foreground)]">TOEFL Writing</p>
+        <div className="flex items-center gap-3">
+          <ExitTestButton />
+          <p className="text-sm font-medium text-[var(--foreground)]">TOEFL Writing</p>
+        </div>
         <p
           aria-live="polite"
           className={`text-sm font-semibold ${timeLow ? "text-red-600" : "text-[var(--foreground)]"}`}
