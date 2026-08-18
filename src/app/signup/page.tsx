@@ -2,15 +2,25 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import ToeflHeader from "@/components/toefl/ToeflHeader";
 import PasswordField from "@/components/PasswordField";
 import { createClient } from "@/lib/supabase/client";
 import { authErrorMessage } from "@/lib/auth-errors";
 import { useLang } from "@/lib/i18n";
 
+// /login·/signup·/reset-password는 수학·영어·TOEFL이 공유하는 계정 인프라다(로그인 자체는
+// 하나). TOEFL은 "완전히 독립된 사이트처럼" 보여야 해서, TOEFL 쪽에서 여기로 넘어온 방문자에게는
+// 수학 사이트 공용 Header/Footer(과목전환·강좌메뉴 등) 대신 ToeflHeader만 보여준다. 판정은
+// ?toefl=1 쿼리 파라미터로 한다(ToeflHeader의 "Log in", GuestBadge의 "Sign up" 링크가 항상
+// 이 파라미터를 붙여서 넘어온다) — 호스트네임(toefl.pmedu4u.com) 대신 쿼리로 판정하는 이유는
+// 이 프로젝트가 지금 pmedu4u.com/toefl 경로로도 그대로 접근되고 있어서, 서브도메인 유무와
+// 무관하게 항상 동작하게 하기 위함.
 export default function SignupPage() {
   const { t } = useLang();
+  const isToefl = useSearchParams().get("toefl") === "1";
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -49,28 +59,28 @@ export default function SignupPage() {
 
   if (done) {
     return (
-      <>
-        <Header />
+      <div data-theme={isToefl ? "en" : undefined} className={isToefl ? "min-h-screen bg-[var(--background)]" : undefined}>
+        {isToefl ? <ToeflHeader /> : <Header />}
         <main className="mx-auto max-w-md px-6 py-24 text-center">
           <h1 className="text-2xl font-medium text-[var(--foreground)]">
             {t("signupDone")}
           </h1>
           <p className="mt-3 text-sm text-[var(--secondary)]">{t("signupDoneSub")}</p>
           <Link
-            href="/login"
+            href={isToefl ? "/login?toefl=1" : "/login"}
             className="mt-8 inline-block rounded-full bg-[var(--pink)] px-6 py-3 text-sm font-medium text-[var(--pink-dark)]"
           >
             {t("goLogin")}
           </Link>
         </main>
-        <Footer />
-      </>
+        {!isToefl && <Footer />}
+      </div>
     );
   }
 
   return (
-    <>
-      <Header />
+    <div data-theme={isToefl ? "en" : undefined} className={isToefl ? "min-h-screen bg-[var(--background)]" : undefined}>
+      {isToefl ? <ToeflHeader /> : <Header />}
       <main className="mx-auto max-w-md px-6 py-16">
         <h1 className="text-2xl font-medium text-[var(--foreground)]">{t("signup")}</h1>
         {isGuestUpgrade && (
@@ -121,12 +131,12 @@ export default function SignupPage() {
 
         <p className="mt-6 text-center text-sm text-[var(--secondary)]">
           {t("haveAccount")}{" "}
-          <Link href="/login" className="text-[var(--foreground)] underline">
+          <Link href={isToefl ? "/login?toefl=1" : "/login"} className="text-[var(--foreground)] underline">
             {t("login")}
           </Link>
         </p>
       </main>
-      <Footer />
-    </>
+      {!isToefl && <Footer />}
+    </div>
   );
 }

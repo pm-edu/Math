@@ -92,7 +92,7 @@ export default function ToeflListeningTestPage({ params }: { params: Promise<{ a
     const supabase = createClient();
     const { data: auth } = await supabase.auth.getUser();
     if (!auth.user) {
-      router.replace("/login");
+      router.replace("/login?toefl=1");
       return;
     }
     const headers = await authHeaders();

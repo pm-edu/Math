@@ -9,7 +9,7 @@ import Link from "next/link";
 export default function GuestBadge() {
   return (
     <Link
-      href="/signup"
+      href="/signup?toefl=1"
       className="inline-flex items-center gap-1.5 rounded-full border border-[var(--pink)] bg-[var(--pink-light)]/30 px-3 py-1 text-xs font-medium text-[var(--pink-dark)]"
     >
       Trying it out · Sign up to save your results →

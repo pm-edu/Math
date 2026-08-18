@@ -59,7 +59,7 @@ export default function ToeflHeader() {
             </>
           )}
           {loggedIn === false && (
-            <Link href="/login" className="text-xs font-medium text-[var(--pink-dark)] underline">
+            <Link href="/login?toefl=1" className="text-xs font-medium text-[var(--pink-dark)] underline">
               Log in
             </Link>
           )}

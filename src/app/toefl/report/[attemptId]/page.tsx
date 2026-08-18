@@ -37,7 +37,7 @@ export default function ToeflReportPage({ params }: { params: Promise<{ attemptI
     async function load() {
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) {
-        router.replace("/login");
+        router.replace("/login?toefl=1");
         return;
       }
       const { data: attempt } = await supabase

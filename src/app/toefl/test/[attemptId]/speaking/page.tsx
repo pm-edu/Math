@@ -75,7 +75,7 @@ export default function ToeflSpeakingTestPage({ params }: { params: Promise<{ at
     const supabase = createClient();
     const { data: auth } = await supabase.auth.getUser();
     if (!auth.user) {
-      router.replace("/login");
+      router.replace("/login?toefl=1");
       return;
     }
     const headers = await authHeaders();
