@@ -165,6 +165,15 @@ export default function ToeflDashboardPage() {
           </button>
           <p className="mt-2 text-xs text-[var(--secondary)]">Sign up any time to save your results.</p>
 
+          {/* 헤더 우상단의 작은 "Log in" 링크만으로는 기존 회원이 못 찾고 지나칠 수 있어서
+              (실사용 피드백, 2026-08-18), 본문에도 눈에 띄게 다시 넣는다. */}
+          <div className="mt-6 flex items-center justify-center gap-2 border-t border-[var(--border-c)] pt-6 text-sm text-[var(--secondary)]">
+            <span>Already have an account?</span>
+            <button onClick={() => router.push("/login?toefl=1")} className="font-semibold text-[var(--pink-dark)] underline">
+              Log in
+            </button>
+          </div>
+
           {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
         </main>
       </div>
