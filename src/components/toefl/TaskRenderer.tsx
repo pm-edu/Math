@@ -1,7 +1,9 @@
 "use client";
 
-import type { ToeflItemPublic } from "@/lib/toefl/types";
-import CompleteTheWordsRenderer from "./CompleteTheWordsRenderer";
+import type { ToeflItemPublic, ToeflStimulusPublic } from "@/lib/toefl/types";
+import CompleteTheWords from "./tasks/CompleteTheWords";
+import DailyLifeReading from "./tasks/DailyLifeReading";
+import AcademicPassage from "./tasks/AcademicPassage";
 import McqOptionsRenderer from "./McqOptionsRenderer";
 import BuildASentenceRenderer from "./BuildASentenceRenderer";
 import EssayRenderer from "./EssayRenderer";
@@ -14,29 +16,51 @@ import TakeAnInterviewRenderer from "./TakeAnInterviewRenderer";
 // Listening 문항의 오디오 재생 게이트(§6: "재생 완료 전 문항 노출 금지")는 이 컴포넌트가 아니라
 // 페이지(listening/page.tsx)가 담당한다 — TaskRenderer는 "이미 재생 끝난 뒤 무엇을 보여줄지"만 안다.
 // attemptId는 Speaking 두 유형(녹음 업로드 경로 구성용)에만 쓰인다.
+// stimulus는 Reading 3종(2026-08-18 재작업)에만 쓰인다 — 이 유형들은 이제 지문 표시까지
+// 스스로 책임져서 "셸의 슬롯에 꽂히는" 컴포넌트가 됐다(전엔 페이지가 지문을 따로 그렸음).
+// Listening 4종은 여전히 McqOptionsRenderer 공용(지문=오디오라 표시 방식이 다름, 이번 작업
+// 범위 밖 — 페이지가 계속 오디오 재생을 별도로 담당).
 
 export default function TaskRenderer({
   item,
   attemptId,
+  stimulus,
   value,
   onChange,
 }: {
   item: ToeflItemPublic;
   attemptId: string;
+  stimulus?: ToeflStimulusPublic | null;
   value: unknown;
   onChange: (answer: unknown) => void;
 }) {
   switch (item.task_type) {
     case "complete_the_words":
       return (
-        <CompleteTheWordsRenderer
+        <CompleteTheWords
           item={item}
           value={value as Record<string, string> | undefined}
           onChange={onChange as (answer: Record<string, string>) => void}
         />
       );
     case "daily_life":
+      return (
+        <DailyLifeReading
+          item={item}
+          stimulus={stimulus ?? null}
+          value={value as { selected?: string[] } | undefined}
+          onChange={onChange as (answer: { selected: string[] }) => void}
+        />
+      );
     case "academic_passage":
+      return (
+        <AcademicPassage
+          item={item}
+          stimulus={stimulus ?? null}
+          value={value as { selected?: string[] } | undefined}
+          onChange={onChange as (answer: { selected: string[] }) => void}
+        />
+      );
     case "choose_a_response":
     case "conversation":
     case "announcement":

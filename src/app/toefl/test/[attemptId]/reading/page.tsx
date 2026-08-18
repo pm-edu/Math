@@ -324,25 +324,18 @@ export default function ToeflReadingTestPage({ params }: { params: Promise<{ att
 
       {errorMsg && <p className="mx-auto max-w-3xl px-6 text-sm text-red-600">{errorMsg}</p>}
 
-      <div className="mx-auto grid max-w-3xl gap-6 px-6 pb-24 pt-2 md:grid-cols-2">
-        {activeStimulus && (
-          <div className="rounded-2xl border border-[var(--border-c)] bg-white p-5">
-            {activeStimulus.title && (
-              <p className="mb-2 text-sm font-semibold text-[var(--foreground)]">{activeStimulus.title}</p>
-            )}
-            {activeStimulus.body && (
-              <p className="whitespace-pre-line text-sm leading-relaxed text-[var(--foreground)]">
-                {activeStimulus.body}
-              </p>
-            )}
-          </div>
-        )}
-        <div className={activeStimulus ? "" : "md:col-span-2"}>
+      <div className="mx-auto max-w-3xl px-6 pb-24 pt-2">
+        {/* 지문 표시는 이제 TaskRenderer 하위 컴포넌트(DailyLifeReading/AcademicPassage)가
+            stimulus를 받아 스스로 그린다(2026-08-18 재작업) — 여기서 별도로 안 그린다. 안
+            그러면 지문이 두 번(여기+컴포넌트 내부) 나온다. complete_the_words는 애초에
+            stimulus가 없다. */}
+        <div>
           {activeItem && (
             <TaskRenderer
               key={activeItem.id}
               item={activeItem}
               attemptId={attemptId}
+              stimulus={activeStimulus}
               value={answers[activeItem.id]}
               onChange={(answer) => handleAnswerChange(activeItem.id, answer)}
             />
