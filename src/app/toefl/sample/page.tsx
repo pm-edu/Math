@@ -5,6 +5,8 @@
 // 진짜 응시(타이머·자동저장·채점)는 전혀 없다 — 그냥 인터페이스 느낌만 보여주는 용도라
 // TaskRenderer에 로컬 state만 연결하고 어디에도 저장하지 않는다. /api/toefl/sample이
 // answer_key 없는 안전한 필드만 내려주므로 정답 노출 걱정도 없다.
+// 언어 토글(2026-08-18) 적용 대상에서 제외 — 위 §14 결정("이 화면도 영어만")이 여전히 유효해서
+// ToeflHeader에 showLanguageToggle={false}만 넘긴다(그 외 이 파일은 안 건드림).
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -35,7 +37,7 @@ export default function ToeflSamplePage() {
 
   return (
     <div data-theme="en" className="min-h-screen bg-[var(--background)]">
-      <ToeflHeader />
+      <ToeflHeader showLanguageToggle={false} />
       <main className="mx-auto max-w-2xl px-6 py-16">
         <h1 className="text-3xl font-medium text-[var(--foreground)]">Try a few sample questions</h1>
         <p className="mt-2 text-sm text-[var(--secondary)]">

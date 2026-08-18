@@ -1,5 +1,6 @@
 "use client";
 
+import { useLang } from "@/lib/i18n";
 import type { McqOption } from "@/lib/toefl/types";
 
 // 선택형 문항(리스닝/리딩 mcq류) 리뷰용 읽기 전용 목록. 정오는 색 + 아이콘을 항상 같이 쓴다
@@ -17,6 +18,7 @@ export default function OptionsReview({
   selected: string[];
   correct: string[];
 }) {
+  const { t } = useLang();
   return (
     <div className="space-y-2">
       {options.map((opt, i) => {
@@ -27,13 +29,13 @@ export default function OptionsReview({
         let marker: string | null = null;
         if (isCorrect && wasSelected) {
           style = "border-[var(--mint-dark)] bg-[var(--mint)]/30 text-[var(--foreground)]";
-          marker = "✓ Your answer (correct)";
+          marker = t("toefl_yourAnswerCorrect");
         } else if (isCorrect && !wasSelected) {
           style = "border-[var(--mint-dark)]/60 bg-[var(--mint)]/10 text-[var(--foreground)]";
-          marker = "✓ Correct answer";
+          marker = t("toefl_correctAnswerMarker");
         } else if (!isCorrect && wasSelected) {
           style = "border-red-400 bg-red-50 text-[var(--foreground)]";
-          marker = "✗ Your answer";
+          marker = t("toefl_yourAnswerWrong");
         }
 
         return (

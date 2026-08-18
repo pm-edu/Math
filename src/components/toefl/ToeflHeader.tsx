@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { site } from "@/lib/site";
+import { useLang } from "@/lib/i18n";
 
 // TOEFL 전용 헤더. 수학 사이트의 공용 Header(과목전환·언어토글·강좌메뉴)는 TOEFL과 무관해서
 // 안 가져오고, TOEFL만의 최소 요소(브랜드 로고 + 로그인 상태)로 새로 만든다.
@@ -12,11 +13,17 @@ import { site } from "@/lib/site";
 // 보이려면 "네비게이션 없음"이 아니라 "자기만의 네비게이션"이 있어야 함.
 // 응시 화면(test/[attemptId]/...)에는 이 헤더를 넣지 않는다 — spec §10 "시험 화면은 전역
 // 네비게이션 숨김(전체화면 몰입)"이 명시적 요구사항이라, 그 페이지들의 무(無)네비게이션은
-// 의도된 설계다. 이 헤더는 진입화면·리포트 화면·샘플 미리보기 화면에만 쓴다.
+// 의도된 설계다. 이 헤더는 진입화면·마이페이지·사전점검·제출후·리포트·리뷰 화면에만 쓴다.
 // 익명 로그인 분기는 제거함(2026-08-18) — 체험이 "진짜 시험 1회"에서 "가입 없이 보는 샘플
 // 미리보기"로 범위가 좁아지면서 익명 세션 자체가 더 이상 필요 없어짐(/toefl/sample 참고).
+//
+// 언어 토글(2026-08-18 추가): 기존 사이트 전역 Header.tsx의 EN/한국어 버튼과 같은 방식으로
+// src/lib/i18n.tsx의 공용 lang 쿠키/컨텍스트를 그대로 재사용한다(새 메커니즘 안 만듦). 시험
+// 응시 화면(test/[attemptId]/...)과 /toefl/sample은 이 헤더 자체를 안 쓰거나(전자)
+// showLanguageToggle=false로 토글만 숨겨서(후자) 항상 영어로 남는다 — spec §14 요구사항.
 
-export default function ToeflHeader() {
+export default function ToeflHeader({ showLanguageToggle = true }: { showLanguageToggle?: boolean }) {
+  const { lang, setLang, t } = useLang();
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
   const [email, setEmail] = useState<string | null>(null);
 
@@ -46,21 +53,37 @@ export default function ToeflHeader() {
           <span className="text-[var(--pink-dark)]">TOEFL</span>
         </Link>
         <div className="flex items-center gap-3">
+          {showLanguageToggle && (
+            <button
+              type="button"
+              onClick={() => setLang(lang === "ko" ? "en" : "ko")}
+              aria-label={lang === "ko" ? "Switch to English" : "한국어로 전환"}
+              className="rounded-full border border-[var(--border-c)] bg-white px-3 py-1.5 text-xs font-medium text-[var(--secondary)] transition-colors hover:text-[var(--foreground)]"
+            >
+              {lang === "ko" ? "EN" : "한국어"}
+            </button>
+          )}
           {loggedIn && (
             <>
               {email && <span className="hidden text-xs text-[var(--secondary)] sm:inline">{email}</span>}
+              <Link
+                href="/toefl/mypage"
+                className="text-xs font-medium text-[var(--secondary)] underline hover:text-[var(--foreground)]"
+              >
+                {t("mypage")}
+              </Link>
               <button
                 type="button"
                 onClick={handleLogout}
                 className="text-xs font-medium text-[var(--secondary)] underline hover:text-[var(--foreground)]"
               >
-                Log out
+                {t("logout")}
               </button>
             </>
           )}
           {loggedIn === false && (
             <Link href="/login?toefl=1" className="text-xs font-medium text-[var(--pink-dark)] underline">
-              Log in
+              {t("login")}
             </Link>
           )}
         </div>

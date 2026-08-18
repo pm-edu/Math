@@ -72,8 +72,10 @@ export function bandToCefr(band: number): string {
 }
 
 // 밴드 숫자만으로는 학생이 "그래서 뭘 할 수 있다는 건지" 알기 어렵다는 게 리포트 화면 검토에서
-// 나온 지적이라, CEFR 등급별 짧은 평문 설명을 붙인다. 학생 응시 화면은 영어만 쓴다(spec §14).
-const CEFR_DESCRIPTION: Record<string, string> = {
+// 나온 지적이라, CEFR 등급별 짧은 평문 설명을 붙인다. 리포트는 안내 화면이라 언어 토글 대상이고
+// (2026-08-18), 시험 응시 화면(§14)과는 별개다 — 그래서 en/ko 둘 다 여기 순수함수로 갖고 있는다
+// (컴포넌트 쪽 DICT로 옮기지 않은 이유: bandToCefr 매핑과 함께 있어야 값이 어긋날 일이 없어서).
+const CEFR_DESCRIPTION_EN: Record<string, string> = {
   A1: "You can understand basic phrases and very simple exchanges.",
   A2: "You can follow short, simple texts and conversations on familiar topics.",
   B1: "You can follow the main points of clear, standard input on familiar matters.",
@@ -82,6 +84,16 @@ const CEFR_DESCRIPTION: Record<string, string> = {
   C2: "You can understand virtually everything you read or hear with ease.",
 };
 
-export function bandDescription(band: number): string {
-  return CEFR_DESCRIPTION[bandToCefr(band)];
+const CEFR_DESCRIPTION_KO: Record<string, string> = {
+  A1: "기본적인 표현과 아주 간단한 대화를 이해할 수 있습니다.",
+  A2: "익숙한 주제의 짧고 간단한 글과 대화를 따라갈 수 있습니다.",
+  B1: "익숙한 주제라면 명확하고 표준적인 내용의 핵심을 따라갈 수 있습니다.",
+  B2: "대부분의 학술 강의와 읽기 자료를 따라갈 수 있으며, 빠르거나 전문적인 부분에서만 가끔 놓칠 수 있습니다.",
+  C1: "까다롭고 긴 학술 텍스트와 강의도 폭넓게 이해할 수 있습니다.",
+  C2: "읽거나 듣는 거의 모든 내용을 어려움 없이 이해할 수 있습니다.",
+};
+
+export function bandDescription(band: number, lang: "en" | "ko" = "en"): string {
+  const cefr = bandToCefr(band);
+  return (lang === "ko" ? CEFR_DESCRIPTION_KO : CEFR_DESCRIPTION_EN)[cefr];
 }

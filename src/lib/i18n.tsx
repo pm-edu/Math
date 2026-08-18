@@ -160,6 +160,259 @@ const DICT = {
     en: "Failed to delete account. Please try again shortly.",
   },
   dangerZone: { ko: "계정 관리", en: "Account" },
+
+  // ===== TOEFL 안내 화면 전용 (2026-08-18) =====
+  // 시험 응시 화면(test/[attemptId]/...)과 /toefl/sample은 절대 여기 안 들어간다 — spec §14
+  // "학생 응시 화면은 영어만" 이 여전히 유효해서, 그 화면들은 이 사전과 무관하게 하드코딩
+  // 영어로 남는다. 아래는 진입/사전점검/마이페이지/제출후/리포트/리뷰 화면(전부 ToeflHeader가
+  // 있는 "안내" 화면)에서만 쓴다.
+  toefl_myPageSubtitle: { ko: "진행 중인 시험과 지난 응시 기록입니다.", en: "Your in-progress and past TOEFL attempts." },
+  toefl_backHome: { ko: "← TOEFL 홈으로", en: "← Back to TOEFL home" },
+  toefl_fullTest: { ko: "풀 모의고사", en: "Full test" },
+  toefl_sectionPractice: { ko: "영역별 연습", en: "Section practice" },
+  toefl_loadFailed: { ko: "불러오지 못했습니다.", en: "Failed to load." },
+  toefl_reportNotFound: { ko: "리포트를 찾을 수 없습니다.", en: "Report not found." },
+  toefl_sectionReading: { ko: "리딩", en: "Reading" },
+  toefl_sectionListening: { ko: "리스닝", en: "Listening" },
+  toefl_sectionSpeaking: { ko: "스피킹", en: "Speaking" },
+  toefl_sectionWriting: { ko: "라이팅", en: "Writing" },
+  toefl_sectionDescReading: {
+    ko: "빈칸 어휘 문제와 짧은 지문 독해",
+    en: "Fill-in-the-blank vocabulary and short passages",
+  },
+  toefl_sectionDescListening: {
+    ko: "대화, 안내방송, 강의 듣기",
+    en: "Conversations, announcements, and lectures",
+  },
+  toefl_sectionDescSpeaking: {
+    ko: "문장 따라 말하기와 인터뷰 질문 답하기",
+    en: "Repeat sentences and answer interview questions",
+  },
+  toefl_sectionDescWriting: {
+    ko: "문장 완성하기와 구조화된 답안 작성",
+    en: "Build sentences and write structured responses",
+  },
+
+  // 진입화면
+  toefl_title: { ko: "TOEFL 연습", en: "TOEFL Practice" },
+  toefl_subtitle: {
+    ko: "2026년 개편 포맷 · Reading·Listening은 실력에 맞춰 난이도가 조정됩니다",
+    en: "2026 format · Reading & Listening adapt to your level",
+  },
+  toefl_seeSample: { ko: "샘플 문제 보기 →", en: "See sample questions →" },
+  toefl_sampleNote: {
+    ko: "계정 없이 볼 수 있습니다. 전체 채점 응시는 가입 후 가능합니다.",
+    en: "No account needed. Sign up to take the full, scored test.",
+  },
+  toefl_noForms: { ko: "아직 준비된 시험이 없습니다.", en: "No practice sets are available yet." },
+  toefl_recommended: { ko: "추천", en: "Recommended" },
+  toefl_takenBefore: { ko: "이전에 {count}회 응시함", en: "Taken {count} time(s) before" },
+  toefl_fullTestTitle: { ko: "풀 모의고사 응시하기", en: "Take the Full Practice Test" },
+  toefl_fullTestSummary: {
+    ko: "4개 영역 · 문항 {count}개 · 총 약 {duration}(쉬는 시간 없음)",
+    en: "4 sections · {count} questions · about {duration} total, no breaks",
+  },
+  toefl_retakeFull: { ko: "다시 응시하기 →", en: "Retake Full Test →" },
+  toefl_startFull: { ko: "풀 모의고사 시작 →", en: "Start Full Test →" },
+  toefl_practiceSectionTitle: { ko: "한 영역씩 연습하기", en: "Practice one section at a time" },
+  toefl_practiceSectionSub: { ko: "짧은 세션, 같은 문제은행", en: "Shorter sessions, same question bank" },
+  toefl_sectionSummary: { ko: "문항 {count}개 · 약 {duration}", en: "{count} questions · about {duration}" },
+  toefl_notAvailable: { ko: "아직 준비되지 않았습니다", en: "Not available yet" },
+  toefl_practiceButton: { ko: "연습하기", en: "Practice" },
+  toefl_trademark: {
+    ko: "TOEFL®은 ETS의 등록상표이며, 본 서비스는 ETS의 승인이나 제휴 관계가 없습니다.",
+    en: "TOEFL® is a registered trademark of ETS. This service is not endorsed or affiliated with ETS.",
+  },
+
+  // 사전 점검 화면
+  toefl_checkTitle: { ko: "시작하기 전에", en: "Before you start" },
+  toefl_checkSubtitle: {
+    ko: "응시 중 방해받지 않도록 간단히 확인합니다.",
+    en: "A quick check so nothing interrupts you mid-test.",
+  },
+  toefl_safariWarning: {
+    ko: "Safari는 오디오 녹음에 알려진 제약이 있습니다. Speaking 영역은 Chrome이나 Firefox를 권장합니다.",
+    en: "Safari has known limitations recording audio. Chrome or Firefox is recommended for the Speaking section.",
+  },
+  toefl_screenTooNarrow: {
+    ko: "화면 너비가 {width}px보다 좁습니다. 풀 모의고사는 노트북·데스크톱 크기 화면이 필요합니다 — 다른 기기로 접속해주세요. (영역별 연습은 이 화면에서도 가능합니다.)",
+    en: "Your screen is narrower than {width}px. The full test needs a laptop/desktop-sized screen — please switch devices to continue. (Section practice still works on this screen.)",
+  },
+  toefl_audioCheckLabel: { ko: "오디오 확인", en: "Audio check" },
+  toefl_audioCheckDesc: {
+    ko: "테스트 소리를 재생해서 잘 들리는지 확인해주세요.",
+    en: "Play the test sound and confirm you can hear it clearly.",
+  },
+  toefl_playTestSound: { ko: "▶ 테스트 소리 재생", en: "▶ Play test sound" },
+  toefl_heardClearly: { ko: "소리가 잘 들렸습니다", en: "I heard the sound clearly" },
+  toefl_micCheckLabel: { ko: "마이크 확인", en: "Microphone check" },
+  toefl_micCheckDesc: {
+    ko: "3초간 녹음 후 재생해보세요 — 이 영역은 Speaking이 포함됩니다.",
+    en: "Record 3 seconds and play it back — this section requires Speaking.",
+  },
+  toefl_record3s: { ko: "● 3초 녹음", en: "● Record 3s" },
+  toefl_recordingEllipsis: { ko: "● 녹음 중…", en: "● Recording…" },
+  toefl_soundsGood: { ko: "✓ 잘 들려요", en: "✓ Sounds good" },
+  toefl_recordAgain: { ko: "다시 녹음", en: "Record again" },
+  toefl_micConfirmed: { ko: "✓ 마이크 확인됨", en: "✓ Microphone confirmed" },
+  toefl_micBlocked: { ko: "마이크 접근이 차단되었습니다.", en: "Microphone access was blocked." },
+  toefl_micBlockedSafari: {
+    ko: "Safari: 설정 → 웹사이트 → 마이크에서 이 사이트를 허용으로 바꾼 뒤 새로고침하세요.",
+    en: "Safari: Settings → Websites → Microphone, set this site to Allow, then reload.",
+  },
+  toefl_micBlockedChrome: {
+    ko: "Chrome/Edge: 주소창 옆 🔒 아이콘 → 사이트 설정 → 마이크 → 허용으로 바꾼 뒤 새로고침하세요.",
+    en: "Chrome/Edge: click the 🔒 icon next to the address bar → Site settings → Microphone → Allow, then reload.",
+  },
+  toefl_micBlockedFirefox: {
+    ko: "(Firefox: 🔒 아이콘 → 권한 → 마이크 허용 후 새로고침하세요.)",
+    en: "(Firefox: click the 🔒 icon → Permissions → allow the mic, then reload.)",
+  },
+  toefl_tryAgain: { ko: "다시 시도", en: "Try again" },
+  toefl_continueWithoutSpeaking: { ko: "Speaking 없이 계속하기 →", en: "Continue without Speaking →" },
+  toefl_beforeYouBegin: { ko: "시작하기 전 유의사항", en: "Before you begin" },
+  toefl_noticeAudioOnce: { ko: "오디오는 한 번만 재생됩니다.", en: "Each audio clip plays only once." },
+  toefl_noticeNoReRecord: {
+    ko: "Speaking 답변은 제출 후 다시 녹음할 수 없습니다.",
+    en: "Speaking responses can't be re-recorded once submitted.",
+  },
+  toefl_noticeTimerRuns: {
+    ko: "시험 화면을 벗어나도 타이머는 멈추지 않고 계속 흐릅니다.",
+    en: "Leaving the test doesn't pause the timer — it keeps running.",
+  },
+  toefl_iUnderstand: { ko: "확인했습니다", en: "I understand" },
+  toefl_starting: { ko: "시작하는 중...", en: "Starting..." },
+  toefl_start: { ko: "시작 →", en: "Start →" },
+  toefl_missingSelection: { ko: "선택된 시험 정보가 없습니다.", en: "Missing test selection." },
+  toefl_failedToStart: { ko: "시험을 시작하지 못했습니다.", en: "Failed to start the test." },
+
+  // 마이페이지
+  toefl_inProgress: { ko: "진행 중", en: "In progress" },
+  toefl_nothingInProgress: { ko: "진행 중인 시험이 없습니다.", en: "Nothing in progress." },
+  toefl_discard: { ko: "폐기", en: "Discard" },
+  toefl_discarding: { ko: "폐기하는 중…", en: "Discarding…" },
+  toefl_resume: { ko: "이어하기 →", en: "Resume →" },
+  toefl_pastAttempts: { ko: "지난 응시 기록", en: "Past attempts" },
+  toefl_noPastAttempts: { ko: "아직 지난 응시 기록이 없습니다.", en: "No past attempts yet." },
+  toefl_viewReport: { ko: "리포트 보기 →", en: "View report →" },
+  toefl_discardConfirm: {
+    ko: "이 진행 중인 시험을 폐기할까요? 다시 이어할 수 없습니다.",
+    en: "Discard this in-progress attempt? You won't be able to resume it.",
+  },
+  toefl_failedDiscard: { ko: "폐기하지 못했습니다: {message}", en: "Failed to discard: {message}" },
+  toefl_startedOn: { ko: "{date}에 시작함", en: "Started {date}" },
+  toefl_inProgressSuffix: { ko: "{section} 진행 중", en: "{section} in progress" },
+
+  // 제출 직후(채점 대기) 화면
+  toefl_submittedTitle: { ko: "시험이 제출되었습니다", en: "Your test has been submitted" },
+  toefl_submittedDesc: {
+    ko: "대부분의 점수는 바로 확인할 수 있습니다. AI 채점을 쓰는 Speaking·Writing 응답은 조금 더 걸릴 수 있어요 — 이 탭을 닫으셔도 됩니다. 나중에 확인해도 결과는 그대로 남아 있습니다.",
+    en: "Most scores are ready right away. Speaking and Writing responses that use AI scoring can take a little longer — you can safely close this tab and check your report later; nothing will be lost.",
+  },
+  toefl_readingListening: { ko: "Reading & Listening", en: "Reading & Listening" },
+  toefl_speakingWriting: { ko: "Speaking & Writing", en: "Speaking & Writing" },
+  toefl_bandPrefix: { ko: "✓ 밴드 {band}", en: "✓ Band {band}" },
+  toefl_bandLabel: { ko: "밴드 {band}", en: "Band {band}" },
+  toefl_gradedCount: { ko: "{done} / {total} 채점 완료", en: "{done} / {total} graded" },
+  toefl_itemN: { ko: "문항 {n}", en: "Item {n}" },
+  toefl_statusGraded: { ko: "채점 완료", en: "Graded" },
+  toefl_statusGrading: { ko: "채점 중…", en: "Grading…" },
+  toefl_statusPendingManual: { ko: "수동 검토 대기", en: "Pending manual review" },
+  toefl_gradingInProgress: { ko: "채점 진행 중…", en: "Grading in progress…" },
+  toefl_continueToReport: { ko: "리포트 보러 가기 →", en: "Continue to your report →" },
+  toefl_attemptNotFound: { ko: "응시 기록을 찾을 수 없습니다.", en: "Attempt not found." },
+
+  // 종합 리포트
+  toefl_reportTitle: { ko: "TOEFL 리포트", en: "TOEFL Report" },
+  toefl_reportIncomplete: {
+    ko: "아직 모든 영역이 끝나지 않았습니다 — 이 리포트는 완료된 영역만 반영합니다.",
+    en: "Not every section is finished yet — this report only reflects completed sections.",
+  },
+  toefl_tutorCtaTitle: { ko: "✨ 선생님 첨삭을 받아보시겠어요?", en: "✨ Want a teacher's eyes on this?" },
+  toefl_tutorCtaDesc: {
+    ko: "{count}개의 응답은 자동 채점을 넘어서는 전문가 피드백이 도움이 될 수 있습니다. 실제 TOEFL 튜터의 1:1 피드백을 받아보세요.",
+    en: "{count} of your responses could use expert feedback beyond automated scoring. Get 1:1 feedback from a real TOEFL tutor.",
+  },
+  toefl_tutorCtaButton: { ko: "1:1 튜터 피드백 신청 →", en: "Request 1:1 tutor feedback →" },
+  toefl_colSection: { ko: "영역", en: "Section" },
+  toefl_colScaled: { ko: "영역점수 (0–30)", en: "Scaled (0–30)" },
+  toefl_colBand: { ko: "밴드", en: "Band" },
+  toefl_notTaken: { ko: "응시 안 함", en: "not taken" },
+  toefl_overallBand: { ko: "종합 밴드", en: "Overall band" },
+  toefl_totalScaled: { ko: "총점: {total} / {max}", en: "Total scaled: {total} / {max}" },
+  toefl_adaptiveRouting: { ko: "적응형 라우팅", en: "Adaptive routing" },
+  toefl_routeCapEasy: {
+    ko: "Stage 1 점수에 따라 표준 난이도 Stage 2로 배정되었습니다. 이 경로는 밴드 4.0으로 상한이 있습니다.",
+    en: "Your Stage 1 score routed you to the standard-difficulty Stage 2 set. Scores on this path are capped at band 4.0.",
+  },
+  toefl_routeCapHard: {
+    ko: "Stage 1 점수에 따라 고난도 Stage 2로 배정되었습니다. 이 경로는 점수 상한이 없습니다.",
+    en: "Your Stage 1 score routed you to the harder Stage 2 set. No score cap applies on this path.",
+  },
+  toefl_strong: { ko: "강점:", en: "Strong:" },
+  toefl_needsWork: { ko: "보완 필요:", en: "Needs work:" },
+  toefl_reviewEachQuestion: { ko: "문항별 리뷰 보기 →", en: "Review each question →" },
+
+  // 문항별 리뷰
+  toefl_questionReview: { ko: "문항별 리뷰", en: "Question Review" },
+  toefl_reviewSubtitle: {
+    ko: "모든 문항의 내 답, 정답, 해설을 확인하세요.",
+    en: "Your answers, the correct answers, and explanations for every question.",
+  },
+  toefl_backToReport: { ko: "← 리포트로", en: "← Back to report" },
+  toefl_failedLoadReview: { ko: "리뷰를 불러오지 못했습니다.", en: "Failed to load the review." },
+  toefl_pendingReview: { ko: "🧑‍🏫 검토 대기 중", en: "🧑‍🏫 Pending review" },
+  toefl_notAnswered: { ko: "미응답", en: "Not answered" },
+  toefl_correct: { ko: "✓ 정답", en: "✓ Correct" },
+  toefl_incorrect: { ko: "✗ 오답", en: "✗ Incorrect" },
+  toefl_scored: { ko: "채점됨", en: "Scored" },
+  toefl_explanationLabel: { ko: "해설", en: "Explanation" },
+  toefl_originalSentence: { ko: "원문 문장", en: "Original sentence" },
+  toefl_yourRecording: { ko: "내 녹음", en: "Your recording" },
+  toefl_yourResponse: { ko: "내 답변", en: "Your response" },
+  toefl_interviewQuestion: { ko: "인터뷰 질문", en: "Interview question" },
+  toefl_target: { ko: "목표 문장:", en: "Target:" },
+  toefl_whatWeHeard: { ko: "인식된 내용:", en: "What we heard:" },
+  toefl_yourInsertionPoint: { ko: "내가 고른 위치:", en: "Your insertion point:" },
+  toefl_correctLabel: { ko: "정답:", en: "Correct:" },
+  toefl_correctPrefix: { ko: "정답:", en: "Correct:" },
+  toefl_noAnswer: { ko: "(응답 없음)", en: "(no answer)" },
+  toefl_stillPendingManual: {
+    ko: "이 응답은 아직 수동 검토를 기다리고 있습니다.",
+    en: "This response is still waiting on manual review.",
+  },
+  toefl_showTranscript: { ko: "스크립트 보기", en: "Show transcript" },
+  toefl_addToReview: { ko: "+ 관련 단어 {count}개 복습에 추가", en: "+ Add {count} related word(s) to review queue" },
+  toefl_addingToReview: { ko: "추가하는 중…", en: "Adding…" },
+  toefl_addedToReview: { ko: "✓ 단어 {count}개 복습에 추가함", en: "✓ Added {count} word(s) to review" },
+  toefl_addToReviewFailed: { ko: "추가하지 못했습니다 — 다시 시도해주세요.", en: "Couldn't add to review — please try again." },
+  toefl_yourAnswerCorrect: { ko: "✓ 내 답 (정답)", en: "✓ Your answer (correct)" },
+  toefl_correctAnswerMarker: { ko: "✓ 정답", en: "✓ Correct answer" },
+  toefl_yourAnswerWrong: { ko: "✗ 내 답", en: "✗ Your answer" },
+  toefl_audioUnavailable: { ko: "오디오를 사용할 수 없습니다.", en: "Audio unavailable." },
+
+  // 문항 유형(리뷰 화면 전용 — 응시 화면 자체는 항상 영어 그대로)
+  toefl_taskLabel_complete_the_words: { ko: "빈칸 채우기", en: "complete the words" },
+  toefl_taskLabel_daily_life: { ko: "일상 독해", en: "daily life" },
+  toefl_taskLabel_academic_passage: { ko: "학술 지문", en: "academic passage" },
+  toefl_taskLabel_choose_a_response: { ko: "알맞은 응답 고르기", en: "choose a response" },
+  toefl_taskLabel_conversation: { ko: "대화", en: "conversation" },
+  toefl_taskLabel_announcement: { ko: "안내방송", en: "announcement" },
+  toefl_taskLabel_academic_talk: { ko: "학술 강의", en: "academic talk" },
+  toefl_taskLabel_listen_and_repeat: { ko: "듣고 따라 말하기", en: "listen and repeat" },
+  toefl_taskLabel_take_an_interview: { ko: "인터뷰", en: "take an interview" },
+  toefl_taskLabel_build_a_sentence: { ko: "문장 완성", en: "build a sentence" },
+  toefl_taskLabel_write_an_email: { ko: "이메일 쓰기", en: "write an email" },
+  toefl_taskLabel_academic_discussion: { ko: "학술 토론", en: "academic discussion" },
+
+  // 루브릭 지표명(Writing/Speaking AI 채점, 고정 7종)
+  toefl_metric_task_achievement: { ko: "과제 수행", en: "task achievement" },
+  toefl_metric_coherence: { ko: "논리적 연결", en: "coherence" },
+  toefl_metric_lexical_resource: { ko: "어휘력", en: "lexical resource" },
+  toefl_metric_grammar: { ko: "문법", en: "grammar" },
+  toefl_metric_delivery: { ko: "전달력", en: "delivery" },
+  toefl_metric_language_use: { ko: "언어 사용", en: "language use" },
+  toefl_metric_topic_development: { ko: "내용 전개", en: "topic development" },
 } as const;
 
 // 강좌 분류는 값이 4개로 정해져 있어서 화면에서 번역할 수 있다.
@@ -172,6 +425,12 @@ const CATEGORY_EN: Record<string, string> = {
 
 export function categoryLabel(category: string, lang: Lang): string {
   return lang === "en" ? CATEGORY_EN[category] ?? category : category;
+}
+
+// DICT 값 안의 "{key}" 자리표시자를 채워 넣는다(TOEFL 화면들처럼 문항 수·날짜 등을 문구에
+// 끼워 넣어야 하는 경우용 — 기존 DICT엔 이런 값 있는 문구가 없어서 여태 없었다).
+export function interpolate(template: string, vars: Record<string, string | number>): string {
+  return Object.entries(vars).reduce((s, [k, v]) => s.replaceAll(`{${k}}`, String(v)), template);
 }
 
 export type DictKey = keyof typeof DICT;

@@ -7,14 +7,17 @@
 // 저장해둔 값을 그대로 읽는다(요청: "리포트 데이터를 클라이언트에서 재계산하지 말 것" — 예전엔
 // 여기서 매번 평균/합산을 다시 계산했었음). 라우팅 결과·강약점은 skill_tags 등 staff-only 데이터가
 // 필요해서 /api/toefl/attempts/[id]/insights 라우트(service role)가 계산한 값만 그대로 쓴다.
+// 언어 토글 적용 대상(2026-08-18) — 안내 화면. 라우팅 문구는 서버가 프로즈를 안 내려주고
+// routed_to 값만 주므로, 여기서 t()로 직접 조립한다(그래야 언어 전환 시 이 문장도 같이 바뀜).
 
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { bandDescription, bandToCefr } from "@/lib/toefl/scoring";
-import { SECTION_LABEL, SECTION_ORDER } from "@/lib/toefl/section-order";
+import { SECTION_LABEL_KEY, SECTION_ORDER } from "@/lib/toefl/section-order";
 import ToeflHeader from "@/components/toefl/ToeflHeader";
 import BandGauge from "@/components/toefl/BandGauge";
+import { interpolate, useLang, type DictKey } from "@/lib/i18n";
 import type { ToeflRoute, ToeflSection } from "@/lib/toefl/types";
 import type { SkillTagStat } from "@/lib/toefl/scoring";
 
@@ -29,14 +32,19 @@ type SectionRow = {
 type Insight = {
   section: ToeflSection;
   routed_to: ToeflRoute | null;
-  routing_note: string | null;
   weak_tags: SkillTagStat[];
   strong_tags: SkillTagStat[];
+};
+
+const ROUTE_CAP_KEY: Record<"easy" | "hard", DictKey> = {
+  easy: "toefl_routeCapEasy",
+  hard: "toefl_routeCapHard",
 };
 
 export default function ToeflReportPage({ params }: { params: Promise<{ attemptId: string }> }) {
   const { attemptId } = use(params);
   const router = useRouter();
+  const { lang, t } = useLang();
 
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -114,7 +122,7 @@ export default function ToeflReportPage({ params }: { params: Promise<{ attemptI
       <div data-theme="en" className="min-h-screen bg-[var(--background)]">
         <ToeflHeader />
         <main className="flex items-center justify-center py-24">
-          <p className="text-sm text-[var(--secondary)]">Loading...</p>
+          <p className="text-sm text-[var(--secondary)]">{t("loading")}</p>
         </main>
       </div>
     );
@@ -125,9 +133,9 @@ export default function ToeflReportPage({ params }: { params: Promise<{ attemptI
       <div data-theme="en" className="min-h-screen bg-[var(--background)]">
         <ToeflHeader />
         <main className="flex flex-col items-center justify-center gap-3 px-6 py-24 text-center">
-          <p className="text-sm text-red-600">Report not found.</p>
+          <p className="text-sm text-red-600">⚠ {t("toefl_reportNotFound")}</p>
           <button onClick={() => router.push("/toefl")} className="text-sm text-[var(--secondary)] underline">
-            ← Back to TOEFL home
+            {t("toefl_backHome")}
           </button>
         </main>
       </div>
@@ -138,33 +146,33 @@ export default function ToeflReportPage({ params }: { params: Promise<{ attemptI
   const allDone = finishedSections.length === sections.length && sections.length > 0;
   const cefr = overallBand ? bandToCefr(overallBand) : null;
   const insightBySection = new Map(insights.map((i) => [i.section, i]));
+  const routedInsights = insights.filter((i) => i.routed_to === "easy" || i.routed_to === "hard");
 
   return (
     <div data-theme="en" className="min-h-screen bg-[var(--background)]">
       <ToeflHeader />
       <main className="mx-auto max-w-2xl px-6 py-16">
-        <h1 className="text-3xl font-medium text-[var(--foreground)]">TOEFL Report</h1>
-        <p className="mt-1 text-sm text-[var(--secondary)]">{mode === "full" ? "Full practice test" : "Section practice"}</p>
+        <h1 className="text-3xl font-medium text-[var(--foreground)]">{t("toefl_reportTitle")}</h1>
+        <p className="mt-1 text-sm text-[var(--secondary)]">{mode === "full" ? t("toefl_fullTest") : t("toefl_sectionPractice")}</p>
 
         {!allDone && (
           <p className="mt-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            Not every section is finished yet — this report only reflects completed sections.
+            {t("toefl_reportIncomplete")}
           </p>
         )}
 
         {pendingManualCount > 0 && (
           <div className="mt-4 rounded-2xl border border-[var(--pink)]/40 bg-[var(--pink-light)]/30 px-5 py-4">
-            <p className="text-sm font-semibold text-[var(--pink-dark)]">✨ Want a teacher&apos;s eyes on this?</p>
+            <p className="text-sm font-semibold text-[var(--pink-dark)]">{t("toefl_tutorCtaTitle")}</p>
             <p className="mt-1 text-xs leading-relaxed text-[var(--foreground)]">
-              {pendingManualCount} of your response{pendingManualCount > 1 ? "s" : ""} could use expert feedback beyond
-              automated scoring. Get 1:1 feedback from a real TOEFL tutor.
+              {interpolate(t("toefl_tutorCtaDesc"), { count: pendingManualCount })}
             </p>
             <button
               type="button"
               onClick={() => router.push("/contact")}
               className="mt-3 rounded-full bg-[var(--pink-dark)] px-4 py-1.5 text-xs font-medium text-white"
             >
-              Request 1:1 tutor feedback →
+              {t("toefl_tutorCtaButton")}
             </button>
           </div>
         )}
@@ -173,17 +181,17 @@ export default function ToeflReportPage({ params }: { params: Promise<{ attemptI
           <table className="w-full text-sm">
             <thead className="bg-[var(--mint)]/20 text-left text-[var(--secondary)]">
               <tr>
-                <th className="px-4 py-2 font-medium">Section</th>
-                <th className="px-4 py-2 font-medium">Scaled (0–30)</th>
-                <th className="px-4 py-2 font-medium">Band</th>
+                <th className="px-4 py-2 font-medium">{t("toefl_colSection")}</th>
+                <th className="px-4 py-2 font-medium">{t("toefl_colScaled")}</th>
+                <th className="px-4 py-2 font-medium">{t("toefl_colBand")}</th>
               </tr>
             </thead>
             <tbody>
               {sections.map((s) => (
                 <tr key={s.section} className="border-t border-[var(--border-c)]">
-                  <td className="px-4 py-2 text-[var(--foreground)]">{SECTION_LABEL[s.section]}</td>
+                  <td className="px-4 py-2 text-[var(--foreground)]">{t(SECTION_LABEL_KEY[s.section])}</td>
                   <td className="px-4 py-2 text-[var(--foreground)]">
-                    {s.finished_at ? (s.scaled_score ?? "—") : "not taken"}
+                    {s.finished_at ? (s.scaled_score ?? "—") : t("toefl_notTaken")}
                   </td>
                   <td className="px-4 py-2 text-[var(--foreground)]">{s.finished_at ? (s.band ?? "—") : "—"}</td>
                 </tr>
@@ -193,13 +201,13 @@ export default function ToeflReportPage({ params }: { params: Promise<{ attemptI
         </div>
 
         <div className="mt-6 rounded-2xl border border-[var(--mint-dark)]/30 bg-[var(--mint)]/30 px-6 py-6 text-center">
-          <p className="text-sm text-[var(--secondary)]">Overall band</p>
+          <p className="text-sm text-[var(--secondary)]">{t("toefl_overallBand")}</p>
           <p className="text-4xl font-bold text-[var(--mint-dark)]">{overallBand || "—"}</p>
           <div className="mx-auto mt-4 max-w-xs">
             <BandGauge band={overallBand ?? 0} />
           </div>
           <p className="mt-1 text-xs text-[var(--secondary)]">
-            Total scaled: {totalScaled ?? "—"} / {sections.length * 30}
+            {interpolate(t("toefl_totalScaled"), { total: totalScaled ?? "—", max: sections.length * 30 })}
           </p>
           {overallBand !== null && overallBand > 0 && cefr && (
             <>
@@ -207,23 +215,21 @@ export default function ToeflReportPage({ params }: { params: Promise<{ attemptI
                 ≈ CEFR {cefr}
               </span>
               <p className="mx-auto mt-3 max-w-sm text-xs leading-relaxed text-[var(--secondary)]">
-                {bandDescription(overallBand)}
+                {bandDescription(overallBand, lang)}
               </p>
             </>
           )}
         </div>
 
-        {insights.some((i) => i.routing_note) && (
+        {routedInsights.length > 0 && (
           <div className="mt-6 rounded-2xl border border-[var(--border-c)] bg-white px-5 py-4">
-            <h2 className="text-sm font-semibold text-[var(--foreground)]">Adaptive routing</h2>
-            {insights
-              .filter((i) => i.routing_note)
-              .map((i) => (
-                <p key={i.section} className="mt-1.5 text-xs leading-relaxed text-[var(--secondary)]">
-                  <span className="font-medium text-[var(--foreground)]">{SECTION_LABEL[i.section]}:</span>{" "}
-                  {i.routing_note}
-                </p>
-              ))}
+            <h2 className="text-sm font-semibold text-[var(--foreground)]">{t("toefl_adaptiveRouting")}</h2>
+            {routedInsights.map((i) => (
+              <p key={i.section} className="mt-1.5 text-xs leading-relaxed text-[var(--secondary)]">
+                <span className="font-medium text-[var(--foreground)]">{t(SECTION_LABEL_KEY[i.section])}:</span>{" "}
+                {t(ROUTE_CAP_KEY[i.routed_to as "easy" | "hard"])}
+              </p>
+            ))}
           </div>
         )}
 
@@ -236,15 +242,15 @@ export default function ToeflReportPage({ params }: { params: Promise<{ attemptI
                 if (insight.weak_tags.length === 0 && insight.strong_tags.length === 0) return null;
                 return (
                   <div key={s.section} className="rounded-2xl border border-[var(--border-c)] bg-white px-4 py-3">
-                    <p className="text-xs font-semibold text-[var(--foreground)]">{SECTION_LABEL[s.section]}</p>
+                    <p className="text-xs font-semibold text-[var(--foreground)]">{t(SECTION_LABEL_KEY[s.section])}</p>
                     {insight.strong_tags.length > 0 && (
                       <p className="mt-1.5 text-xs text-[var(--mint-dark)]">
-                        ✓ Strong: {insight.strong_tags.map((t) => t.tag.replace(/_/g, " ")).join(", ")}
+                        ✓ {t("toefl_strong")} {insight.strong_tags.map((tag) => tag.tag.replace(/_/g, " ")).join(", ")}
                       </p>
                     )}
                     {insight.weak_tags.length > 0 && (
                       <p className="mt-1 text-xs text-red-600">
-                        ⚠ Needs work: {insight.weak_tags.map((t) => t.tag.replace(/_/g, " ")).join(", ")}
+                        ⚠ {t("toefl_needsWork")} {insight.weak_tags.map((tag) => tag.tag.replace(/_/g, " ")).join(", ")}
                       </p>
                     )}
                   </div>
@@ -257,11 +263,11 @@ export default function ToeflReportPage({ params }: { params: Promise<{ attemptI
           onClick={() => router.push(`/toefl/report/${attemptId}/review`)}
           className="mt-8 w-full rounded-full border border-[var(--pink)] px-6 py-3 text-sm font-medium text-[var(--pink-dark)]"
         >
-          Review each question →
+          {t("toefl_reviewEachQuestion")}
         </button>
 
         <button onClick={() => router.push("/toefl")} className="mt-4 block text-sm text-[var(--secondary)] underline">
-          ← Back to TOEFL home
+          {t("toefl_backHome")}
         </button>
       </main>
     </div>

@@ -8,11 +8,13 @@
 // attempt 생성(POST /api/toefl/attempts)을 "시작하기" 클릭 시점으로 그대로 미뤄뒀다. 기존
 // 진입화면 로직을 그대로 여기로 옮겨온 것뿐이라 서버 쪽엔 변경이 없다).
 // 모든 항목을 통과해야 "시작하기"가 활성화된다.
+// 언어 토글 적용 대상(2026-08-18) — 안내 화면이라 §14의 "응시 화면 영어전용"과 무관하다.
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import ToeflHeader from "@/components/toefl/ToeflHeader";
+import { interpolate, useLang } from "@/lib/i18n";
 import type { ToeflSection } from "@/lib/toefl/types";
 
 const MIN_SCREEN_WIDTH = 1024;
@@ -29,6 +31,7 @@ function detectSafari(): boolean {
 export default function ToeflCheckPage() {
   const router = useRouter();
   const params = useSearchParams();
+  const { t } = useLang();
   const formId = params.get("formId");
   const mode = params.get("mode") === "full" ? "full" : "section_practice";
   const section = params.get("section") as ToeflSection | null;
@@ -164,7 +167,7 @@ export default function ToeflCheckPage() {
     const data = await res.json();
     setStarting(false);
     if (!res.ok || !data.ok) {
-      setError(data.message ?? "Failed to start the test.");
+      setError(data.message ?? t("toefl_failedToStart"));
       return;
     }
     router.push(`/toefl/test/${data.attempt_id}/${mode === "full" ? "reading" : section}`);
@@ -175,9 +178,9 @@ export default function ToeflCheckPage() {
       <div data-theme="en" className="min-h-screen bg-[var(--background)]">
         <ToeflHeader />
         <main className="mx-auto max-w-md px-6 py-24 text-center">
-          <p className="text-sm text-red-600">Missing test selection.</p>
+          <p className="text-sm text-red-600">⚠ {t("toefl_missingSelection")}</p>
           <button onClick={() => router.push("/toefl")} className="mt-4 text-sm text-[var(--secondary)] underline">
-            ← Back to TOEFL home
+            {t("toefl_backHome")}
           </button>
         </main>
       </div>
@@ -190,38 +193,39 @@ export default function ToeflCheckPage() {
     <div data-theme="en" className="min-h-screen bg-[var(--background)]">
       <ToeflHeader />
       <main className="mx-auto max-w-lg px-6 py-16">
-        <h1 className="text-2xl font-medium text-[var(--foreground)]">Before you start</h1>
-        <p className="mt-1 text-sm text-[var(--secondary)]">A quick check so nothing interrupts you mid-test.</p>
+        <h1 className="text-2xl font-medium text-[var(--foreground)]">{t("toefl_checkTitle")}</h1>
+        <p className="mt-1 text-sm text-[var(--secondary)]">{t("toefl_checkSubtitle")}</p>
 
         {needsSpeaking && isSafari && (
           <div className="mt-5 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs text-amber-800">
-            Safari has known limitations recording audio. Chrome or Firefox is recommended for the Speaking section.
+            {t("toefl_safariWarning")}
           </div>
         )}
 
         {mode === "full" && !screenOk && (
           <div className="mt-5 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-xs text-red-700">
-            Your screen is narrower than {MIN_SCREEN_WIDTH}px. The full test needs a laptop/desktop-sized screen —
-            please switch devices to continue. (Section practice still works on this screen.)
+            {interpolate(t("toefl_screenTooNarrow"), { width: MIN_SCREEN_WIDTH })}
           </div>
         )}
 
         {/* 오디오 재생 테스트 — Listening/Speaking이 있을 때만(Reading·Writing엔 소리가 안 나옴) */}
         {needsAudio && (
           <section className="mt-6 rounded-2xl border border-[var(--border-c)] bg-white p-5">
-            <p className="text-sm font-semibold text-[var(--foreground)]">{audioStep}. Audio check</p>
-            <p className="mt-1 text-xs text-[var(--secondary)]">Play the test sound and confirm you can hear it clearly.</p>
+            <p className="text-sm font-semibold text-[var(--foreground)]">
+              {audioStep}. {t("toefl_audioCheckLabel")}
+            </p>
+            <p className="mt-1 text-xs text-[var(--secondary)]">{t("toefl_audioCheckDesc")}</p>
             <button
               type="button"
               onClick={playTestTone}
               className="mt-3 rounded-full border border-[var(--pink)] px-4 py-1.5 text-xs font-medium text-[var(--pink-dark)]"
             >
-              ▶ Play test sound
+              {t("toefl_playTestSound")}
             </button>
             {audioPlayed && (
               <label className="mt-3 flex items-center gap-2 text-xs text-[var(--foreground)]">
                 <input type="checkbox" checked={audioConfirmed} onChange={(e) => setAudioConfirmed(e.target.checked)} />
-                I heard the sound clearly
+                {t("toefl_heardClearly")}
               </label>
             )}
           </section>
@@ -230,8 +234,10 @@ export default function ToeflCheckPage() {
         {/* 마이크 테스트 (Speaking 포함시만) */}
         {needsSpeaking && (
           <section className="mt-4 rounded-2xl border border-[var(--border-c)] bg-white p-5">
-            <p className="text-sm font-semibold text-[var(--foreground)]">{micStep}. Microphone check</p>
-            <p className="mt-1 text-xs text-[var(--secondary)]">Record 3 seconds and play it back — this section requires Speaking.</p>
+            <p className="text-sm font-semibold text-[var(--foreground)]">
+              {micStep}. {t("toefl_micCheckLabel")}
+            </p>
+            <p className="mt-1 text-xs text-[var(--secondary)]">{t("toefl_micCheckDesc")}</p>
 
             {micPhase === "idle" && (
               <button
@@ -239,13 +245,13 @@ export default function ToeflCheckPage() {
                 onClick={startMicTest}
                 className="mt-3 rounded-full border border-[var(--pink)] px-4 py-1.5 text-xs font-medium text-[var(--pink-dark)]"
               >
-                ● Record 3s
+                {t("toefl_record3s")}
               </button>
             )}
 
             {micPhase === "recording" && (
               <div className="mt-3">
-                <p className="text-xs font-medium text-red-600">● Recording…</p>
+                <p className="text-xs font-medium text-red-600">{t("toefl_recordingEllipsis")}</p>
                 <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[var(--background)]">
                   <div className="h-full bg-[var(--mint-dark)] transition-all" style={{ width: `${micLevel}%` }} />
                 </div>
@@ -261,28 +267,25 @@ export default function ToeflCheckPage() {
                     onClick={() => setMicConfirmed(true)}
                     className="rounded-full border border-[var(--pink)] px-4 py-1.5 text-xs font-medium text-[var(--pink-dark)]"
                   >
-                    ✓ Sounds good
+                    {t("toefl_soundsGood")}
                   </button>
                   <button type="button" onClick={() => setMicPhase("idle")} className="text-xs text-[var(--secondary)] underline">
-                    Record again
+                    {t("toefl_recordAgain")}
                   </button>
                 </div>
-                {micConfirmed && <p className="text-xs text-[var(--mint-dark)]">✓ Microphone confirmed</p>}
+                {micConfirmed && <p className="text-xs text-[var(--mint-dark)]">{t("toefl_micConfirmed")}</p>}
               </div>
             )}
 
             {micPhase === "denied" && (
               <div className="mt-3 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-xs text-red-700">
-                <p className="font-medium">Microphone access was blocked.</p>
+                <p className="font-medium">⚠ {t("toefl_micBlocked")}</p>
                 <p className="mt-1">
-                  {isSafari
-                    ? "Safari: Settings → Websites → Microphone, set this site to Allow, then reload."
-                    : "Chrome/Edge: click the 🔒 icon next to the address bar → Site settings → Microphone → Allow, then reload."}
-                  {" "}(Firefox: click the 🔒 icon → Permissions → allow the mic, then reload.)
+                  {isSafari ? t("toefl_micBlockedSafari") : t("toefl_micBlockedChrome")} {t("toefl_micBlockedFirefox")}
                 </p>
                 <div className="mt-2 flex items-center gap-3">
                   <button type="button" onClick={startMicTest} className="font-medium underline">
-                    Try again
+                    {t("toefl_tryAgain")}
                   </button>
                   {mode === "full" && (
                     <button
@@ -290,7 +293,7 @@ export default function ToeflCheckPage() {
                       onClick={() => router.push("/toefl")}
                       className="font-medium underline"
                     >
-                      Continue without Speaking →
+                      {t("toefl_continueWithoutSpeaking")}
                     </button>
                   )}
                 </div>
@@ -301,29 +304,31 @@ export default function ToeflCheckPage() {
 
         {/* 유의사항 고지 — 항상 마지막 번호 */}
         <section className="mt-4 rounded-2xl border border-[var(--border-c)] bg-white p-5">
-          <p className="text-sm font-semibold text-[var(--foreground)]">{noticesStep}. Before you begin</p>
+          <p className="text-sm font-semibold text-[var(--foreground)]">
+            {noticesStep}. {t("toefl_beforeYouBegin")}
+          </p>
           <ul className="mt-2 list-inside list-disc space-y-1 text-xs text-[var(--secondary)]">
-            <li>Each audio clip plays only once.</li>
-            <li>Speaking responses can't be re-recorded once submitted.</li>
-            <li>Leaving the test doesn't pause the timer — it keeps running.</li>
+            <li>{t("toefl_noticeAudioOnce")}</li>
+            <li>{t("toefl_noticeNoReRecord")}</li>
+            <li>{t("toefl_noticeTimerRuns")}</li>
           </ul>
           <label className="mt-3 flex items-center gap-2 text-xs text-[var(--foreground)]">
             <input type="checkbox" checked={noticesAcked} onChange={(e) => setNoticesAcked(e.target.checked)} />
-            I understand
+            {t("toefl_iUnderstand")}
           </label>
         </section>
 
-        {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+        {error && <p className="mt-4 text-sm text-red-600">⚠ {error}</p>}
 
         <button
           onClick={handleStart}
           disabled={!canStart || starting}
           className="mt-6 w-full rounded-full bg-[var(--pink-dark)] px-6 py-3 text-sm font-semibold text-white disabled:opacity-40"
         >
-          {starting ? "Starting..." : "Start →"}
+          {starting ? t("toefl_starting") : t("toefl_start")}
         </button>
         <button onClick={() => router.push("/toefl")} className="mt-3 w-full text-center text-sm text-[var(--secondary)] underline">
-          ← Back to TOEFL home
+          {t("toefl_backHome")}
         </button>
       </main>
     </div>

@@ -12,12 +12,9 @@ import type { ToeflRoute, ToeflSection } from "@/lib/toefl/types";
 // 섹션의 통계를 보여주는 게 의미가 없어서다.
 // route(easy/hard)를 여기서 노출하는 건 §8 5번 규칙 위반이 아니다 — 그 규칙은 "응시 중" 클라이언트
 // 응답 얘기고, 여긴 제출 후에만 호출 가능한 리포트 전용 라우트다(spec §8 "적응형 라우팅 결과 공개").
-
-const ROUTE_CAP_NOTE: Record<ToeflRoute, string> = {
-  easy: "Your Stage 1 score routed you to the standard-difficulty Stage 2 set. Scores on this path are capped at band 4.0.",
-  hard: "Your Stage 1 score routed you to the harder Stage 2 set. No score cap applies on this path.",
-  base: "",
-};
+// 문구 자체(설명 텍스트)는 안 내려준다 — 언어 토글(2026-08-18) 도입 후 클라이언트가 routed_to
+// 값만 보고 t()로 한/영 문구를 직접 구성한다(서버가 영어 프로즈를 고정으로 내려주면 리포트
+// 화면이 한국어일 때도 이 문장만 영어로 남는 문제가 생김).
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireToeflUser(req);
@@ -74,7 +71,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       return {
         section,
         routed_to: routedTo,
-        routing_note: routedTo ? ROUTE_CAP_NOTE[routedTo] : null,
         weak_tags: weak,
         strong_tags: strong,
       };

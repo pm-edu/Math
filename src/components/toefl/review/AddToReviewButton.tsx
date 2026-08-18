@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { interpolate, useLang } from "@/lib/i18n";
 
 // 오답 문항에 연결된 단어를 기존 FSRS 복습 큐(user_word_states, [[english-mastery-learning-subsystem]]
 // 이 쓰는 그 테이블)로 보낸다. spec §13: "기존 스케줄러 재사용, 신규 구현 금지" — 그래서 새 테이블/
@@ -13,6 +14,7 @@ import { createClient } from "@/lib/supabase/client";
 // 컬럼만 덮어쓴다.
 
 export default function AddToReviewButton({ vocabIds }: { vocabIds: string[] }) {
+  const { t } = useLang();
   const [state, setState] = useState<"idle" | "saving" | "done" | "error">("idle");
 
   async function handleClick() {
@@ -39,12 +41,12 @@ export default function AddToReviewButton({ vocabIds }: { vocabIds: string[] }) 
         className="rounded-full border border-[var(--pink)] px-3 py-1.5 text-xs font-medium text-[var(--pink-dark)] disabled:opacity-70"
       >
         {state === "done"
-          ? `✓ Added ${vocabIds.length} word${vocabIds.length > 1 ? "s" : ""} to review`
+          ? interpolate(t("toefl_addedToReview"), { count: vocabIds.length })
           : state === "saving"
-            ? "Adding…"
-            : `+ Add ${vocabIds.length} related word${vocabIds.length > 1 ? "s" : ""} to review queue`}
+            ? t("toefl_addingToReview")
+            : interpolate(t("toefl_addToReview"), { count: vocabIds.length })}
       </button>
-      {state === "error" && <p className="mt-1 text-xs text-red-600">Couldn&apos;t add to review — please try again.</p>}
+      {state === "error" && <p className="mt-1 text-xs text-red-600">⚠ {t("toefl_addToReviewFailed")}</p>}
     </div>
   );
 }

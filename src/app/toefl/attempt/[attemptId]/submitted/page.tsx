@@ -15,7 +15,8 @@ import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import ToeflHeader from "@/components/toefl/ToeflHeader";
-import { SECTION_LABEL, SECTION_ORDER, TASK_TYPE_SECTION } from "@/lib/toefl/section-order";
+import { SECTION_LABEL_KEY, SECTION_ORDER, TASK_TYPE_SECTION } from "@/lib/toefl/section-order";
+import { interpolate, useLang, type DictKey } from "@/lib/i18n";
 import type { ToeflSection, ToeflTaskType } from "@/lib/toefl/types";
 
 type SectionRow = { section: ToeflSection; finished_at: string | null; band: number | null; scaled_score: number | null };
@@ -28,6 +29,7 @@ const AI_RUBRIC_SECTIONS: ToeflSection[] = ["speaking", "writing"];
 export default function ToeflSubmittedPage({ params }: { params: Promise<{ attemptId: string }> }) {
   const { attemptId } = use(params);
   const router = useRouter();
+  const { t } = useLang();
 
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -120,7 +122,7 @@ export default function ToeflSubmittedPage({ params }: { params: Promise<{ attem
       <div data-theme="en" className="min-h-screen bg-[var(--background)]">
         <ToeflHeader />
         <main className="flex items-center justify-center py-24">
-          <p className="text-sm text-[var(--secondary)]">Loading...</p>
+          <p className="text-sm text-[var(--secondary)]">{t("loading")}</p>
         </main>
       </div>
     );
@@ -131,9 +133,9 @@ export default function ToeflSubmittedPage({ params }: { params: Promise<{ attem
       <div data-theme="en" className="min-h-screen bg-[var(--background)]">
         <ToeflHeader />
         <main className="flex flex-col items-center justify-center gap-3 px-6 py-24 text-center">
-          <p className="text-sm text-red-600">Attempt not found.</p>
+          <p className="text-sm text-red-600">⚠ {t("toefl_attemptNotFound")}</p>
           <button onClick={() => router.push("/toefl")} className="text-sm text-[var(--secondary)] underline">
-            ← Back to TOEFL home
+            {t("toefl_backHome")}
           </button>
         </main>
       </div>
@@ -143,33 +145,30 @@ export default function ToeflSubmittedPage({ params }: { params: Promise<{ attem
   const readingListening = sections.filter((s) => s.section === "reading" || s.section === "listening");
   const speakingWriting = sections.filter((s) => s.section === "speaking" || s.section === "writing");
 
-  const STATUS_LABEL: Record<ItemStatus["status"], { text: string; icon: string; className: string }> = {
-    done: { text: "Graded", icon: "✓", className: "text-[var(--mint-dark)]" },
-    grading: { text: "Grading…", icon: "⏳", className: "text-[var(--secondary)]" },
-    manual_review: { text: "Pending manual review", icon: "🧑‍🏫", className: "text-amber-700" },
+  const STATUS_LABEL: Record<ItemStatus["status"], { key: DictKey; icon: string; className: string }> = {
+    done: { key: "toefl_statusGraded", icon: "✓", className: "text-[var(--mint-dark)]" },
+    grading: { key: "toefl_statusGrading", icon: "⏳", className: "text-[var(--secondary)]" },
+    manual_review: { key: "toefl_statusPendingManual", icon: "🧑‍🏫", className: "text-amber-700" },
   };
 
   return (
     <div data-theme="en" className="min-h-screen bg-[var(--background)]">
       <ToeflHeader />
       <main className="mx-auto max-w-2xl px-6 py-16">
-        <h1 className="text-3xl font-medium text-[var(--foreground)]">Your test has been submitted</h1>
-        <p className="mt-2 text-sm text-[var(--secondary)]">
-          Most scores are ready right away. Speaking and Writing responses that use AI scoring can take a little
-          longer — you can safely close this tab and check your report later; nothing will be lost.
-        </p>
+        <h1 className="text-3xl font-medium text-[var(--foreground)]">{t("toefl_submittedTitle")}</h1>
+        <p className="mt-2 text-sm text-[var(--secondary)]">{t("toefl_submittedDesc")}</p>
 
         {readingListening.length > 0 && (
           <div className="mt-8">
-            <h2 className="text-sm font-semibold text-[var(--secondary)]">Reading &amp; Listening</h2>
+            <h2 className="text-sm font-semibold text-[var(--secondary)]">{t("toefl_readingListening")}</h2>
             <div className="mt-2 grid gap-2 sm:grid-cols-2">
               {readingListening.map((s) => (
                 <div
                   key={s.section}
                   className="flex items-center justify-between rounded-xl border border-[var(--mint-dark)]/30 bg-[var(--mint)]/20 px-4 py-3"
                 >
-                  <span className="text-sm font-medium text-[var(--foreground)]">{SECTION_LABEL[s.section]}</span>
-                  <span className="text-sm text-[var(--mint-dark)]">✓ Band {s.band ?? "—"}</span>
+                  <span className="text-sm font-medium text-[var(--foreground)]">{t(SECTION_LABEL_KEY[s.section])}</span>
+                  <span className="text-sm text-[var(--mint-dark)]">{interpolate(t("toefl_bandPrefix"), { band: s.band ?? "—" })}</span>
                 </div>
               ))}
             </div>
@@ -178,16 +177,19 @@ export default function ToeflSubmittedPage({ params }: { params: Promise<{ attem
 
         {speakingWriting.length > 0 && (
           <div className="mt-6">
-            <h2 className="text-sm font-semibold text-[var(--secondary)]">Speaking &amp; Writing</h2>
+            <h2 className="text-sm font-semibold text-[var(--secondary)]">{t("toefl_speakingWriting")}</h2>
             <div className="mt-2 space-y-2">
               {speakingWriting.map((s) => {
                 const sectionItems = items.filter((i) => i.section === s.section);
                 return (
                   <div key={s.section} className="rounded-xl border border-[var(--border-c)] bg-white px-4 py-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-[var(--foreground)]">{SECTION_LABEL[s.section]}</span>
+                      <span className="text-sm font-medium text-[var(--foreground)]">{t(SECTION_LABEL_KEY[s.section])}</span>
                       <span className="text-xs text-[var(--secondary)]">
-                        {sectionItems.filter((i) => i.status === "done").length} / {sectionItems.length || "—"} graded
+                        {interpolate(t("toefl_gradedCount"), {
+                          done: sectionItems.filter((i) => i.status === "done").length,
+                          total: sectionItems.length || "—",
+                        })}
                       </span>
                     </div>
                     {sectionItems.length > 0 && (
@@ -198,7 +200,7 @@ export default function ToeflSubmittedPage({ params }: { params: Promise<{ attem
                             <li key={it.itemId} className={`flex items-center gap-1.5 text-xs ${label.className}`}>
                               <span aria-hidden="true">{label.icon}</span>
                               <span>
-                                Item {idx + 1} — {label.text}
+                                {interpolate(t("toefl_itemN"), { n: idx + 1 })} — {t(label.key)}
                               </span>
                             </li>
                           );
@@ -217,7 +219,7 @@ export default function ToeflSubmittedPage({ params }: { params: Promise<{ attem
           disabled={stillGrading}
           className="mt-8 w-full rounded-full bg-[var(--pink-dark)] px-8 py-3 text-sm font-medium text-white disabled:opacity-60"
         >
-          {stillGrading ? "Grading in progress…" : "Continue to your report →"}
+          {stillGrading ? t("toefl_gradingInProgress") : t("toefl_continueToReport")}
         </button>
       </main>
     </div>

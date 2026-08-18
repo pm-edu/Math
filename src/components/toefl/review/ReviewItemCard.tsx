@@ -5,6 +5,7 @@ import AudioReplay from "./AudioReplay";
 import OptionsReview from "./OptionsReview";
 import AddToReviewButton from "./AddToReviewButton";
 import { assembleSentence } from "@/lib/toefl/sentence-assembly";
+import { interpolate, useLang, type DictKey } from "@/lib/i18n";
 import type {
   AcademicDiscussionPayload,
   BuildASentenceAnswerKey,
@@ -30,35 +31,44 @@ import type { ReviewItem } from "./types";
 // 않는다"와 같은 원칙 — TaskRenderer의 읽기전용 버전). 여기서 보여주는 정답/해설은 이미 서버
 // (review 라우트)가 제출 완료된 attempt에 대해서만 내려준 것 — 이 컴포넌트는 그걸 그대로
 // 렌더링만 한다(정오 판정도 response.is_correct를 그대로 쓰고 다시 비교하지 않는다).
+// 언어 토글 적용 대상(2026-08-18) — 리뷰는 안내 화면이다. explanation_ko(DB에 원래 한국어로만
+// 저장된 해설)는 토글과 무관하게 그대로 보여준다 — 문항 콘텐츠 자체를 번역하는 건 범위 밖.
+
+function useTaskTypeLabel() {
+  const { t } = useLang();
+  return (taskType: string) => t(`toefl_taskLabel_${taskType}` as DictKey);
+}
 
 function StatusBadge({ item }: { item: ReviewItem }) {
+  const { t } = useLang();
   if (item.review_status === "pending_manual") {
-    return <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800">🧑‍🏫 Pending review</span>;
+    return <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800">{t("toefl_pendingReview")}</span>;
   }
   if (item.review_status === "unanswered") {
-    return <span className="rounded-full bg-[var(--background)] px-2.5 py-1 text-xs font-medium text-[var(--secondary)]">Not answered</span>;
+    return <span className="rounded-full bg-[var(--background)] px-2.5 py-1 text-xs font-medium text-[var(--secondary)]">{t("toefl_notAnswered")}</span>;
   }
   const correct = item.response?.is_correct;
   if (correct === true) {
-    return <span className="rounded-full bg-[var(--mint)]/40 px-2.5 py-1 text-xs font-medium text-[var(--mint-dark)]">✓ Correct</span>;
+    return <span className="rounded-full bg-[var(--mint)]/40 px-2.5 py-1 text-xs font-medium text-[var(--mint-dark)]">{t("toefl_correct")}</span>;
   }
   if (correct === false) {
-    return <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700">✗ Incorrect</span>;
+    return <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700">{t("toefl_incorrect")}</span>;
   }
-  return <span className="rounded-full bg-[var(--background)] px-2.5 py-1 text-xs font-medium text-[var(--secondary)]">Scored</span>;
+  return <span className="rounded-full bg-[var(--background)] px-2.5 py-1 text-xs font-medium text-[var(--secondary)]">{t("toefl_scored")}</span>;
 }
 
 function RubricFeedback({ rubric }: { rubric: WritingRubricScore | InterviewRubricScore }) {
+  const { t } = useLang();
   const metrics = Object.entries(rubric).filter(
     ([k, v]) => typeof v === "number" && k !== "overall_band"
   ) as [string, number][];
   return (
     <div className="mt-3 rounded-xl border border-[var(--border-c)] bg-[var(--background)] p-4">
       <div className="flex flex-wrap items-center gap-3">
-        <span className="text-sm font-semibold text-[var(--foreground)]">Band {rubric.overall_band}</span>
+        <span className="text-sm font-semibold text-[var(--foreground)]">{interpolate(t("toefl_bandLabel"), { band: rubric.overall_band })}</span>
         {metrics.map(([k, v]) => (
           <span key={k} className="text-xs text-[var(--secondary)]">
-            {k.replace(/_/g, " ")}: {v}
+            {t(`toefl_metric_${k}` as DictKey)}: {v}
           </span>
         ))}
       </div>
@@ -84,7 +94,7 @@ function RubricFeedback({ rubric }: { rubric: WritingRubricScore | InterviewRubr
   );
 }
 
-function completeTheWordsBody(payload: CompleteTheWordsPayload, myAnswer: Record<string, string>, correct: CompleteTheWordsAnswerKey): ReactNode[] {
+function completeTheWordsBody(payload: CompleteTheWordsPayload, myAnswer: Record<string, string>, correct: CompleteTheWordsAnswerKey, blankLabel: string): ReactNode[] {
   const parts: ReactNode[] = [];
   let remaining = payload.paragraph;
   payload.blanks.forEach((blank, idx) => {
@@ -98,7 +108,7 @@ function completeTheWordsBody(payload: CompleteTheWordsPayload, myAnswer: Record
     parts.push(
       <span key={blank.id} className="mx-1 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-sm">
         <span className={isRight ? "font-medium text-[var(--mint-dark)]" : "font-medium text-red-600 line-through"}>
-          {mine || "(blank)"}
+          {mine || blankLabel}
         </span>
         {!isRight && <span className="font-medium text-[var(--mint-dark)]">{correctWord}</span>}
       </span>
@@ -110,6 +120,8 @@ function completeTheWordsBody(payload: CompleteTheWordsPayload, myAnswer: Record
 }
 
 export default function ReviewItemCard({ item, index }: { item: ReviewItem; index: number }) {
+  const { t } = useLang();
+  const taskTypeLabel = useTaskTypeLabel();
   const myAnswer = item.response?.answer as Record<string, unknown> | undefined;
   const canAddToReview = item.vocab_ids.length > 0 && item.response?.is_correct === false;
 
@@ -120,7 +132,7 @@ export default function ReviewItemCard({ item, index }: { item: ReviewItem; inde
         const answerKey = item.answer_key as CompleteTheWordsAnswerKey;
         return (
           <p className="rounded-xl border border-[var(--border-c)] bg-white p-5 text-[15px] leading-loose text-[var(--foreground)]">
-            {completeTheWordsBody(payload, (myAnswer as Record<string, string>) ?? {}, answerKey)}
+            {completeTheWordsBody(payload, (myAnswer as Record<string, string>) ?? {}, answerKey, t("toefl_noAnswer"))}
           </p>
         );
       }
@@ -139,7 +151,7 @@ export default function ReviewItemCard({ item, index }: { item: ReviewItem; inde
             )}
             {payload.format === "insert_text" ? (
               <p className="text-sm text-[var(--foreground)]">
-                Your insertion point: <strong>{selected[0] ?? "—"}</strong> · Correct:{" "}
+                {t("toefl_yourInsertionPoint")} <strong>{selected[0] ?? "—"}</strong> · {t("toefl_correctLabel")}{" "}
                 <strong>{answerKey.correct[0] ?? "—"}</strong>
               </p>
             ) : (
@@ -171,7 +183,7 @@ export default function ReviewItemCard({ item, index }: { item: ReviewItem; inde
             <AudioReplay src={item.stimulus?.audio_path ?? null} />
             {item.stimulus?.transcript && (
               <details className="rounded-xl border border-[var(--border-c)] bg-white p-3 text-xs text-[var(--foreground)]">
-                <summary className="cursor-pointer font-medium text-[var(--secondary)]">Show transcript</summary>
+                <summary className="cursor-pointer font-medium text-[var(--secondary)]">{t("toefl_showTranscript")}</summary>
                 <p className="mt-2 whitespace-pre-line leading-relaxed">{item.stimulus.transcript}</p>
               </details>
             )}
@@ -184,14 +196,14 @@ export default function ReviewItemCard({ item, index }: { item: ReviewItem; inde
         const answerKey = item.answer_key as ListenAndRepeatAnswerKey;
         return (
           <div className="space-y-3">
-            <AudioReplay src={(payload.clip_path as string) ?? null} label="Original sentence" />
+            <AudioReplay src={(payload.clip_path as string) ?? null} label={t("toefl_originalSentence")} />
             <p className="text-sm text-[var(--foreground)]">
-              Target: <span className="font-medium text-[var(--mint-dark)]">{answerKey.target_sentence}</span>
+              {t("toefl_target")} <span className="font-medium text-[var(--mint-dark)]">{answerKey.target_sentence}</span>
             </p>
-            <AudioReplay src={item.response?.audio_path ?? null} label="Your recording" />
+            <AudioReplay src={item.response?.audio_path ?? null} label={t("toefl_yourRecording")} />
             {item.response?.transcript && (
               <p className="text-sm text-[var(--foreground)]">
-                What we heard: <span className="italic">&ldquo;{item.response.transcript}&rdquo;</span>
+                {t("toefl_whatWeHeard")} <span className="italic">&ldquo;{item.response.transcript}&rdquo;</span>
               </p>
             )}
           </div>
@@ -201,12 +213,12 @@ export default function ReviewItemCard({ item, index }: { item: ReviewItem; inde
         const payload = item.payload as TakeAnInterviewPayload;
         return (
           <div className="space-y-3">
-            <AudioReplay src={(payload.question_audio_path as string) ?? null} label="Interview question" />
-            <AudioReplay src={item.response?.audio_path ?? null} label="Your response" />
+            <AudioReplay src={(payload.question_audio_path as string) ?? null} label={t("toefl_interviewQuestion")} />
+            <AudioReplay src={item.response?.audio_path ?? null} label={t("toefl_yourResponse")} />
             {item.ai_score ? (
               <RubricFeedback rubric={item.ai_score.rubric as unknown as InterviewRubricScore} />
             ) : (
-              <p className="text-sm text-amber-700">🧑‍🏫 This response is still waiting on manual review.</p>
+              <p className="text-sm text-amber-700">{t("toefl_stillPendingManual")}</p>
             )}
           </div>
         );
@@ -219,11 +231,11 @@ export default function ReviewItemCard({ item, index }: { item: ReviewItem; inde
         return (
           <div className="space-y-2">
             <p className="rounded-xl border border-[var(--border-c)] bg-white p-4 text-base font-medium text-[var(--foreground)]">
-              {assembleSentence(myOrder, chunkById) || "(no answer)"}
+              {assembleSentence(myOrder, chunkById) || t("toefl_noAnswer")}
             </p>
             {item.response?.is_correct === false && (
               <p className="text-sm text-[var(--mint-dark)]">
-                Correct: {assembleSentence(answerKey.order, chunkById)}
+                {t("toefl_correctPrefix")} {assembleSentence(answerKey.order, chunkById)}
               </p>
             )}
           </div>
@@ -237,12 +249,12 @@ export default function ReviewItemCard({ item, index }: { item: ReviewItem; inde
         return (
           <div className="space-y-3">
             <p className="whitespace-pre-line rounded-xl border border-[var(--border-c)] bg-white p-4 text-sm text-[var(--foreground)]">
-              {text || "(no answer)"}
+              {text || t("toefl_noAnswer")}
             </p>
             {item.ai_score ? (
               <RubricFeedback rubric={item.ai_score.rubric as unknown as WritingRubricScore} />
             ) : (
-              <p className="text-sm text-amber-700">🧑‍🏫 This response is still waiting on manual review.</p>
+              <p className="text-sm text-amber-700">{t("toefl_stillPendingManual")}</p>
             )}
           </div>
         );
@@ -256,7 +268,7 @@ export default function ReviewItemCard({ item, index }: { item: ReviewItem; inde
     <div className="rounded-2xl border border-[var(--border-c)] bg-[var(--background)] p-5">
       <div className="flex items-start justify-between gap-3">
         <p className="text-xs font-semibold text-[var(--secondary)]">
-          Item {index + 1} · {item.task_type.replace(/_/g, " ")}
+          {interpolate(t("toefl_itemN"), { n: index + 1 })} · {taskTypeLabel(item.task_type)}
         </p>
         <StatusBadge item={item} />
       </div>
@@ -264,7 +276,7 @@ export default function ReviewItemCard({ item, index }: { item: ReviewItem; inde
       <div className="mt-3">{body()}</div>
       {item.explanation_ko && (
         <div className="mt-4 rounded-xl bg-[var(--pink-light)]/30 p-4 text-sm leading-relaxed text-[var(--foreground)]">
-          <p className="mb-1 text-xs font-semibold text-[var(--pink-dark)]">Explanation</p>
+          <p className="mb-1 text-xs font-semibold text-[var(--pink-dark)]">{t("toefl_explanationLabel")}</p>
           {item.explanation_ko}
         </div>
       )}

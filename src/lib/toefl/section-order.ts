@@ -1,3 +1,4 @@
+import type { DictKey } from "@/lib/i18n";
 import type { ToeflSection, ToeflTaskType } from "./types";
 
 // spec §2: 2026 포맷은 영역 순서가 고정이다(R → L → S → W). 풀 모의고사(mode='full')가
@@ -43,6 +44,25 @@ export const TASK_TYPE_SECTION: Record<ToeflTaskType, ToeflSection> = {
   build_a_sentence: "writing",
   write_an_email: "writing",
   academic_discussion: "writing",
+};
+
+// SECTION_LABEL/SECTION_DESCRIPTION 자체는 절대 안 건드린다 — SectionDoneActions.tsx가 실제
+// 시험 흐름(test/[attemptId]/... 안의 "다음 영역으로" 버튼) 안에서 이 상수를 그대로 쓰고,
+// 거기는 spec §14 "학생 응시 화면은 영어만"이 여전히 유효해서 언어 토글과 무관하게 항상
+// 영어여야 한다. 아래 두 매핑은 ToeflHeader가 있는 "안내" 화면(진입/마이페이지/제출후/리포트/
+// 리뷰)에서만 쓴다 — t(SECTION_LABEL_KEY[section]) 형태로.
+export const SECTION_LABEL_KEY: Record<ToeflSection, DictKey> = {
+  reading: "toefl_sectionReading",
+  listening: "toefl_sectionListening",
+  speaking: "toefl_sectionSpeaking",
+  writing: "toefl_sectionWriting",
+};
+
+export const SECTION_DESCRIPTION_KEY: Record<ToeflSection, DictKey> = {
+  reading: "toefl_sectionDescReading",
+  listening: "toefl_sectionDescListening",
+  speaking: "toefl_sectionDescSpeaking",
+  writing: "toefl_sectionDescWriting",
 };
 
 export function nextSection(current: ToeflSection): ToeflSection | null {
