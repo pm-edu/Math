@@ -31,6 +31,8 @@ export default function ToeflDashboardPage() {
   const [phase, setPhase] = useState<Phase>("loading");
   const [forms, setForms] = useState<FormWithBlueprint[]>([]);
   const [resume, setResume] = useState<ResumeState | null>(null);
+  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [guestTrialUsed, setGuestTrialUsed] = useState(false);
   const [starting, setStarting] = useState<string | null>(null);
   const [guestStarting, setGuestStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +43,15 @@ export default function ToeflDashboardPage() {
     if (!auth.user) {
       setPhase("gate");
       return;
+    }
+    setIsAnonymous(!!auth.user.is_anonymous);
+
+    // 익명(체험) 계정은 1회만 응시 가능(서버 API가 진짜로 강제함, /api/toefl/attempts 참고) —
+    // 여기서는 "이미 썼는지" 미리 알아서 시작 버튼 자체를 숨기고, 클릭했다가 403을 받는
+    // 경험을 안 만든다.
+    if (auth.user.is_anonymous) {
+      const { count } = await supabase.from("toefl_attempt").select("id", { count: "exact", head: true }).eq("user_id", auth.user.id);
+      setGuestTrialUsed((count ?? 0) > 0);
     }
 
     const [{ data: formRows }, { data: inProgress }] = await Promise.all([
@@ -206,6 +217,19 @@ export default function ToeflDashboardPage() {
         <p className="mt-10 text-sm text-[var(--secondary)]">Loading...</p>
       ) : forms.length === 0 ? (
         <p className="mt-10 text-sm text-[var(--secondary)]">No practice sets are available yet.</p>
+      ) : isAnonymous && guestTrialUsed ? (
+        <div className="mt-8 rounded-2xl border border-[var(--border-c)] bg-white px-7 py-8 text-center">
+          <p className="text-sm font-semibold text-[var(--foreground)]">You've used your free trial test</p>
+          <p className="mt-1 text-sm text-[var(--secondary)]">
+            Sign up to keep practicing — your trial result will carry over to your new account.
+          </p>
+          <button
+            onClick={() => router.push("/signup?toefl=1")}
+            className="mt-5 rounded-full bg-[var(--pink)] px-6 py-3 text-sm font-semibold text-[var(--pink-dark)]"
+          >
+            Sign up to continue →
+          </button>
+        </div>
       ) : (
         <div className="mt-8 space-y-8">
           {forms.map((f) => {

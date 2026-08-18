@@ -8,7 +8,7 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 
 export type ToeflAuthResult =
-  | { ok: true; userId: string; client: SupabaseClient }
+  | { ok: true; userId: string; isAnonymous: boolean; client: SupabaseClient }
   | { ok: false; status: number; message: string };
 
 export async function requireToeflUser(req: Request): Promise<ToeflAuthResult> {
@@ -22,7 +22,7 @@ export async function requireToeflUser(req: Request): Promise<ToeflAuthResult> {
   const { data } = await client.auth.getUser();
   if (!data.user) return { ok: false, status: 401, message: "로그인이 필요합니다." };
 
-  return { ok: true, userId: data.user.id, client };
+  return { ok: true, userId: data.user.id, isAnonymous: !!data.user.is_anonymous, client };
 }
 
 export function jsonError(status: number, message: string) {

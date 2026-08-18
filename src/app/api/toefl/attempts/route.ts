@@ -28,6 +28,20 @@ export async function POST(req: Request) {
 
   const { client } = auth;
 
+  // 익명(체험) 계정은 딱 1회만 응시할 수 있다 — 가입 없이도 시험을 볼 수 있게 열어주되(사용자
+  // 요청), 무제한 반복 응시로 문제은행이 통째로 노출되거나 Speaking/Writing AI 채점(Gemini
+  // 호출) 비용이 새는 걸 막기 위한 서버측 한도. 화면 버튼 비활성화만으로는 API 직접 호출로
+  // 우회 가능하므로 여기(생성 시점)에서 진짜로 막는다.
+  if (auth.isAnonymous) {
+    const { count } = await client
+      .from("toefl_attempt")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", auth.userId);
+    if ((count ?? 0) > 0) {
+      return jsonError(403, "체험 응시는 1회만 가능합니다. 계속하시려면 가입해주세요.");
+    }
+  }
+
   const { data: form } = await client
     .from("toefl_form")
     .select("id, blueprint_version")
