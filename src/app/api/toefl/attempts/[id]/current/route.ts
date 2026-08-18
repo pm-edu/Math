@@ -64,14 +64,17 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const { data: responses } = itemIds.length
     ? await client
         .from("toefl_response")
-        .select("item_id, answer, time_spent_ms")
+        .select("item_id, answer, audio_path, time_spent_ms")
         .eq("attempt_id", attemptId)
         .in("item_id", itemIds)
-    : { data: [] as { item_id: string; answer: unknown; time_spent_ms: number | null }[] };
+    : { data: [] as { item_id: string; answer: unknown; audio_path: string | null; time_spent_ms: number | null }[] };
 
   const answers: Record<string, { answer: unknown; time_spent_ms: number | null }> = {};
   for (const r of responses ?? []) {
-    answers[r.item_id] = { answer: r.answer, time_spent_ms: r.time_spent_ms };
+    // Speaking(listen_and_repeat/take_an_interview)은 답을 answer(jsonb)가 아니라 전용 audio_path
+    // 컬럼에 저장한다 — 여기서 answer가 비어 있으면 audio_path로 채워야 새로고침 후에도
+    // "녹음됨" 표시가 유지된다(전엔 audio_path를 아예 안 읽어와서 새로고침하면 표시가 사라졌음).
+    answers[r.item_id] = { answer: r.answer ?? (r.audio_path ? { audio_path: r.audio_path } : null), time_spent_ms: r.time_spent_ms };
   }
 
   // toefl-audio 버킷은 비공개(signed URL 전용, spec §5)라 학생 세션으로는 직접 못 읽는다.
