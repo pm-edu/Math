@@ -62,14 +62,23 @@ export default function OptionsList({
               key={opt.id}
               type="button"
               onClick={() => toggle(opt.id)}
-              className={`flex w-full items-start gap-3 rounded-lg border px-4 py-2.5 text-left text-sm transition-colors ${
+              aria-pressed={isSelected}
+              className={`flex w-full items-start justify-between gap-3 rounded-lg border px-4 py-2.5 text-left text-sm transition-colors ${
                 isSelected
                   ? "border-[var(--pink)] bg-[var(--pink-light)]/40"
                   : "border-[var(--border-c)] bg-white hover:bg-[var(--mint)]/20"
               }`}
             >
-              <span className="font-semibold text-[var(--secondary)]">{LETTERS[i] ?? opt.id}</span>
-              <span className="text-[var(--foreground)]">{opt.text}</span>
+              <span className="flex items-start gap-3">
+                <span className="font-semibold text-[var(--secondary)]">{LETTERS[i] ?? opt.id}</span>
+                <span className="text-[var(--foreground)]">{opt.text}</span>
+              </span>
+              {/* 선택 여부를 색상만으로 표현하지 않는다 — 체크 아이콘 병기(접근성). */}
+              {isSelected && (
+                <span className="shrink-0 font-semibold text-[var(--pink-dark)]" aria-hidden="true">
+                  ✓
+                </span>
+              )}
             </button>
           );
         })}

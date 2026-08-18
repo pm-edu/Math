@@ -318,7 +318,7 @@ export default function ToeflCheckPage() {
         <button
           onClick={handleStart}
           disabled={!canStart || starting}
-          className="mt-6 w-full rounded-full bg-[var(--pink)] px-6 py-3 text-sm font-semibold text-[var(--pink-dark)] disabled:opacity-40"
+          className="mt-6 w-full rounded-full bg-[var(--pink-dark)] px-6 py-3 text-sm font-semibold text-white disabled:opacity-40"
         >
           {starting ? "Starting..." : "Start →"}
         </button>

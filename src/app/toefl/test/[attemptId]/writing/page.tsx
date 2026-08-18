@@ -52,6 +52,7 @@ export default function ToeflWritingTestPage({ params }: { params: Promise<{ att
   const [activeIndex, setActiveIndex] = useState(0);
   const [deadlineAt, setDeadlineAt] = useState<string | null>(null);
   const [remainingMs, setRemainingMs] = useState<number | null>(null);
+  const [timeAnnouncement, setTimeAnnouncement] = useState("");
   const [sectionResult, setSectionResult] = useState<{
     raw_score: number | null;
     scaled_score: number | null;
@@ -66,6 +67,7 @@ export default function ToeflWritingTestPage({ params }: { params: Promise<{ att
   const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const itemStartRef = useRef<number>(Date.now());
   const autoFinishedRef = useRef(false);
+  const announcedRef = useRef({ five: false, one: false });
 
   const authHeaders = useCallback(async () => {
     if (!tokenRef.current) {
@@ -145,9 +147,18 @@ export default function ToeflWritingTestPage({ params }: { params: Promise<{ att
 
   useEffect(() => {
     if (phase !== "in_module" || !deadlineAt) return;
+    announcedRef.current = { five: false, one: false };
     function tick() {
       const rem = new Date(deadlineAt as string).getTime() - Date.now();
       setRemainingMs(rem);
+      if (rem > 0 && rem <= 5 * 60 * 1000 && !announcedRef.current.five) {
+        announcedRef.current.five = true;
+        setTimeAnnouncement("5 minutes remaining.");
+      }
+      if (rem > 0 && rem <= 60 * 1000 && !announcedRef.current.one) {
+        announcedRef.current.one = true;
+        setTimeAnnouncement("1 minute remaining.");
+      }
       if (rem <= 0 && !autoFinishedRef.current) {
         autoFinishedRef.current = true;
         finishModule();
@@ -308,21 +319,27 @@ export default function ToeflWritingTestPage({ params }: { params: Promise<{ att
           <p className="text-sm font-medium text-[var(--foreground)]">TOEFL Writing</p>
         </div>
         <p
-          aria-live="polite"
+          aria-live="off"
           className={`text-sm font-semibold ${timeLow ? "text-red-600" : "text-[var(--foreground)]"}`}
         >
+          {timeLow && (
+            <span aria-hidden="true">⚠ </span>
+          )}
           {minutes !== null ? `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}` : "--:--"}
+        </p>
+        <p aria-live="assertive" className="sr-only">
+          {timeAnnouncement}
         </p>
       </header>
 
-      <div className="mx-auto flex max-w-3xl items-center gap-2 px-6 py-3">
+      <div className="mx-auto flex max-w-3xl items-center gap-2 overflow-x-auto px-6 py-3">
         {items.map((it, idx) => (
           <button
             key={it.id}
             onClick={() => goTo(idx)}
-            className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium ${
+            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-medium ${
               idx === activeIndex
-                ? "bg-[var(--pink)] text-[var(--pink-dark)]"
+                ? "bg-[var(--pink-dark)] text-white"
                 : it.id in answers
                 ? "bg-[var(--mint)] text-[var(--mint-dark)]"
                 : "border border-[var(--border-c)] bg-white text-[var(--secondary)]"
@@ -331,7 +348,7 @@ export default function ToeflWritingTestPage({ params }: { params: Promise<{ att
             {idx + 1}
           </button>
         ))}
-        <span className="ml-2 text-xs text-[var(--secondary)]">
+        <span className="ml-2 shrink-0 whitespace-nowrap text-xs text-[var(--secondary)]">
           {answeredCount} / {items.length} answered
         </span>
       </div>
@@ -361,7 +378,7 @@ export default function ToeflWritingTestPage({ params }: { params: Promise<{ att
         {activeIndex < items.length - 1 ? (
           <button
             onClick={() => goTo(activeIndex + 1)}
-            className="rounded-full bg-[var(--pink)] px-6 py-2 text-sm font-medium text-[var(--pink-dark)]"
+            className="rounded-full bg-[var(--pink-dark)] px-6 py-2 text-sm font-medium text-white"
           >
             Next →
           </button>
@@ -369,7 +386,7 @@ export default function ToeflWritingTestPage({ params }: { params: Promise<{ att
           <button
             onClick={finishModule}
             disabled={busy}
-            className="rounded-full bg-[var(--pink)] px-6 py-2 text-sm font-medium text-[var(--pink-dark)] disabled:opacity-60"
+            className="rounded-full bg-[var(--pink-dark)] px-6 py-2 text-sm font-medium text-white disabled:opacity-60"
           >
             {busy ? "Grading..." : "Finish this part"}
           </button>

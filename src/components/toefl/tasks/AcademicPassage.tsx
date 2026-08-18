@@ -5,7 +5,9 @@ import type { ReactNode } from "react";
 import OptionsList from "./OptionsList";
 import type { ReadingMcqPayload, ToeflItemPublic, ToeflStimulusPublic } from "@/lib/toefl/types";
 
-// spec §6 academic_passage. 좌(지문, 독립 스크롤)/우(문항) 2단.
+// spec §6 academic_passage. 좌(지문, 독립 스크롤)/우(문항) 2단 — lg(1024px)부터 2단, 그 밑은
+// 세로 스택(태블릿 세로 포함). 예전엔 md(768px)였는데 태블릿 세로 폭(768~820px)이 정확히 그
+// 경계라 좁은 화면에 2단이 끼어버렸음(접근성/반응형 점검에서 발견, 2026-08-18).
 //
 // 스펙에 명시가 없어서 이 컴포넌트가 직접 정한 것 2가지(둘 다 §17 "payload 구조를 임의
 // 변형하지 않는다"는 지키되, body 안의 "표현 방식"만 정한 것 — payload 필드 자체는 그대로임):
@@ -56,7 +58,7 @@ export default function AcademicPassage({
   }, [item.id]);
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid gap-4 lg:grid-cols-2">
       <div ref={passageRef} className="max-h-[70vh] overflow-y-auto rounded-xl border border-[var(--border-c)] bg-white p-5">
         {stimulus?.title && <p className="mb-2 text-sm font-semibold text-[var(--foreground)]">{stimulus.title}</p>}
         {stimulus?.body && (

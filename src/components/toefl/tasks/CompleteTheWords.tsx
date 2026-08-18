@@ -68,7 +68,7 @@ function renderParagraph(
         autoCorrect="off"
         autoCapitalize="off"
         spellCheck={false}
-        className="mx-1 rounded border-b-2 border-[var(--pink)] bg-[var(--pink-light)]/30 px-1 text-center font-medium text-[var(--foreground)] outline-none focus:bg-[var(--pink-light)]/60"
+        className="mx-1 rounded border-b-2 border-[var(--pink)] bg-[var(--pink-light)]/30 px-1 text-center font-medium text-[var(--foreground)] outline-none focus:bg-[var(--pink-light)]/60 focus:ring-2 focus:ring-[var(--pink)]/60"
       />
       // Tab 이동은 별도 처리 없이 DOM 순서(문단 내 등장 순서)를 그대로 따른다 — input에
       // tabIndex를 따로 안 주는 한 브라우저가 자연스럽게 다음 빈칸으로 넘겨준다.

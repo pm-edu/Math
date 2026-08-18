@@ -162,14 +162,14 @@ export default function ToeflReportPage({ params }: { params: Promise<{ attemptI
             <button
               type="button"
               onClick={() => router.push("/contact")}
-              className="mt-3 rounded-full bg-[var(--pink)] px-4 py-1.5 text-xs font-medium text-[var(--pink-dark)]"
+              className="mt-3 rounded-full bg-[var(--pink-dark)] px-4 py-1.5 text-xs font-medium text-white"
             >
               Request 1:1 tutor feedback →
             </button>
           </div>
         )}
 
-        <div className="mt-8 overflow-hidden rounded-2xl border border-[var(--border-c)]">
+        <div className="mt-8 overflow-x-auto rounded-2xl border border-[var(--border-c)]">
           <table className="w-full text-sm">
             <thead className="bg-[var(--mint)]/20 text-left text-[var(--secondary)]">
               <tr>

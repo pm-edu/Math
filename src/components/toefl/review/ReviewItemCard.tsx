@@ -206,7 +206,7 @@ export default function ReviewItemCard({ item, index }: { item: ReviewItem; inde
             {item.ai_score ? (
               <RubricFeedback rubric={item.ai_score.rubric as unknown as InterviewRubricScore} />
             ) : (
-              <p className="text-sm text-amber-700">This response is still waiting on manual review.</p>
+              <p className="text-sm text-amber-700">🧑‍🏫 This response is still waiting on manual review.</p>
             )}
           </div>
         );
@@ -242,7 +242,7 @@ export default function ReviewItemCard({ item, index }: { item: ReviewItem; inde
             {item.ai_score ? (
               <RubricFeedback rubric={item.ai_score.rubric as unknown as WritingRubricScore} />
             ) : (
-              <p className="text-sm text-amber-700">This response is still waiting on manual review.</p>
+              <p className="text-sm text-amber-700">🧑‍🏫 This response is still waiting on manual review.</p>
             )}
           </div>
         );

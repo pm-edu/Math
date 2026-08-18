@@ -50,7 +50,7 @@ export default function WriteAnEmail({
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
-          className="w-full rounded-xl border border-[var(--border-c)] bg-white p-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--pink)]"
+          className="w-full rounded-xl border border-[var(--border-c)] bg-white p-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--pink)] focus:ring-2 focus:ring-[var(--pink)]/50"
         />
         <PasteBlockedToast show={pasteToast.show} />
       </div>

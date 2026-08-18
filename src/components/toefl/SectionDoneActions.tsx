@@ -80,7 +80,7 @@ export default function SectionDoneActions({
         <button
           onClick={continueToNext}
           disabled={busy}
-          className="rounded-full bg-[var(--pink)] px-8 py-3 text-sm font-medium text-[var(--pink-dark)] disabled:opacity-60"
+          className="rounded-full bg-[var(--pink-dark)] px-8 py-3 text-sm font-medium text-white disabled:opacity-60"
         >
           {busy ? "Starting..." : `Continue to ${SECTION_LABEL[next]} →`}
         </button>
@@ -88,7 +88,7 @@ export default function SectionDoneActions({
         <button
           onClick={submitAttempt}
           disabled={busy}
-          className="rounded-full bg-[var(--pink)] px-8 py-3 text-sm font-medium text-[var(--pink-dark)] disabled:opacity-60"
+          className="rounded-full bg-[var(--pink-dark)] px-8 py-3 text-sm font-medium text-white disabled:opacity-60"
         >
           {busy ? "Submitting..." : "Submit and see result"}
         </button>

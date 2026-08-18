@@ -44,7 +44,7 @@ export default function StimulusAudioTask({
   const audioUrl = stimulus?.audio_path ?? null;
 
   return (
-    <div className="grid gap-4 md:grid-cols-[1fr_260px]">
+    <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
       <div>
         {stimulus?.title && <p className="mb-2 text-sm font-semibold text-[var(--foreground)]">{stimulus.title}</p>}
 

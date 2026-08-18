@@ -74,7 +74,7 @@ export default function NotesPanel({ attemptId, section }: { attemptId: string; 
             autoComplete="off"
             autoCorrect="off"
             spellCheck={false}
-            className="w-full resize-none rounded-lg border border-[var(--border-c)] bg-[var(--background)] p-3 text-xs leading-relaxed text-[var(--foreground)] outline-none focus:border-[var(--pink)]"
+            className="w-full resize-none rounded-lg border border-[var(--border-c)] bg-[var(--background)] p-3 text-xs leading-relaxed text-[var(--foreground)] outline-none focus:border-[var(--pink)] focus:ring-2 focus:ring-[var(--pink)]/50"
           />
         </div>
       )}

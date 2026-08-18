@@ -60,6 +60,7 @@ export default function ToeflListeningTestPage({ params }: { params: Promise<{ a
   const [deadlineAt, setDeadlineAt] = useState<string | null>(null);
   const [stage, setStage] = useState<"stage1" | "stage2" | null>(null);
   const [remainingMs, setRemainingMs] = useState<number | null>(null);
+  const [timeAnnouncement, setTimeAnnouncement] = useState("");
   const [sectionResult, setSectionResult] = useState<{
     raw_score: number | null;
     scaled_score: number | null;
@@ -72,6 +73,7 @@ export default function ToeflListeningTestPage({ params }: { params: Promise<{ a
   const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const itemStartRef = useRef<number>(Date.now());
   const autoFinishedRef = useRef(false);
+  const announcedRef = useRef({ five: false, one: false });
 
   const authHeaders = useCallback(async () => {
     if (!tokenRef.current) {
@@ -156,9 +158,18 @@ export default function ToeflListeningTestPage({ params }: { params: Promise<{ a
 
   useEffect(() => {
     if (phase !== "in_module" || !deadlineAt) return;
+    announcedRef.current = { five: false, one: false };
     function tick() {
       const rem = new Date(deadlineAt as string).getTime() - Date.now();
       setRemainingMs(rem);
+      if (rem > 0 && rem <= 5 * 60 * 1000 && !announcedRef.current.five) {
+        announcedRef.current.five = true;
+        setTimeAnnouncement("5 minutes remaining.");
+      }
+      if (rem > 0 && rem <= 60 * 1000 && !announcedRef.current.one) {
+        announcedRef.current.one = true;
+        setTimeAnnouncement("1 minute remaining.");
+      }
       if (rem <= 0 && !autoFinishedRef.current) {
         autoFinishedRef.current = true;
         finishModule();
@@ -302,19 +313,25 @@ export default function ToeflListeningTestPage({ params }: { params: Promise<{ a
           )}
         </div>
         <p
-          aria-live="polite"
+          aria-live="off"
           className={`text-sm font-semibold ${timeLow ? "text-red-600" : "text-[var(--foreground)]"}`}
         >
+          {timeLow && (
+            <span aria-hidden="true">⚠ </span>
+          )}
           {minutes !== null ? `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}` : "--:--"}
+        </p>
+        <p aria-live="assertive" className="sr-only">
+          {timeAnnouncement}
         </p>
       </header>
 
       {/* 진행 표시 전용(클릭 불가) — Listening은 뒤로 가기가 없다 */}
-      <div className="mx-auto flex max-w-2xl items-center gap-2 px-6 py-3">
+      <div className="mx-auto flex max-w-2xl items-center gap-2 overflow-x-auto px-6 py-3">
         {items.map((it, idx) => (
           <span
             key={it.id}
-            className={`h-2.5 w-2.5 rounded-full ${
+            className={`h-2.5 w-2.5 shrink-0 rounded-full ${
               idx === activeIndex
                 ? "bg-[var(--pink)]"
                 : idx < activeIndex
@@ -323,7 +340,7 @@ export default function ToeflListeningTestPage({ params }: { params: Promise<{ a
             }`}
           />
         ))}
-        <span className="ml-2 text-xs text-[var(--secondary)]">
+        <span className="ml-2 shrink-0 whitespace-nowrap text-xs text-[var(--secondary)]">
           Item {activeIndex + 1} of {items.length}
         </span>
       </div>
@@ -352,7 +369,7 @@ export default function ToeflListeningTestPage({ params }: { params: Promise<{ a
           <button
             onClick={goNext}
             disabled={!audioEnded}
-            className="rounded-full bg-[var(--pink)] px-6 py-2 text-sm font-medium text-[var(--pink-dark)] disabled:opacity-40"
+            className="rounded-full bg-[var(--pink-dark)] px-6 py-2 text-sm font-medium text-white disabled:opacity-40"
           >
             Next →
           </button>
@@ -360,7 +377,7 @@ export default function ToeflListeningTestPage({ params }: { params: Promise<{ a
           <button
             onClick={finishModule}
             disabled={!audioEnded || busy}
-            className="rounded-full bg-[var(--pink)] px-6 py-2 text-sm font-medium text-[var(--pink-dark)] disabled:opacity-40"
+            className="rounded-full bg-[var(--pink-dark)] px-6 py-2 text-sm font-medium text-white disabled:opacity-40"
           >
             {busy ? "Submitting..." : "Finish this part"}
           </button>

@@ -215,7 +215,7 @@ export default function ToeflSubmittedPage({ params }: { params: Promise<{ attem
         <button
           onClick={() => router.push(`/toefl/report/${attemptId}`)}
           disabled={stillGrading}
-          className="mt-8 w-full rounded-full bg-[var(--pink)] px-8 py-3 text-sm font-medium text-[var(--pink-dark)] disabled:opacity-60"
+          className="mt-8 w-full rounded-full bg-[var(--pink-dark)] px-8 py-3 text-sm font-medium text-white disabled:opacity-60"
         >
           {stillGrading ? "Grading in progress…" : "Continue to your report →"}
         </button>

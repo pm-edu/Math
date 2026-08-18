@@ -54,7 +54,7 @@ export default function ListenAndRepeat({
     return (
       <div>
         <p className="text-sm font-medium text-[var(--foreground)]">{item.prompt}</p>
-        <p className="mt-4 text-sm text-red-600">This task could not be completed and was left unanswered.</p>
+        <p className="mt-4 text-sm text-red-600">⚠ This task could not be completed and was left unanswered.</p>
       </div>
     );
   }

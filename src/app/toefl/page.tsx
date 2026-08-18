@@ -114,7 +114,7 @@ export default function ToeflDashboardPage() {
 
           <button
             onClick={() => router.push("/toefl/sample")}
-            className="mt-8 w-full rounded-full bg-[var(--pink)] px-6 py-3 text-sm font-semibold text-[var(--pink-dark)]"
+            className="mt-8 w-full rounded-full bg-[var(--pink-dark)] px-6 py-3 text-sm font-semibold text-white"
           >
             See sample questions →
           </button>
@@ -198,7 +198,7 @@ export default function ToeflDashboardPage() {
                   </p>
                   <button
                     onClick={() => goToCheck(f.id, "full")}
-                    className="mt-5 rounded-full bg-[var(--pink)] px-6 py-3 text-sm font-semibold text-[var(--pink-dark)]"
+                    className="mt-5 rounded-full bg-[var(--pink-dark)] px-6 py-3 text-sm font-semibold text-white"
                   >
                     {completedCount > 0 ? "Retake Full Test →" : "Start Full Test →"}
                   </button>

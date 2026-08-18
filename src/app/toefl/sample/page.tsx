@@ -78,7 +78,7 @@ export default function ToeflSamplePage() {
         <div className="mt-10 flex flex-col items-center gap-3 border-t border-[var(--border-c)] pt-8 text-center">
           <button
             onClick={() => router.push("/signup?toefl=1")}
-            className="rounded-full bg-[var(--pink)] px-6 py-3 text-sm font-semibold text-[var(--pink-dark)]"
+            className="rounded-full bg-[var(--pink-dark)] px-6 py-3 text-sm font-semibold text-white"
           >
             Sign up to take the full test →
           </button>

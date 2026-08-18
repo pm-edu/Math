@@ -67,7 +67,7 @@ export default function TakeAnInterview({
     return (
       <div>
         {turnLabel && <p className="mb-2 text-xs font-semibold text-[var(--secondary)]">{turnLabel}</p>}
-        <p className="text-sm text-red-600">This turn could not be completed and was left unanswered.</p>
+        <p className="text-sm text-red-600">⚠ This turn could not be completed and was left unanswered.</p>
       </div>
     );
   }

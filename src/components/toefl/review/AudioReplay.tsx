@@ -8,7 +8,7 @@ export default function AudioReplay({ src, label }: { src: string | null; label?
   return (
     <div>
       {label && <p className="mb-1 text-xs font-medium text-[var(--secondary)]">{label}</p>}
-      <audio controls src={src} className="w-full" />
+      <audio controls src={src} aria-label={label ?? "Audio"} className="w-full" />
     </div>
   );
 }
