@@ -35,6 +35,18 @@ export default function ToeflCheckPage() {
 
   // full 모드는 결국 Speaking까지 가고, section_practice는 그 영역이 speaking일 때만 필요하다.
   const needsSpeaking = mode === "full" || section === "speaking";
+  // 오디오 체크는 실제로 오디오를 듣는 영역(Listening/Speaking)에만 의미가 있다 — Reading·
+  // Writing 연습에는 소리 자체가 안 나오는데 "Audio check"를 보여주는 게 이상하다는 지적으로
+  // 추가함(실사용 피드백, 2026-08-18). needsSpeaking과 항상 같지 않다 — Listening 단독
+  // 연습은 오디오는 필요하지만 마이크는 필요 없다.
+  const needsAudio = mode === "full" || section === "listening" || section === "speaking";
+
+  // 항목이 조건부로 숨겨지다 보니 번호를 "1./2./3."으로 고정해두면 마이크 체크가 없을 때
+  // "1, 3"처럼 번호가 비는 문제가 있었다(실사용 피드백) — 실제로 보이는 항목 순서대로 다시 매긴다.
+  let stepCounter = 0;
+  const audioStep = needsAudio ? ++stepCounter : null;
+  const micStep = needsSpeaking ? ++stepCounter : null;
+  const noticesStep = ++stepCounter;
 
   const [audioPlayed, setAudioPlayed] = useState(false);
   const [audioConfirmed, setAudioConfirmed] = useState(false);
@@ -134,7 +146,7 @@ export default function ToeflCheckPage() {
   }
 
   const screenOk = mode !== "full" || screenWidth === null || screenWidth >= MIN_SCREEN_WIDTH;
-  const canStart = audioConfirmed && (!needsSpeaking || micConfirmed) && screenOk && noticesAcked;
+  const canStart = (!needsAudio || audioConfirmed) && (!needsSpeaking || micConfirmed) && screenOk && noticesAcked;
 
   async function handleStart() {
     if (!formId) return;
@@ -194,29 +206,31 @@ export default function ToeflCheckPage() {
           </div>
         )}
 
-        {/* 1. 오디오 재생 테스트 */}
-        <section className="mt-6 rounded-2xl border border-[var(--border-c)] bg-white p-5">
-          <p className="text-sm font-semibold text-[var(--foreground)]">1. Audio check</p>
-          <p className="mt-1 text-xs text-[var(--secondary)]">Play the test sound and confirm you can hear it clearly.</p>
-          <button
-            type="button"
-            onClick={playTestTone}
-            className="mt-3 rounded-full border border-[var(--pink)] px-4 py-1.5 text-xs font-medium text-[var(--pink-dark)]"
-          >
-            ▶ Play test sound
-          </button>
-          {audioPlayed && (
-            <label className="mt-3 flex items-center gap-2 text-xs text-[var(--foreground)]">
-              <input type="checkbox" checked={audioConfirmed} onChange={(e) => setAudioConfirmed(e.target.checked)} />
-              I heard the sound clearly
-            </label>
-          )}
-        </section>
+        {/* 오디오 재생 테스트 — Listening/Speaking이 있을 때만(Reading·Writing엔 소리가 안 나옴) */}
+        {needsAudio && (
+          <section className="mt-6 rounded-2xl border border-[var(--border-c)] bg-white p-5">
+            <p className="text-sm font-semibold text-[var(--foreground)]">{audioStep}. Audio check</p>
+            <p className="mt-1 text-xs text-[var(--secondary)]">Play the test sound and confirm you can hear it clearly.</p>
+            <button
+              type="button"
+              onClick={playTestTone}
+              className="mt-3 rounded-full border border-[var(--pink)] px-4 py-1.5 text-xs font-medium text-[var(--pink-dark)]"
+            >
+              ▶ Play test sound
+            </button>
+            {audioPlayed && (
+              <label className="mt-3 flex items-center gap-2 text-xs text-[var(--foreground)]">
+                <input type="checkbox" checked={audioConfirmed} onChange={(e) => setAudioConfirmed(e.target.checked)} />
+                I heard the sound clearly
+              </label>
+            )}
+          </section>
+        )}
 
-        {/* 2. 마이크 테스트 (Speaking 포함시만) */}
+        {/* 마이크 테스트 (Speaking 포함시만) */}
         {needsSpeaking && (
           <section className="mt-4 rounded-2xl border border-[var(--border-c)] bg-white p-5">
-            <p className="text-sm font-semibold text-[var(--foreground)]">2. Microphone check</p>
+            <p className="text-sm font-semibold text-[var(--foreground)]">{micStep}. Microphone check</p>
             <p className="mt-1 text-xs text-[var(--secondary)]">Record 3 seconds and play it back — this section requires Speaking.</p>
 
             {micPhase === "idle" && (
@@ -285,9 +299,9 @@ export default function ToeflCheckPage() {
           </section>
         )}
 
-        {/* 3. 유의사항 고지 */}
+        {/* 유의사항 고지 — 항상 마지막 번호 */}
         <section className="mt-4 rounded-2xl border border-[var(--border-c)] bg-white p-5">
-          <p className="text-sm font-semibold text-[var(--foreground)]">3. Before you begin</p>
+          <p className="text-sm font-semibold text-[var(--foreground)]">{noticesStep}. Before you begin</p>
           <ul className="mt-2 list-inside list-disc space-y-1 text-xs text-[var(--secondary)]">
             <li>Each audio clip plays only once.</li>
             <li>Speaking responses can't be re-recorded once submitted.</li>
