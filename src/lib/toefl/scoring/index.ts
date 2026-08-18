@@ -8,3 +8,5 @@ export { rawToScaled, scaledToBand, applyRouteCap, bandToCefr, bandDescription }
 export type { ScaleConversionRow } from "./scale";
 export { round2 } from "./round";
 export { aiRubricToPoints } from "./ai-rubric";
+export { summarizeSkillTags } from "./skill-tags";
+export type { SkillTagEntry, SkillTagStat } from "./skill-tags";

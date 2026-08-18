@@ -105,6 +105,8 @@ export type ToeflAttempt = {
   started_at: string;
   submitted_at: string | null;
   scored_at: string | null;
+  overall_band: number | null;
+  total_scaled: number | null;
 };
 
 export type ToeflSectionAttempt = {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { assembleSentence } from "@/lib/toefl/sentence-assembly";
 import type { BuildASentencePayload, ToeflItemPublic } from "@/lib/toefl/types";
 
 // spec §6 build_a_sentence: 조각(chunk)을 순서대로 배열해 문장을 완성한다. 요청(2026-08-18):
@@ -10,22 +11,7 @@ import type { BuildASentencePayload, ToeflItemPublic } from "@/lib/toefl/types";
 //
 // 구두점("."/","  등)도 독립 카드다 — payload.chunks 자체가 원래 낱말/구두점 구분 없이 평평한
 // 목록이라 데이터 구조는 그대로 두고(§6 계약 준수), 화면에 "완성된 문장"을 조립해 보여줄 때만
-// 구두점 카드 앞에 공백을 안 붙이는 타이포그래피 처리를 한다.
-
-function isPunctuationChunk(text: string): boolean {
-  return /^[.,!?;:]$/.test(text.trim());
-}
-
-function assembleSentence(order: string[], chunkById: Map<string, { id: string; text: string }>): string {
-  let out = "";
-  for (const id of order) {
-    const text = chunkById.get(id)?.text ?? "";
-    if (!text) continue;
-    if (out.length === 0 || isPunctuationChunk(text)) out += text;
-    else out += ` ${text}`;
-  }
-  return out;
-}
+// 구두점 카드 앞에 공백을 안 붙이는 타이포그래피 처리를 한다(assembleSentence, 리뷰 화면과 공유).
 
 type DragPayload = { id: string; source: "pool" | "placed"; fromIndex?: number };
 

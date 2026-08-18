@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { jsonError, requireToeflUser } from "@/lib/toefl/server/auth";
 import { createToeflServiceClient } from "@/lib/toefl/server/service-client";
 import { fetchBlueprint, resolveCurrentModule } from "@/lib/toefl/server/modules";
+import { ADAPTIVE_SECTIONS } from "@/lib/toefl/section-order";
 import { gradeWritingResponse } from "@/lib/toefl/server/ai-grading";
 import { gradeInterviewAudio, scoreListenAndRepeatFromTranscript, transcribeAudio } from "@/lib/toefl/server/audio-grading";
 import { aggregateRaw, aiRubricToPoints, applyRouteCap, rawToScaled, routeStage2, scaledToBand } from "@/lib/toefl/scoring";
@@ -20,8 +21,8 @@ export const maxDuration = 150;
 
 // reading·listening만 Stage1→Stage2 적응형 구조다(§8: "Reading/Listening에만 적용").
 // writing/speaking은 블루프린트에 stage2 행이 아예 없어서(단일 stage1/base) 이 라우팅
-// 로직이 안 맞는다 — 아래에서 완전히 다른 분기(단일 종료)로 처리한다.
-const ADAPTIVE_SECTIONS: ToeflSection[] = ["reading", "listening"];
+// 로직이 안 맞는다 — 아래에서 완전히 다른 분기(단일 종료)로 처리한다. (ADAPTIVE_SECTIONS는
+// insights 라우트도 같은 분기가 필요해져서 section-order.ts로 옮김, 2026-08-18)
 const SUPPORTED_SECTIONS: ToeflSection[] = ["reading", "listening", "writing", "speaking"];
 
 // 영역 종료 → 라우팅 or 다음 영역. docs/toefl-spec.md §8, §9, §11.

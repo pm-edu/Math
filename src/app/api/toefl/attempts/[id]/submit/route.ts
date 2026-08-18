@@ -43,17 +43,25 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
   }
 
-  if (attempt.status === "in_progress") {
-    const { error: updateErr } = await client
-      .from("toefl_attempt")
-      .update({ status: "scored", submitted_at: new Date().toISOString(), scored_at: new Date().toISOString() })
-      .eq("id", attemptId);
-    if (updateErr) return jsonError(500, `제출 처리에 실패했습니다: ${updateErr.message}`);
-  }
-
   const totalScaled = sections.reduce((sum, s) => sum + (s.scaled_score ?? 0), 0);
   const avgBand = sections.reduce((sum, s) => sum + Number(s.band ?? 0), 0) / sections.length;
   const overallBand = Math.round(avgBand * 2) / 2; // 0.5 단위 반올림 (§7)
+
+  // 종합 밴드/총점은 여기서 딱 한 번 계산해 저장한다 — 리포트 화면이 매번 클라이언트에서
+  // 다시 계산하지 않도록(요청: "리포트 데이터를 클라이언트에서 재계산하지 말 것").
+  if (attempt.status === "in_progress") {
+    const { error: updateErr } = await client
+      .from("toefl_attempt")
+      .update({
+        status: "scored",
+        submitted_at: new Date().toISOString(),
+        scored_at: new Date().toISOString(),
+        overall_band: overallBand,
+        total_scaled: totalScaled,
+      })
+      .eq("id", attemptId);
+    if (updateErr) return jsonError(500, `제출 처리에 실패했습니다: ${updateErr.message}`);
+  }
 
   return Response.json({
     ok: true,

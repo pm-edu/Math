@@ -66,7 +66,7 @@ export default function SectionDoneActions({
         setError(data.message ?? "Failed to submit.");
         return;
       }
-      router.push(`/toefl/report/${attemptId}`);
+      router.push(`/toefl/attempt/${attemptId}/submitted`);
     } catch (e) {
       setError(`Failed to submit: ${(e as Error).message}`);
     } finally {
