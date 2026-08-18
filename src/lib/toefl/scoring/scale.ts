@@ -70,3 +70,18 @@ export function bandToCefr(band: number): string {
   }
   return matched;
 }
+
+// 밴드 숫자만으로는 학생이 "그래서 뭘 할 수 있다는 건지" 알기 어렵다는 게 리포트 화면 검토에서
+// 나온 지적이라, CEFR 등급별 짧은 평문 설명을 붙인다. 학생 응시 화면은 영어만 쓴다(spec §14).
+const CEFR_DESCRIPTION: Record<string, string> = {
+  A1: "You can understand basic phrases and very simple exchanges.",
+  A2: "You can follow short, simple texts and conversations on familiar topics.",
+  B1: "You can follow the main points of clear, standard input on familiar matters.",
+  B2: "You can follow most academic lectures and readings, with occasional gaps in fast or highly technical passages.",
+  C1: "You can understand a wide range of demanding, longer academic texts and lectures.",
+  C2: "You can understand virtually everything you read or hear with ease.",
+};
+
+export function bandDescription(band: number): string {
+  return CEFR_DESCRIPTION[bandToCefr(band)];
+}

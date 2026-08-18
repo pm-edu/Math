@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyRouteCap, bandToCefr, rawToScaled, scaledToBand, type ScaleConversionRow } from "./scale";
+import { applyRouteCap, bandDescription, bandToCefr, rawToScaled, scaledToBand, type ScaleConversionRow } from "./scale";
 
 const ROWS: ScaleConversionRow[] = [
   { raw_min: 0, raw_max: 8, scaled: 0 },
@@ -62,5 +62,18 @@ describe("bandToCefr", () => {
   it("범위를 벗어나도 clamp", () => {
     expect(bandToCefr(0)).toBe("A1");
     expect(bandToCefr(10)).toBe("C2");
+  });
+});
+
+describe("bandDescription", () => {
+  it("CEFR 등급에 맞는 설명을 돌려준다", () => {
+    expect(bandDescription(4.5)).toMatch(/academic lectures/);
+    expect(bandDescription(1.0)).toMatch(/basic phrases/);
+  });
+
+  it("정의되지 않은 등급은 없다(A1~C2 전부 매핑됨)", () => {
+    for (let band = 1.0; band <= 6.0; band += 0.5) {
+      expect(bandDescription(band)).toBeTruthy();
+    }
   });
 });

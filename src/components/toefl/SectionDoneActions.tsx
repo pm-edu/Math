@@ -8,15 +8,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { nextSection } from "@/lib/toefl/section-order";
+import { nextSection, SECTION_LABEL } from "@/lib/toefl/section-order";
 import type { ToeflSection } from "@/lib/toefl/types";
-
-const SECTION_LABEL: Record<ToeflSection, string> = {
-  reading: "Reading",
-  listening: "Listening",
-  speaking: "Speaking",
-  writing: "Writing",
-};
 
 export default function SectionDoneActions({
   attemptId,

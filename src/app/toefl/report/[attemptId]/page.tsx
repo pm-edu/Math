@@ -10,8 +10,8 @@
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { bandToCefr } from "@/lib/toefl/scoring";
-import { SECTION_ORDER } from "@/lib/toefl/section-order";
+import { bandDescription, bandToCefr } from "@/lib/toefl/scoring";
+import { SECTION_LABEL, SECTION_ORDER } from "@/lib/toefl/section-order";
 import type { ToeflSection } from "@/lib/toefl/types";
 
 type SectionRow = {
@@ -20,13 +20,6 @@ type SectionRow = {
   scaled_score: number | null;
   band: number | null;
   finished_at: string | null;
-};
-
-const SECTION_LABEL: Record<ToeflSection, string> = {
-  reading: "Reading",
-  listening: "Listening",
-  speaking: "Speaking",
-  writing: "Writing",
 };
 
 export default function ToeflReportPage({ params }: { params: Promise<{ attemptId: string }> }) {
@@ -139,8 +132,18 @@ export default function ToeflReportPage({ params }: { params: Promise<{ attemptI
         <p className="text-sm text-[var(--secondary)]">Overall band</p>
         <p className="text-4xl font-bold text-[var(--mint-dark)]">{overallBand || "—"}</p>
         <p className="mt-1 text-xs text-[var(--secondary)]">
-          Total scaled: {totalScaled} / {sections.length * 30} · CEFR: {cefr}
+          Total scaled: {totalScaled} / {sections.length * 30}
         </p>
+        {overallBand > 0 && (
+          <>
+            <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[var(--pink-light)] px-3 py-1 text-xs font-medium text-[var(--pink-dark)]">
+              ≈ CEFR {cefr}
+            </span>
+            <p className="mx-auto mt-3 max-w-sm text-xs leading-relaxed text-[var(--secondary)]">
+              {bandDescription(overallBand)}
+            </p>
+          </>
+        )}
       </div>
 
       <button
