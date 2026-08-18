@@ -60,7 +60,11 @@ export default function ToeflHeader() {
               </button>
             </>
           )}
-          {loggedIn === false && (
+          {/* 익명(체험) 세션도 정식 계정으로 보면 "로그인 안 한" 상태다 — 체험 중에도 기존
+              회원이 자기 계정으로 전환할 수 있는 길이 있어야 한다(실사용 피드백,
+              "시범이나 가입은 있는데 로그인이 없다"). 로그인하면 이 익명 세션은 자연히
+              버려지고 실제 계정 세션으로 바뀐다. */}
+          {(loggedIn === false || isAnonymous) && (
             <Link href="/login?toefl=1" className="text-xs font-medium text-[var(--pink-dark)] underline">
               Log in
             </Link>
