@@ -17,7 +17,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { formatDuration, summarizeBySection, totalSummary, type BlueprintSummaryRow } from "@/lib/toefl/blueprint-summary";
-import { SECTION_LABEL, SECTION_ORDER } from "@/lib/toefl/section-order";
+import { SECTION_DESCRIPTION, SECTION_LABEL, SECTION_ORDER } from "@/lib/toefl/section-order";
 import ToeflHeader from "@/components/toefl/ToeflHeader";
 import type { ToeflSection } from "@/lib/toefl/types";
 
@@ -243,10 +243,11 @@ export default function ToeflDashboardPage() {
                       const stat = bySection.get(s);
                       const key = `${f.id}:${s}`;
                       return (
-                        <div key={s} className="flex items-center justify-between border-t border-[var(--border-c)] py-3">
+                        <div key={s} className="flex items-center justify-between gap-4 border-t border-[var(--border-c)] py-3">
                           <div>
-                            <p className="text-sm font-medium text-[var(--foreground)]">{SECTION_LABEL[s]}</p>
-                            <p className="text-xs text-[var(--secondary)]">
+                            <p className="text-sm font-semibold text-[var(--foreground)]">{SECTION_LABEL[s]}</p>
+                            <p className="text-xs text-[var(--secondary)]">{SECTION_DESCRIPTION[s]}</p>
+                            <p className="mt-1 text-[11px] text-[var(--pink-dark)]">
                               {stat ? `${stat.itemCount} questions · about ${formatDuration(stat.timeSec)}` : "Not available yet"}
                             </p>
                           </div>

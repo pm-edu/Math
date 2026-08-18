@@ -12,6 +12,16 @@ export const SECTION_LABEL: Record<ToeflSection, string> = {
   writing: "Writing",
 };
 
+// 진입화면 "영역별 연습" 카드용 한 줄 설명(2026-08-18) — 이름만으론 각 영역이 실제로 뭘
+// 연습시키는지 안 보인다는 지적으로 추가. §6의 task_type 12종을 학생이 이해할 수 있는 말로
+// 압축한 것이라 실제 문항 구성과 일치한다(예: reading=complete_the_words+daily_life+academic_passage).
+export const SECTION_DESCRIPTION: Record<ToeflSection, string> = {
+  reading: "Fill-in-the-blank vocabulary and short passages",
+  listening: "Conversations, announcements, and lectures",
+  speaking: "Repeat sentences and answer interview questions",
+  writing: "Build sentences and write structured responses",
+};
+
 export function nextSection(current: ToeflSection): ToeflSection | null {
   const idx = SECTION_ORDER.indexOf(current);
   if (idx === -1 || idx === SECTION_ORDER.length - 1) return null;
