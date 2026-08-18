@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { bandDescription, bandToCefr } from "@/lib/toefl/scoring";
 import { SECTION_LABEL, SECTION_ORDER } from "@/lib/toefl/section-order";
-import GuestBadge from "@/components/toefl/GuestBadge";
+import ToeflHeader from "@/components/toefl/ToeflHeader";
 import type { ToeflSection } from "@/lib/toefl/types";
 
 type SectionRow = {
@@ -31,7 +31,6 @@ export default function ToeflReportPage({ params }: { params: Promise<{ attemptI
   const [notFound, setNotFound] = useState(false);
   const [sections, setSections] = useState<SectionRow[]>([]);
   const [mode, setMode] = useState<string | null>(null);
-  const [isAnonymous, setIsAnonymous] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -41,7 +40,6 @@ export default function ToeflReportPage({ params }: { params: Promise<{ attemptI
         router.replace("/login");
         return;
       }
-      setIsAnonymous(auth.user.is_anonymous ?? false);
       const { data: attempt } = await supabase
         .from("toefl_attempt")
         .select("id, mode")
@@ -70,20 +68,26 @@ export default function ToeflReportPage({ params }: { params: Promise<{ attemptI
 
   if (loading) {
     return (
-      <main data-theme="en" className="flex min-h-screen items-center justify-center bg-[var(--background)]">
-        <p className="text-sm text-[var(--secondary)]">Loading...</p>
-      </main>
+      <div data-theme="en" className="min-h-screen bg-[var(--background)]">
+        <ToeflHeader />
+        <main className="flex items-center justify-center py-24">
+          <p className="text-sm text-[var(--secondary)]">Loading...</p>
+        </main>
+      </div>
     );
   }
 
   if (notFound) {
     return (
-      <main data-theme="en" className="flex min-h-screen flex-col items-center justify-center gap-3 px-6 text-center bg-[var(--background)]">
-        <p className="text-sm text-red-600">Report not found.</p>
-        <button onClick={() => router.push("/toefl")} className="text-sm text-[var(--secondary)] underline">
-          ← Back to TOEFL home
-        </button>
-      </main>
+      <div data-theme="en" className="min-h-screen bg-[var(--background)]">
+        <ToeflHeader />
+        <main className="flex flex-col items-center justify-center gap-3 px-6 py-24 text-center">
+          <p className="text-sm text-red-600">Report not found.</p>
+          <button onClick={() => router.push("/toefl")} className="text-sm text-[var(--secondary)] underline">
+            ← Back to TOEFL home
+          </button>
+        </main>
+      </div>
     );
   }
 
@@ -98,14 +102,11 @@ export default function ToeflReportPage({ params }: { params: Promise<{ attemptI
   const cefr = bandToCefr(overallBand);
 
   return (
-    <main data-theme="en" className="min-h-screen bg-[var(--background)] mx-auto max-w-2xl px-6 py-16">
+    <div data-theme="en" className="min-h-screen bg-[var(--background)]">
+      <ToeflHeader />
+      <main className="mx-auto max-w-2xl px-6 py-16">
       <h1 className="text-3xl font-medium text-[var(--foreground)]">TOEFL Report</h1>
       <p className="mt-1 text-sm text-[var(--secondary)]">{mode === "full" ? "Full practice test" : "Section practice"}</p>
-      {isAnonymous && (
-        <div className="mt-4">
-          <GuestBadge />
-        </div>
-      )}
 
       {!allDone && (
         <p className="mt-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -160,6 +161,7 @@ export default function ToeflReportPage({ params }: { params: Promise<{ attemptI
       >
         ← Back to TOEFL home
       </button>
-    </main>
+      </main>
+    </div>
   );
 }

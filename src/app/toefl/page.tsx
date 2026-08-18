@@ -18,7 +18,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { formatDuration, summarizeBySection, totalSummary, type BlueprintSummaryRow } from "@/lib/toefl/blueprint-summary";
 import { SECTION_LABEL, SECTION_ORDER } from "@/lib/toefl/section-order";
-import GuestBadge from "@/components/toefl/GuestBadge";
+import ToeflHeader from "@/components/toefl/ToeflHeader";
 import type { ToeflSection } from "@/lib/toefl/types";
 
 type ToeflForm = { id: string; code: string; title: string; blueprint_version: string };
@@ -31,7 +31,6 @@ export default function ToeflDashboardPage() {
   const [phase, setPhase] = useState<Phase>("loading");
   const [forms, setForms] = useState<FormWithBlueprint[]>([]);
   const [resume, setResume] = useState<ResumeState | null>(null);
-  const [isAnonymous, setIsAnonymous] = useState(false);
   const [starting, setStarting] = useState<string | null>(null);
   const [guestStarting, setGuestStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +42,6 @@ export default function ToeflDashboardPage() {
       setPhase("gate");
       return;
     }
-    setIsAnonymous(auth.user.is_anonymous ?? false);
 
     const [{ data: formRows }, { data: inProgress }] = await Promise.all([
       supabase.from("toefl_form").select("id, code, title, blueprint_version").eq("is_published", true).order("created_at"),
@@ -152,40 +150,33 @@ export default function ToeflDashboardPage() {
 
   if (phase === "gate") {
     return (
-      <main data-theme="en" className="min-h-screen bg-[var(--background)] mx-auto max-w-md px-6 py-24 text-center">
-        <h1 className="text-3xl font-medium text-[var(--foreground)]">TOEFL Practice</h1>
-        <p className="mt-2 text-sm text-[var(--secondary)]">2026 format · Reading &amp; Listening adapt to your level</p>
+      <div data-theme="en" className="min-h-screen bg-[var(--background)]">
+        <ToeflHeader />
+        <main className="mx-auto max-w-md px-6 py-24 text-center">
+          <h1 className="text-3xl font-medium text-[var(--foreground)]">TOEFL Practice</h1>
+          <p className="mt-2 text-sm text-[var(--secondary)]">2026 format · Reading &amp; Listening adapt to your level</p>
 
-        <button
-          onClick={startAsGuest}
-          disabled={guestStarting}
-          className="mt-8 w-full rounded-full bg-[var(--pink)] px-6 py-3 text-sm font-semibold text-[var(--pink-dark)] disabled:opacity-60"
-        >
-          {guestStarting ? "Starting..." : "Try it now — no sign-up →"}
-        </button>
-        <p className="mt-2 text-xs text-[var(--secondary)]">Sign up any time to save your results.</p>
-
-        <div className="mt-6 flex items-center justify-center gap-2 text-sm text-[var(--secondary)]">
-          <span>Already have an account?</span>
-          <button onClick={() => router.push("/login")} className="font-medium text-[var(--pink-dark)] underline">
-            Log in
+          <button
+            onClick={startAsGuest}
+            disabled={guestStarting}
+            className="mt-8 w-full rounded-full bg-[var(--pink)] px-6 py-3 text-sm font-semibold text-[var(--pink-dark)] disabled:opacity-60"
+          >
+            {guestStarting ? "Starting..." : "Try it now — no sign-up →"}
           </button>
-        </div>
+          <p className="mt-2 text-xs text-[var(--secondary)]">Sign up any time to save your results.</p>
 
-        {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
-      </main>
+          {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+        </main>
+      </div>
     );
   }
 
   return (
-    <main data-theme="en" className="min-h-screen bg-[var(--background)] mx-auto max-w-3xl px-6 py-16">
+    <div data-theme="en" className="min-h-screen bg-[var(--background)]">
+      <ToeflHeader />
+      <main className="mx-auto max-w-3xl px-6 py-16">
       <h1 className="text-3xl font-medium text-[var(--foreground)]">TOEFL Practice</h1>
       <p className="mt-2 text-sm text-[var(--secondary)]">2026 format · Reading &amp; Listening adapt to your level</p>
-      {isAnonymous && (
-        <div className="mt-4">
-          <GuestBadge />
-        </div>
-      )}
 
       {resume && (
         <div className="mt-8 flex items-center justify-between gap-4 rounded-2xl border border-[var(--mint-dark)]/25 bg-[var(--mint)]/40 px-5 py-4">
@@ -282,6 +273,7 @@ export default function ToeflDashboardPage() {
       <p className="mt-10 text-xs text-[var(--secondary)]">
         TOEFL® is a registered trademark of ETS. This service is not endorsed or affiliated with ETS.
       </p>
-    </main>
+      </main>
+    </div>
   );
 }
