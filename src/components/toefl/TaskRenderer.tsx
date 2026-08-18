@@ -8,8 +8,9 @@ import ChooseAResponse from "./tasks/ChooseAResponse";
 import ConversationTask from "./tasks/ConversationTask";
 import AnnouncementTask from "./tasks/AnnouncementTask";
 import AcademicTalkTask from "./tasks/AcademicTalkTask";
-import BuildASentenceRenderer from "./BuildASentenceRenderer";
-import EssayRenderer from "./EssayRenderer";
+import BuildASentence from "./tasks/BuildASentence";
+import WriteAnEmail from "./tasks/WriteAnEmail";
+import AcademicDiscussion from "./tasks/AcademicDiscussion";
 import ListenAndRepeat from "./tasks/ListenAndRepeat";
 import TakeAnInterview from "./tasks/TakeAnInterview";
 
@@ -116,16 +117,23 @@ export default function TaskRenderer({
       );
     case "build_a_sentence":
       return (
-        <BuildASentenceRenderer
+        <BuildASentence
           item={item}
           value={value as { order?: string[] } | undefined}
           onChange={onChange as (answer: { order: string[] }) => void}
         />
       );
     case "write_an_email":
+      return (
+        <WriteAnEmail
+          item={item}
+          value={value as { text?: string } | undefined}
+          onChange={onChange as (answer: { text: string }) => void}
+        />
+      );
     case "academic_discussion":
       return (
-        <EssayRenderer
+        <AcademicDiscussion
           item={item}
           value={value as { text?: string } | undefined}
           onChange={onChange as (answer: { text: string }) => void}
