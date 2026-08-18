@@ -89,8 +89,19 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   );
   const itemsSigned = await Promise.all(
     (items ?? []).map(async (it) => {
-      const payload = it.payload as { clip_path?: string | null; question_audio_path?: string | null } | null;
+      const payload = it.payload as {
+        clip_path?: string | null;
+        question_audio_path?: string | null;
+        target_sentence?: string;
+      } | null;
       let nextPayload = payload;
+      // listen_and_repeat의 target_sentence는 정답 그 자체다(§5) — toefl_item_public 뷰는
+      // answer_key/explanation만 걸러내고 payload 내부까지는 못 걸러내므로 여기서 직접 제거한다.
+      // finish 채점은 service role로 toefl_item을 다시 읽어 원본 payload를 쓰므로 영향 없다.
+      if (it.task_type === "listen_and_repeat" && nextPayload && "target_sentence" in nextPayload) {
+        const { target_sentence: _target_sentence, ...rest } = nextPayload;
+        nextPayload = rest;
+      }
       if (payload?.clip_path) {
         const { data: signed } = await service.storage
           .from("toefl-audio")

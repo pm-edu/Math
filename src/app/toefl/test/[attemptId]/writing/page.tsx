@@ -36,6 +36,9 @@ type CurrentResponse = {
 
 type Phase = "loading" | "in_module" | "section_done" | "error";
 
+// 뒤로가기 방지(reading/page.tsx의 PAGE_SECTION 주석 참고).
+const PAGE_SECTION = "writing";
+
 export default function ToeflWritingTestPage({ params }: { params: Promise<{ attemptId: string }> }) {
   const { attemptId } = use(params);
   const router = useRouter();
@@ -85,6 +88,11 @@ export default function ToeflWritingTestPage({ params }: { params: Promise<{ att
     if (!res.ok || !data.ok) {
       setErrorMsg(data.message ?? "Failed to load the test.");
       setPhase("error");
+      return;
+    }
+
+    if (data.section.section !== PAGE_SECTION) {
+      router.replace(`/toefl/test/${attemptId}/${data.section.section}`);
       return;
     }
 
@@ -329,6 +337,7 @@ export default function ToeflWritingTestPage({ params }: { params: Promise<{ att
       <div className="mx-auto max-w-3xl px-6 pb-24 pt-2">
         {activeItem && (
           <TaskRenderer
+            key={activeItem.id}
             item={activeItem}
             attemptId={attemptId}
             value={answers[activeItem.id]}

@@ -80,6 +80,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return jsonError(400, "현재 모듈에 속하지 않는 문항이 포함되어 있습니다.");
   }
 
+  // 녹음 경로 소유권 검증: toefl-recordings RLS는 "경로 첫 세그먼트=user_id"를 강제하지만, finish()는
+  // service role(RLS 우회)로 클라이언트가 보낸 경로를 그대로 다운로드해 채점한다 — 여기서 안 막으면
+  // 남의 attemptId/userId(둘 다 UUID)를 알아낸 사람이 남의 녹음 경로를 자기 응답으로 제출해 대신
+  // 채점받게 할 수 있다.
+  for (const r of responses) {
+    if (r.audio_path && !r.audio_path.startsWith(`${auth.userId}/`)) {
+      return jsonError(403, "본인이 업로드한 녹음만 제출할 수 있습니다.");
+    }
+  }
+
   const now = new Date().toISOString();
   const rows = responses.map((r) => {
     const item = itemById.get(r.item_id) as ScoreableItem & { id: string };

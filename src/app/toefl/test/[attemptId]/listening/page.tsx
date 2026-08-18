@@ -37,6 +37,9 @@ type CurrentResponse = {
 
 type Phase = "loading" | "in_module" | "section_done" | "error";
 
+// 뒤로가기 방지(reading/page.tsx의 PAGE_SECTION 주석 참고).
+const PAGE_SECTION = "listening";
+
 function audioUrlFor(item: ToeflItemPublic, stimuli: ToeflStimulusPublic[]): string | null {
   if (item.task_type === "choose_a_response") {
     const payload = item.payload as { clip_path?: string | null };
@@ -98,6 +101,11 @@ export default function ToeflListeningTestPage({ params }: { params: Promise<{ a
     if (!res.ok || !data.ok) {
       setErrorMsg(data.message ?? "Failed to load the test.");
       setPhase("error");
+      return;
+    }
+
+    if (data.section.section !== PAGE_SECTION) {
+      router.replace(`/toefl/test/${attemptId}/${data.section.section}`);
       return;
     }
 
@@ -345,6 +353,7 @@ export default function ToeflListeningTestPage({ params }: { params: Promise<{ a
 
         {hasPlayed && activeItem ? (
           <TaskRenderer
+            key={activeItem.id}
             item={activeItem}
             attemptId={attemptId}
             value={answers[activeItem.id]}

@@ -34,6 +34,11 @@ type CurrentResponse = {
 
 type Phase = "loading" | "in_module" | "section_done" | "error";
 
+// 이 페이지가 다루는 영역. current가 돌려준 section이 이거랑 다르면(뒤로가기 등으로 이미 지나간
+// 영역 URL에 들어온 경우) 실제로 진행 중인 영역 페이지로 돌려보낸다 — §11의 "뒤로 가기 불가" 원칙을
+// current 엔드포인트 하나로 4개 페이지 전부에서 강제하는 지점.
+const PAGE_SECTION = "reading";
+
 export default function ToeflReadingTestPage({ params }: { params: Promise<{ attemptId: string }> }) {
   const { attemptId } = use(params);
   const router = useRouter();
@@ -83,6 +88,11 @@ export default function ToeflReadingTestPage({ params }: { params: Promise<{ att
     if (!res.ok || !data.ok) {
       setErrorMsg(data.message ?? "Failed to load the test.");
       setPhase("error");
+      return;
+    }
+
+    if (data.section.section !== PAGE_SECTION) {
+      router.replace(`/toefl/test/${attemptId}/${data.section.section}`);
       return;
     }
 
@@ -328,6 +338,7 @@ export default function ToeflReadingTestPage({ params }: { params: Promise<{ att
         <div className={activeStimulus ? "" : "md:col-span-2"}>
           {activeItem && (
             <TaskRenderer
+              key={activeItem.id}
               item={activeItem}
               attemptId={attemptId}
               value={answers[activeItem.id]}
