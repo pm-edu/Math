@@ -3,15 +3,17 @@
 // TOEFL 대시보드(진입화면). docs/toefl-spec.md §10.
 // 선택 위계 개선(2026-08-18): 풀 모의고사를 가장 눈에 띄는 카드로, 영역별 연습은 테두리만 있는
 // 조용한 카드로 낮춰서 "일단 뭘 눌러야 하는지"가 한눈에 보이게 함. 진행 중인 시험이 있으면
-// 이어하기 배너를 맨 위에 띄운다(전엔 이 상태가 없어서 실수로 새 attempt를 또 시작할 수 있었음).
+// 이어하기 배너를 맨 위에 띄운다.
 // 시간·문항수는 절대 하드코딩하지 않고 toefl_form_blueprint에서 계산한다(spec §2 필수 요구사항,
 // src/lib/toefl/blueprint-summary.ts).
 // 학생 응시 화면은 영어만 쓴다(§14).
 //
-// 가입 없이 체험(2026-08-18): Supabase 익명 로그인(signInAnonymously)을 쓴다 — toefl_attempt.user_id는
-// NOT NULL 그대로, RLS도 안 바꿈(익명 세션도 "authenticated" 롤이라 기존 정책을 그대로 통과함).
-// 나중에 /signup에서 이메일·비밀번호를 등록하면 같은 user_id를 유지한 채 정식 계정으로 승격되므로
-// 체험 중 쌓은 attempt가 마이그레이션 없이 그대로 내 기록이 된다.
+// 체험 방식 확정 (2026-08-18): 처음엔 Supabase 익명 로그인으로 "진짜 시험 1회"를 체험시키는
+// 방식을 만들었으나, 사용자가 "체험은 단순히 샘플을 보여주는 수준"이면 된다고 범위를 좁힘 —
+// 비회원도 반복 응시 가능했던 것과 문제은행이 계정 없이 노출되는 것 둘 다 부담스럽다는 이유.
+// 그래서 익명 로그인·1회제한·Resume숨김 로직을 전부 제거하고, 대신 로그인 전혀 없이 인증 없는
+// 서버 라우트(/api/toefl/sample, service role)로 문항 몇 개만 미리보기(/toefl/sample)로 보여주고
+// 실제 응시는 가입/로그인 후로 확정했다.
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -31,10 +33,7 @@ export default function ToeflDashboardPage() {
   const [phase, setPhase] = useState<Phase>("loading");
   const [forms, setForms] = useState<FormWithBlueprint[]>([]);
   const [resume, setResume] = useState<ResumeState | null>(null);
-  const [isAnonymous, setIsAnonymous] = useState(false);
-  const [guestTrialUsed, setGuestTrialUsed] = useState(false);
   const [starting, setStarting] = useState<string | null>(null);
-  const [guestStarting, setGuestStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -43,15 +42,6 @@ export default function ToeflDashboardPage() {
     if (!auth.user) {
       setPhase("gate");
       return;
-    }
-    setIsAnonymous(!!auth.user.is_anonymous);
-
-    // 익명(체험) 계정은 1회만 응시 가능(서버 API가 진짜로 강제함, /api/toefl/attempts 참고) —
-    // 여기서는 "이미 썼는지" 미리 알아서 시작 버튼 자체를 숨기고, 클릭했다가 403을 받는
-    // 경험을 안 만든다.
-    if (auth.user.is_anonymous) {
-      const { count } = await supabase.from("toefl_attempt").select("id", { count: "exact", head: true }).eq("user_id", auth.user.id);
-      setGuestTrialUsed((count ?? 0) > 0);
     }
 
     const [{ data: formRows }, { data: inProgress }] = await Promise.all([
@@ -97,21 +87,6 @@ export default function ToeflDashboardPage() {
   useEffect(() => {
     load();
   }, [load]);
-
-  // 가입 없이 체험: 익명 세션을 새로 만든 뒤 그대로 이어서 대시보드를 로드한다(로그인과 동일 경로).
-  async function startAsGuest() {
-    setError(null);
-    setGuestStarting(true);
-    const supabase = createClient();
-    const { error: signInError } = await supabase.auth.signInAnonymously();
-    setGuestStarting(false);
-    if (signInError) {
-      setError("Couldn't start a trial session. Please try again.");
-      return;
-    }
-    setPhase("loading");
-    await load();
-  }
 
   async function startSection(formId: string, section: ToeflSection) {
     setError(null);
@@ -168,13 +143,12 @@ export default function ToeflDashboardPage() {
           <p className="mt-2 text-sm text-[var(--secondary)]">2026 format · Reading &amp; Listening adapt to your level</p>
 
           <button
-            onClick={startAsGuest}
-            disabled={guestStarting}
-            className="mt-8 w-full rounded-full bg-[var(--pink)] px-6 py-3 text-sm font-semibold text-[var(--pink-dark)] disabled:opacity-60"
+            onClick={() => router.push("/toefl/sample")}
+            className="mt-8 w-full rounded-full bg-[var(--pink)] px-6 py-3 text-sm font-semibold text-[var(--pink-dark)]"
           >
-            {guestStarting ? "Starting..." : "Try it now — no sign-up →"}
+            See sample questions →
           </button>
-          <p className="mt-2 text-xs text-[var(--secondary)]">Sign up any time to save your results.</p>
+          <p className="mt-2 text-xs text-[var(--secondary)]">No account needed. Sign up to take the full, scored test.</p>
 
           {/* 헤더 우상단의 작은 "Log in" 링크만으로는 기존 회원이 못 찾고 지나칠 수 있어서
               (실사용 피드백, 2026-08-18), 본문에도 눈에 띄게 다시 넣는다. */}
@@ -198,11 +172,7 @@ export default function ToeflDashboardPage() {
       <h1 className="text-3xl font-medium text-[var(--foreground)]">TOEFL Practice</h1>
       <p className="mt-2 text-sm text-[var(--secondary)]">2026 format · Reading &amp; Listening adapt to your level</p>
 
-      {/* 익명(체험) 상태에서는 Resume을 보여주지 않는다 — 보여주면 가입 없이도 중단한 시험을
-          영원히 이어갈 수 있어서 "1회 체험" 제한이 무의미해진다(실사용 피드백, 2026-08-18).
-          가입(계정 승격)은 user_id를 그대로 유지하므로, 가입하고 나면 이 배너가 정상적으로
-          뜨고 중단했던 시험을 정확히 이어서 풀 수 있다. */}
-      {resume && !isAnonymous && (
+      {resume && (
         <div className="mt-8 flex items-center justify-between gap-4 rounded-2xl border border-[var(--mint-dark)]/25 bg-[var(--mint)]/40 px-5 py-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-[var(--mint-dark)]">Continue where you left off</p>
@@ -221,19 +191,6 @@ export default function ToeflDashboardPage() {
         <p className="mt-10 text-sm text-[var(--secondary)]">Loading...</p>
       ) : forms.length === 0 ? (
         <p className="mt-10 text-sm text-[var(--secondary)]">No practice sets are available yet.</p>
-      ) : isAnonymous && guestTrialUsed ? (
-        <div className="mt-8 rounded-2xl border border-[var(--border-c)] bg-white px-7 py-8 text-center">
-          <p className="text-sm font-semibold text-[var(--foreground)]">You've used your free trial test</p>
-          <p className="mt-1 text-sm text-[var(--secondary)]">
-            Sign up to keep practicing — your trial result will carry over to your new account.
-          </p>
-          <button
-            onClick={() => router.push("/signup?toefl=1")}
-            className="mt-5 rounded-full bg-[var(--pink)] px-6 py-3 text-sm font-semibold text-[var(--pink-dark)]"
-          >
-            Sign up to continue →
-          </button>
-        </div>
       ) : (
         <div className="mt-8 space-y-8">
           {forms.map((f) => {
