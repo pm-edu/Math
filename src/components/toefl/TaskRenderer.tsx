@@ -10,8 +10,8 @@ import AnnouncementTask from "./tasks/AnnouncementTask";
 import AcademicTalkTask from "./tasks/AcademicTalkTask";
 import BuildASentenceRenderer from "./BuildASentenceRenderer";
 import EssayRenderer from "./EssayRenderer";
-import ListenAndRepeatRenderer from "./ListenAndRepeatRenderer";
-import TakeAnInterviewRenderer from "./TakeAnInterviewRenderer";
+import ListenAndRepeat from "./tasks/ListenAndRepeat";
+import TakeAnInterview from "./tasks/TakeAnInterview";
 
 // task_type별 문항 렌더러 디스패처. spec §10: "유형별 if문을 페이지에 흩뿌리지 않는다" —
 // 페이지는 이 컴포넌트 하나만 쓰고, 유형 추가는 여기 switch 한 곳만 늘리면 된다.
@@ -32,6 +32,8 @@ export default function TaskRenderer({
   value,
   onChange,
   onAudioEnded,
+  turnIndex,
+  turnTotal,
 }: {
   item: ToeflItemPublic;
   attemptId: string;
@@ -39,6 +41,9 @@ export default function TaskRenderer({
   value: unknown;
   onChange: (answer: unknown) => void;
   onAudioEnded?: () => void;
+  // take_an_interview 전용: 같은 섹션의 이 유형 문항들 중 몇 번째인지(0-based)/총 몇 턴인지.
+  turnIndex?: number;
+  turnTotal?: number;
 }) {
   switch (item.task_type) {
     case "complete_the_words":
@@ -128,7 +133,7 @@ export default function TaskRenderer({
       );
     case "listen_and_repeat":
       return (
-        <ListenAndRepeatRenderer
+        <ListenAndRepeat
           item={item}
           attemptId={attemptId}
           value={value as { audio_path?: string } | undefined}
@@ -137,11 +142,13 @@ export default function TaskRenderer({
       );
     case "take_an_interview":
       return (
-        <TakeAnInterviewRenderer
+        <TakeAnInterview
           item={item}
           attemptId={attemptId}
           value={value as { audio_path?: string } | undefined}
           onChange={onChange as (answer: { audio_path: string }) => void}
+          turnIndex={turnIndex}
+          turnTotal={turnTotal}
         />
       );
     default:

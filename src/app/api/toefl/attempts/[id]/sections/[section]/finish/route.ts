@@ -252,7 +252,7 @@ async function finishNonAdaptiveSection(params: {
       const payload = item.payload as TakeAnInterviewPayload;
       const result = await gradeInterviewAudio({
         audioBase64,
-        mimeType: "audio/webm",
+        mimeType: guessAudioMimeType(response.audio_path),
         question: item.prompt,
         turnType: payload.turn_type,
       });
@@ -276,7 +276,7 @@ async function finishNonAdaptiveSection(params: {
         continue;
       }
 
-      const sttResult = await transcribeAudio(audioBase64, "audio/webm");
+      const sttResult = await transcribeAudio(audioBase64, guessAudioMimeType(response.audio_path));
       if (!sttResult.ok) {
         warnings.push(`listen_and_repeat 채점 실패: ${sttResult.message}`);
         continue;
@@ -345,6 +345,13 @@ async function saveAiScore(
     feedback_ko: feedbackKo,
     raw_output: rubric,
   });
+}
+
+// 클라이언트는 실제 녹음 포맷(webm 또는 Safari mp4 폴백)을 파일 확장자로 남겨둔다
+// (RecorderPanel.tsx) — 여기서 하드코딩된 "audio/webm" 대신 그 확장자로 Gemini에 보낼
+// mimeType을 고른다. 안 맞으면 Gemini가 오디오를 못 읽어서 mp4 폴백이 조용히 깨진다.
+function guessAudioMimeType(path: string): string {
+  return path.toLowerCase().endsWith(".mp4") ? "audio/mp4" : "audio/webm";
 }
 
 // toefl-recordings는 비공개 버킷이라 service role로만 내려받을 수 있다(§5와 같은 원칙).

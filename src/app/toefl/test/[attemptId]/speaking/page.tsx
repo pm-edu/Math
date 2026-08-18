@@ -15,6 +15,7 @@ import { createClient } from "@/lib/supabase/client";
 import TaskRenderer from "@/components/toefl/TaskRenderer";
 import SectionDoneActions from "@/components/toefl/SectionDoneActions";
 import ExitTestButton from "@/components/toefl/ExitTestButton";
+import { useHasPendingUploads, usePendingUploadTasks, recordingUploadQueue } from "@/lib/toefl/recording-upload-queue";
 import type { ToeflItemPublic, ToeflStimulusPublic } from "@/lib/toefl/types";
 
 type CurrentResponse = {
@@ -62,6 +63,8 @@ export default function ToeflSpeakingTestPage({ params }: { params: Promise<{ at
 
   const tokenRef = useRef<string | null>(null);
   const autoFinishedRef = useRef(false);
+  const hasPendingUploads = useHasPendingUploads();
+  const pendingTasks = usePendingUploadTasks();
 
   const authHeaders = useCallback(async () => {
     if (!tokenRef.current) {
@@ -140,7 +143,9 @@ export default function ToeflSpeakingTestPage({ params }: { params: Promise<{ at
     function tick() {
       const rem = new Date(deadlineAt as string).getTime() - Date.now();
       setRemainingMs(rem);
-      if (rem <= 0 && !autoFinishedRef.current) {
+      // 시간이 다 됐어도 아직 업로드 중인 녹음이 있으면 자동제출을 미룬다(요청: 미업로드 상태로
+      // 제출 차단) — 큐가 백그라운드에서 재시도를 계속하므로 다음 tick에서 다시 확인한다.
+      if (rem <= 0 && !autoFinishedRef.current && !recordingUploadQueue.hasPending()) {
         autoFinishedRef.current = true;
         finishModule();
       }
@@ -169,6 +174,10 @@ export default function ToeflSpeakingTestPage({ params }: { params: Promise<{ at
   // AI 채점(STT+루브릭)이 녹음 다운로드까지 포함해 시간이 걸릴 수 있다 — 실패해도 반드시
   // grading/busy를 풀고 에러를 보여준다(writing에서 겪은 멈춤 버그와 같은 패턴 방지).
   async function finishModule() {
+    if (recordingUploadQueue.hasPending()) {
+      setErrorMsg("Some recordings are still uploading. Please wait for them to finish (or retry below) before submitting.");
+      return;
+    }
     setBusy(true);
     setGrading(true);
     setErrorMsg(null);
@@ -302,6 +311,38 @@ export default function ToeflSpeakingTestPage({ params }: { params: Promise<{ at
 
       {errorMsg && <p className="mx-auto max-w-3xl px-6 text-sm text-red-600">{errorMsg}</p>}
 
+      {pendingTasks.length > 0 && (
+        <div className="mx-auto max-w-3xl px-6 pt-2">
+          <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+            <p className="font-medium">
+              {pendingTasks.length} recording{pendingTasks.length > 1 ? "s" : ""} still uploading — you can&apos;t submit until
+              this finishes.
+            </p>
+            <ul className="mt-1.5 space-y-1">
+              {pendingTasks.map((t) => {
+                const idx = items.findIndex((it) => it.id === t.itemId);
+                return (
+                  <li key={t.itemId} className="flex items-center gap-2">
+                    <span>
+                      Item {idx >= 0 ? idx + 1 : "?"}: {t.status === "failed" ? "upload failed" : "retrying…"}
+                    </span>
+                    {t.status === "failed" && (
+                      <button
+                        type="button"
+                        onClick={() => recordingUploadQueue.retryNow(t.itemId)}
+                        className="rounded-full border border-amber-400 px-2 py-0.5 font-medium text-amber-900"
+                      >
+                        Retry now
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </div>
+      )}
+
       <div className="mx-auto max-w-3xl px-6 pb-24 pt-2">
         {activeItem && (
           <TaskRenderer
@@ -310,6 +351,8 @@ export default function ToeflSpeakingTestPage({ params }: { params: Promise<{ at
             attemptId={attemptId}
             value={answers[activeItem.id]}
             onChange={(answer) => handleRecorded(activeItem.id, (answer as { audio_path: string }).audio_path)}
+            turnIndex={interviewTurnIndex(items, activeItem.id)}
+            turnTotal={items.filter((it) => it.task_type === "take_an_interview").length}
           />
         )}
       </div>
@@ -332,13 +375,21 @@ export default function ToeflSpeakingTestPage({ params }: { params: Promise<{ at
         ) : (
           <button
             onClick={finishModule}
-            disabled={busy}
+            disabled={busy || hasPendingUploads}
             className="rounded-full bg-[var(--pink)] px-6 py-2 text-sm font-medium text-[var(--pink-dark)] disabled:opacity-60"
           >
-            {busy ? "Grading..." : "Finish this part"}
+            {busy ? "Grading..." : hasPendingUploads ? "Uploading…" : "Finish this part"}
           </button>
         )}
       </footer>
     </main>
   );
+}
+
+// take_an_interview 문항이 이 섹션에서 몇 번째 턴인지(0-based) — 같은 task_type 문항들만
+// 걸러서 순서를 매긴다(position 자체는 다른 유형과 섞여 있어 그대로 못 씀).
+function interviewTurnIndex(items: ToeflItemPublic[], itemId: string): number | undefined {
+  const interviewItems = items.filter((it) => it.task_type === "take_an_interview");
+  const idx = interviewItems.findIndex((it) => it.id === itemId);
+  return idx === -1 ? undefined : idx;
 }

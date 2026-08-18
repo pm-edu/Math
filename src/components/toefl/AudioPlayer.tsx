@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // Listening 재생 규칙(spec §6, §10): 재생은 1회, 되감기/일시정지로 다시 듣기 불가.
 // 그래서 브라우저 기본 <audio controls>(스크러버로 되감기 가능) 대신 재생 버튼 하나만 노출하고,
@@ -17,6 +17,7 @@ export default function AudioPlayer({
   onComplete,
   onStateChange,
   onSkip,
+  autoPlay,
 }: {
   src: string;
   onComplete: () => void;
@@ -26,15 +27,27 @@ export default function AudioPlayer({
   // 3회 재시도 실패 후 "이 문항 건너뛰기"를 누르면 호출된다. 상위가 별도로 안 넘기면
   // onComplete()만 호출해 화면이 멈추지 않게 한다(문항은 못 들었으니 미응답으로 남을 뿐).
   onSkip?: () => void;
+  // Speaking(listen_and_repeat/take_an_interview)은 "전 과정 자동 진행, 사용자 버튼 없음"이
+  // 요구사항이라 재생 버튼 클릭을 기다리지 않고 마운트되자마자 재생한다. 실패하면(자동재생
+  // 정책 차단 등) 평소처럼 error 상태로 떨어져 Retry 버튼이 뜬다 — 그 이후는 사용자 조작.
+  autoPlay?: boolean;
 }) {
   const audioRef = useRef<HTMLAudioElement>(null);
-  const [state, setState] = useState<"idle" | "playing" | "done" | "error">("idle");
+  const [state, setState] = useState<"idle" | "playing" | "done" | "error">(autoPlay ? "playing" : "idle");
   const [progress, setProgress] = useState(0);
   const [retryCount, setRetryCount] = useState(0);
 
   function report(next: AudioPlayerState) {
     onStateChange?.(next);
   }
+
+  useEffect(() => {
+    if (autoPlay) {
+      report("playing");
+      audioRef.current?.play().catch(() => handleError());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // play()가 실패하면(만료된 signed URL, 네트워크 등) "playing" 상태에 영원히 멈추지 않도록
   // 반드시 error 상태로 되돌려 재시도 버튼을 보여준다 — 재생 자체는 여전히 1회 제한(§6)이라
