@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -17,6 +17,17 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [loading, setLoading] = useState(false);
+  // 익명(체험) 세션 위에서 가입하면 새 계정을 만드는 게 아니라 같은 user_id를 유지한 채
+  // 정식 계정으로 "승격"시킨다(updateUser) — 그래야 체험 중 쌓인 toefl_attempt가 그대로
+  // 이 계정 것이 된다. 일반 가입(signUp)은 완전히 별개의 계정을 새로 만든다.
+  const [isGuestUpgrade, setIsGuestUpgrade] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user?.is_anonymous) setIsGuestUpgrade(true);
+    });
+  }, []);
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
@@ -24,11 +35,9 @@ export default function SignupPage() {
     setError(null);
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { name } },
-    });
+    const { error } = isGuestUpgrade
+      ? await supabase.auth.updateUser({ email, password, data: { name } })
+      : await supabase.auth.signUp({ email, password, options: { data: { name } } });
 
     setLoading(false);
     if (error) {
@@ -64,6 +73,9 @@ export default function SignupPage() {
       <Header />
       <main className="mx-auto max-w-md px-6 py-16">
         <h1 className="text-2xl font-medium text-[var(--foreground)]">{t("signup")}</h1>
+        {isGuestUpgrade && (
+          <p className="mt-2 text-sm text-[var(--secondary)]">{t("signupGuestNote")}</p>
+        )}
 
         <form onSubmit={handleSignup} className="mt-8 space-y-4">
           <div>

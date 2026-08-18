@@ -105,6 +105,10 @@ const DICT = {
     en: "Click the verification link in your email, then log in.",
   },
   goLogin: { ko: "로그인하러 가기", en: "Go to login" },
+  signupGuestNote: {
+    ko: "체험 중 풀었던 시험 기록이 그대로 이 계정에 저장됩니다.",
+    en: "Your trial test results will be saved to this account.",
+  },
 
   // 후기
   reviewsTitle: { ko: "수강 후기", en: "Student Reviews" },

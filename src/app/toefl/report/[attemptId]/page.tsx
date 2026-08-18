@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { bandDescription, bandToCefr } from "@/lib/toefl/scoring";
 import { SECTION_LABEL, SECTION_ORDER } from "@/lib/toefl/section-order";
+import GuestBadge from "@/components/toefl/GuestBadge";
 import type { ToeflSection } from "@/lib/toefl/types";
 
 type SectionRow = {
@@ -30,6 +31,7 @@ export default function ToeflReportPage({ params }: { params: Promise<{ attemptI
   const [notFound, setNotFound] = useState(false);
   const [sections, setSections] = useState<SectionRow[]>([]);
   const [mode, setMode] = useState<string | null>(null);
+  const [isAnonymous, setIsAnonymous] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -39,6 +41,7 @@ export default function ToeflReportPage({ params }: { params: Promise<{ attemptI
         router.replace("/login");
         return;
       }
+      setIsAnonymous(auth.user.is_anonymous ?? false);
       const { data: attempt } = await supabase
         .from("toefl_attempt")
         .select("id, mode")
@@ -98,6 +101,11 @@ export default function ToeflReportPage({ params }: { params: Promise<{ attemptI
     <main data-theme="en" className="min-h-screen bg-[var(--background)] mx-auto max-w-2xl px-6 py-16">
       <h1 className="text-3xl font-medium text-[var(--foreground)]">TOEFL Report</h1>
       <p className="mt-1 text-sm text-[var(--secondary)]">{mode === "full" ? "Full practice test" : "Section practice"}</p>
+      {isAnonymous && (
+        <div className="mt-4">
+          <GuestBadge />
+        </div>
+      )}
 
       {!allDone && (
         <p className="mt-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">

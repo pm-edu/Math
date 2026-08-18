@@ -7,76 +7,102 @@
 // 시간·문항수는 절대 하드코딩하지 않고 toefl_form_blueprint에서 계산한다(spec §2 필수 요구사항,
 // src/lib/toefl/blueprint-summary.ts).
 // 학생 응시 화면은 영어만 쓴다(§14).
+//
+// 가입 없이 체험(2026-08-18): Supabase 익명 로그인(signInAnonymously)을 쓴다 — toefl_attempt.user_id는
+// NOT NULL 그대로, RLS도 안 바꿈(익명 세션도 "authenticated" 롤이라 기존 정책을 그대로 통과함).
+// 나중에 /signup에서 이메일·비밀번호를 등록하면 같은 user_id를 유지한 채 정식 계정으로 승격되므로
+// 체험 중 쌓은 attempt가 마이그레이션 없이 그대로 내 기록이 된다.
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { formatDuration, summarizeBySection, totalSummary, type BlueprintSummaryRow } from "@/lib/toefl/blueprint-summary";
 import { SECTION_LABEL, SECTION_ORDER } from "@/lib/toefl/section-order";
+import GuestBadge from "@/components/toefl/GuestBadge";
 import type { ToeflSection } from "@/lib/toefl/types";
 
 type ToeflForm = { id: string; code: string; title: string; blueprint_version: string };
 type FormWithBlueprint = ToeflForm & { rows: BlueprintSummaryRow[] };
 type ResumeState = { attemptId: string; section: ToeflSection };
+type Phase = "loading" | "gate" | "ready";
 
 export default function ToeflDashboardPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  const [phase, setPhase] = useState<Phase>("loading");
   const [forms, setForms] = useState<FormWithBlueprint[]>([]);
   const [resume, setResume] = useState<ResumeState | null>(null);
+  const [isAnonymous, setIsAnonymous] = useState(false);
   const [starting, setStarting] = useState<string | null>(null);
+  const [guestStarting, setGuestStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     const supabase = createClient();
-    async function load() {
-      const { data: auth } = await supabase.auth.getUser();
-      if (!auth.user) {
-        router.replace("/login");
-        return;
-      }
-
-      const [{ data: formRows }, { data: inProgress }] = await Promise.all([
-        supabase.from("toefl_form").select("id, code, title, blueprint_version").eq("is_published", true).order("created_at"),
-        supabase
-          .from("toefl_attempt")
-          .select("id")
-          .eq("user_id", auth.user.id)
-          .eq("status", "in_progress")
-          .order("started_at", { ascending: false })
-          .limit(1),
-      ]);
-
-      if (inProgress && inProgress.length > 0) {
-        const attemptId = inProgress[0].id;
-        const { data: sectionRows } = await supabase
-          .from("toefl_section_attempt")
-          .select("section")
-          .eq("attempt_id", attemptId)
-          .order("started_at", { ascending: false })
-          .limit(1);
-        if (sectionRows && sectionRows.length > 0) {
-          setResume({ attemptId, section: sectionRows[0].section as ToeflSection });
-        }
-      }
-
-      const versions = Array.from(new Set((formRows ?? []).map((f) => f.blueprint_version)));
-      const blueprintByVersion = new Map<string, BlueprintSummaryRow[]>();
-      await Promise.all(
-        versions.map(async (version) => {
-          const { data } = await supabase
-            .from("toefl_form_blueprint")
-            .select("section, stage, time_limit_sec, item_count")
-            .eq("version", version);
-          blueprintByVersion.set(version, data ?? []);
-        })
-      );
-
-      setForms((formRows ?? []).map((f) => ({ ...f, rows: blueprintByVersion.get(f.blueprint_version) ?? [] })));
-      setLoading(false);
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) {
+      setPhase("gate");
+      return;
     }
+    setIsAnonymous(auth.user.is_anonymous ?? false);
+
+    const [{ data: formRows }, { data: inProgress }] = await Promise.all([
+      supabase.from("toefl_form").select("id, code, title, blueprint_version").eq("is_published", true).order("created_at"),
+      supabase
+        .from("toefl_attempt")
+        .select("id")
+        .eq("user_id", auth.user.id)
+        .eq("status", "in_progress")
+        .order("started_at", { ascending: false })
+        .limit(1),
+    ]);
+
+    if (inProgress && inProgress.length > 0) {
+      const attemptId = inProgress[0].id;
+      const { data: sectionRows } = await supabase
+        .from("toefl_section_attempt")
+        .select("section")
+        .eq("attempt_id", attemptId)
+        .order("started_at", { ascending: false })
+        .limit(1);
+      if (sectionRows && sectionRows.length > 0) {
+        setResume({ attemptId, section: sectionRows[0].section as ToeflSection });
+      }
+    }
+
+    const versions = Array.from(new Set((formRows ?? []).map((f) => f.blueprint_version)));
+    const blueprintByVersion = new Map<string, BlueprintSummaryRow[]>();
+    await Promise.all(
+      versions.map(async (version) => {
+        const { data } = await supabase
+          .from("toefl_form_blueprint")
+          .select("section, stage, time_limit_sec, item_count")
+          .eq("version", version);
+        blueprintByVersion.set(version, data ?? []);
+      })
+    );
+
+    setForms((formRows ?? []).map((f) => ({ ...f, rows: blueprintByVersion.get(f.blueprint_version) ?? [] })));
+    setPhase("ready");
+  }, []);
+
+  useEffect(() => {
     load();
-  }, [router]);
+  }, [load]);
+
+  // 가입 없이 체험: 익명 세션을 새로 만든 뒤 그대로 이어서 대시보드를 로드한다(로그인과 동일 경로).
+  async function startAsGuest() {
+    setError(null);
+    setGuestStarting(true);
+    const supabase = createClient();
+    const { error: signInError } = await supabase.auth.signInAnonymously();
+    setGuestStarting(false);
+    if (signInError) {
+      setError("Couldn't start a trial session. Please try again.");
+      return;
+    }
+    setPhase("loading");
+    await load();
+  }
 
   async function startSection(formId: string, section: ToeflSection) {
     setError(null);
@@ -124,10 +150,42 @@ export default function ToeflDashboardPage() {
     router.push(`/toefl/test/${data.attempt_id}/reading`);
   }
 
+  if (phase === "gate") {
+    return (
+      <main data-theme="en" className="min-h-screen bg-[var(--background)] mx-auto max-w-md px-6 py-24 text-center">
+        <h1 className="text-3xl font-medium text-[var(--foreground)]">TOEFL Practice</h1>
+        <p className="mt-2 text-sm text-[var(--secondary)]">2026 format · Reading &amp; Listening adapt to your level</p>
+
+        <button
+          onClick={startAsGuest}
+          disabled={guestStarting}
+          className="mt-8 w-full rounded-full bg-[var(--pink)] px-6 py-3 text-sm font-semibold text-[var(--pink-dark)] disabled:opacity-60"
+        >
+          {guestStarting ? "Starting..." : "Try it now — no sign-up →"}
+        </button>
+        <p className="mt-2 text-xs text-[var(--secondary)]">Sign up any time to save your results.</p>
+
+        <div className="mt-6 flex items-center justify-center gap-2 text-sm text-[var(--secondary)]">
+          <span>Already have an account?</span>
+          <button onClick={() => router.push("/login")} className="font-medium text-[var(--pink-dark)] underline">
+            Log in
+          </button>
+        </div>
+
+        {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+      </main>
+    );
+  }
+
   return (
     <main data-theme="en" className="min-h-screen bg-[var(--background)] mx-auto max-w-3xl px-6 py-16">
       <h1 className="text-3xl font-medium text-[var(--foreground)]">TOEFL Practice</h1>
       <p className="mt-2 text-sm text-[var(--secondary)]">2026 format · Reading &amp; Listening adapt to your level</p>
+      {isAnonymous && (
+        <div className="mt-4">
+          <GuestBadge />
+        </div>
+      )}
 
       {resume && (
         <div className="mt-8 flex items-center justify-between gap-4 rounded-2xl border border-[var(--mint-dark)]/25 bg-[var(--mint)]/40 px-5 py-4">
@@ -144,7 +202,7 @@ export default function ToeflDashboardPage() {
         </div>
       )}
 
-      {loading ? (
+      {phase === "loading" ? (
         <p className="mt-10 text-sm text-[var(--secondary)]">Loading...</p>
       ) : forms.length === 0 ? (
         <p className="mt-10 text-sm text-[var(--secondary)]">No practice sets are available yet.</p>
