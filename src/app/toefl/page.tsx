@@ -198,7 +198,11 @@ export default function ToeflDashboardPage() {
       <h1 className="text-3xl font-medium text-[var(--foreground)]">TOEFL Practice</h1>
       <p className="mt-2 text-sm text-[var(--secondary)]">2026 format · Reading &amp; Listening adapt to your level</p>
 
-      {resume && (
+      {/* 익명(체험) 상태에서는 Resume을 보여주지 않는다 — 보여주면 가입 없이도 중단한 시험을
+          영원히 이어갈 수 있어서 "1회 체험" 제한이 무의미해진다(실사용 피드백, 2026-08-18).
+          가입(계정 승격)은 user_id를 그대로 유지하므로, 가입하고 나면 이 배너가 정상적으로
+          뜨고 중단했던 시험을 정확히 이어서 풀 수 있다. */}
+      {resume && !isAnonymous && (
         <div className="mt-8 flex items-center justify-between gap-4 rounded-2xl border border-[var(--mint-dark)]/25 bg-[var(--mint)]/40 px-5 py-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-[var(--mint-dark)]">Continue where you left off</p>
