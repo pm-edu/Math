@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { site } from "@/lib/site";
 import GuestBadge from "./GuestBadge";
 
 // TOEFL 전용 헤더. 수학 사이트의 공용 Header(과목전환·언어토글·강좌메뉴)는 TOEFL과 무관해서
@@ -41,8 +42,9 @@ export default function ToeflHeader() {
   return (
     <header data-theme="en" className="border-b border-[var(--border-c)] bg-[var(--background)]">
       <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-3">
-        <Link href="/toefl" className="text-sm font-semibold tracking-wide text-[var(--foreground)]">
-          TOEFL Practice
+        <Link href="/toefl" className="flex items-baseline gap-1.5 text-sm font-semibold tracking-wide text-[var(--foreground)]">
+          <span>{site.name}</span>
+          <span className="text-[var(--pink-dark)]">TOEFL</span>
         </Link>
         <div className="flex items-center gap-3">
           {isAnonymous && <GuestBadge />}
