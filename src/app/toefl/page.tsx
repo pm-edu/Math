@@ -33,7 +33,9 @@ export default function ToeflDashboardPage() {
   const [phase, setPhase] = useState<Phase>("loading");
   const [forms, setForms] = useState<FormWithBlueprint[]>([]);
   const [resume, setResume] = useState<ResumeState | null>(null);
-  const [starting, setStarting] = useState<string | null>(null);
+  // 응시 이력 배지: 폼별로 과거에 제출까지 마친 attempt가 있으면 "Taken before"를 보여준다
+  // (2026-08-18 추가 요청). 진행 중인 것(resume)과는 별개 — 완료된 것만 센다.
+  const [completedCountByForm, setCompletedCountByForm] = useState<Record<string, number>>({});
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -44,7 +46,7 @@ export default function ToeflDashboardPage() {
       return;
     }
 
-    const [{ data: formRows }, { data: inProgress }] = await Promise.all([
+    const [{ data: formRows }, { data: inProgress }, { data: pastAttempts }] = await Promise.all([
       supabase.from("toefl_form").select("id, code, title, blueprint_version").eq("is_published", true).order("created_at"),
       supabase
         .from("toefl_attempt")
@@ -53,6 +55,7 @@ export default function ToeflDashboardPage() {
         .eq("status", "in_progress")
         .order("started_at", { ascending: false })
         .limit(1),
+      supabase.from("toefl_attempt").select("form_id").eq("user_id", auth.user.id).neq("status", "in_progress"),
     ]);
 
     if (inProgress && inProgress.length > 0) {
@@ -67,6 +70,10 @@ export default function ToeflDashboardPage() {
         setResume({ attemptId, section: sectionRows[0].section as ToeflSection });
       }
     }
+
+    const counts: Record<string, number> = {};
+    for (const a of pastAttempts ?? []) counts[a.form_id] = (counts[a.form_id] ?? 0) + 1;
+    setCompletedCountByForm(counts);
 
     const versions = Array.from(new Set((formRows ?? []).map((f) => f.blueprint_version)));
     const blueprintByVersion = new Map<string, BlueprintSummaryRow[]>();
@@ -88,50 +95,13 @@ export default function ToeflDashboardPage() {
     load();
   }, [load]);
 
-  async function startSection(formId: string, section: ToeflSection) {
-    setError(null);
-    const key = `${formId}:${section}`;
-    setStarting(key);
-    const supabase = createClient();
-    const { data: session } = await supabase.auth.getSession();
-    const token = session.session?.access_token;
-
-    const res = await fetch("/api/toefl/attempts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ form_id: formId, mode: "section_practice", section }),
-    });
-    const data = await res.json();
-    setStarting(null);
-    if (!res.ok || !data.ok) {
-      setError(data.message ?? "Failed to start the test.");
-      return;
-    }
-    router.push(`/toefl/test/${data.attempt_id}/${section}`);
-  }
-
-  // 풀 모의고사(mode='full')는 항상 reading부터 시작한다(§2 고정 순서). 이후 각 영역 화면이
-  // 다음 영역 시작(sections/:s/start)으로 이어 붙인다.
-  async function startFull(formId: string) {
-    setError(null);
-    const key = `${formId}:full`;
-    setStarting(key);
-    const supabase = createClient();
-    const { data: session } = await supabase.auth.getSession();
-    const token = session.session?.access_token;
-
-    const res = await fetch("/api/toefl/attempts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ form_id: formId, mode: "full" }),
-    });
-    const data = await res.json();
-    setStarting(null);
-    if (!res.ok || !data.ok) {
-      setError(data.message ?? "Failed to start the test.");
-      return;
-    }
-    router.push(`/toefl/test/${data.attempt_id}/reading`);
+  // 실제 응시 생성(POST /api/toefl/attempts)은 더 이상 여기서 바로 안 한다 — 사전 점검
+  // 화면(/toefl/check)을 먼저 거치도록 함(spec §11, 2026-08-18 추가 요청). 아직 attempt가
+  // 없는 시점이라 폼/모드/영역을 쿼리 파라미터로 넘긴다.
+  function goToCheck(formId: string, mode: "full" | "section_practice", section?: ToeflSection) {
+    const params = new URLSearchParams({ formId, mode });
+    if (section) params.set("section", section);
+    router.push(`/toefl/check?${params.toString()}`);
   }
 
   if (phase === "gate") {
@@ -197,13 +167,20 @@ export default function ToeflDashboardPage() {
             const total = totalSummary(f.rows);
             const perSection = summarizeBySection(f.rows);
             const bySection = new Map(perSection.map((s) => [s.section, s]));
-            const fullKey = `${f.id}:full`;
+            const completedCount = completedCountByForm[f.id] ?? 0;
 
             return (
               <div key={f.id}>
                 {/* 실전 모의고사 — 가장 크고 눈에 띄게. 색은 accent 하나, 버튼도 하나만. */}
                 <div className="rounded-2xl border border-[var(--border-c)] bg-white px-7 py-7" style={{ borderTopWidth: 3, borderTopColor: "var(--pink)" }}>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--pink-dark)]">Recommended</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-[var(--pink-dark)]">Recommended</p>
+                    {completedCount > 0 && (
+                      <span className="rounded-full bg-[var(--mint)]/50 px-2.5 py-0.5 text-[11px] font-medium text-[var(--mint-dark)]">
+                        Taken {completedCount} time{completedCount > 1 ? "s" : ""} before
+                      </span>
+                    )}
+                  </div>
                   <h2 className="mt-2 text-xl font-medium text-[var(--foreground)]">Take the Full Practice Test</h2>
                   <div className="mt-3 flex flex-wrap items-center gap-1.5">
                     {SECTION_ORDER.map((s, i) => (
@@ -220,11 +197,10 @@ export default function ToeflDashboardPage() {
                     <span className="font-medium text-[var(--foreground)]">{formatDuration(total.timeSec)}</span> total, no breaks
                   </p>
                   <button
-                    onClick={() => startFull(f.id)}
-                    disabled={starting === fullKey}
-                    className="mt-5 rounded-full bg-[var(--pink)] px-6 py-3 text-sm font-semibold text-[var(--pink-dark)] disabled:opacity-60"
+                    onClick={() => goToCheck(f.id, "full")}
+                    className="mt-5 rounded-full bg-[var(--pink)] px-6 py-3 text-sm font-semibold text-[var(--pink-dark)]"
                   >
-                    {starting === fullKey ? "Starting..." : "Start Full Test →"}
+                    {completedCount > 0 ? "Retake Full Test →" : "Start Full Test →"}
                   </button>
                 </div>
 
@@ -235,7 +211,6 @@ export default function ToeflDashboardPage() {
                   <div className="mt-3">
                     {SECTION_ORDER.map((s) => {
                       const stat = bySection.get(s);
-                      const key = `${f.id}:${s}`;
                       return (
                         <div key={s} className="flex items-center justify-between gap-4 border-t border-[var(--border-c)] py-3">
                           <div>
@@ -246,11 +221,11 @@ export default function ToeflDashboardPage() {
                             </p>
                           </div>
                           <button
-                            onClick={() => startSection(f.id, s)}
-                            disabled={!stat || starting === key}
+                            onClick={() => goToCheck(f.id, "section_practice", s)}
+                            disabled={!stat}
                             className="shrink-0 rounded-full border border-[var(--pink)] px-4 py-1.5 text-xs font-medium text-[var(--pink-dark)] disabled:opacity-40"
                           >
-                            {starting === key ? "Starting..." : "Practice"}
+                            Practice
                           </button>
                         </div>
                       );
