@@ -182,6 +182,13 @@ export async function POST(req: Request) {
         answer_key: answerKey,
         explanation_ko: explanation,
         skill_tags: (raw.skill_tags ?? []).filter(Boolean),
+        // 이 라우트는 "관리자가 화면에서 검토를 마치고 저장" 하는 지점이라 검수 완료로 넣는다.
+        // (마이그레이션 202608191600 로 toefl_item.verified 가 생겼고, 기본값은 false다 —
+        //  여기서 true를 넣지 않으면 저장해도 학생에게 안 보인다.)
+        // 검수 큐를 별도 화면으로 분리하면, 그때 이 값을 false로 바꾸고 큐에서 승인하게 한다.
+        verified: true,
+        source: "ai",
+        reviewed_at: new Date().toISOString(),
       })
       .select("id")
       .single();
