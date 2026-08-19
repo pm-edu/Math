@@ -177,9 +177,28 @@ export default function AdminToeflItemsPage() {
         headers: { "Content-Type": "application/json", ...(await authHeader()) },
         body: JSON.stringify({ taskType, itemsPerUnit, difficulty, topic }),
       });
-      const data = await res.json();
+      // 응답이 JSON이 아닐 수 있다 — 서버 함수가 타임아웃되거나 500으로 죽으면 본문이
+      // 비거나 HTML이 온다. 그때 res.json()이 먼저 터져서 원인이 "생성 실패"로만 보였다.
+      // 상태코드와 본문 앞부분을 함께 보여줘 원인을 화면에서 바로 알 수 있게 한다.
+      type GenerateResponse = { ok?: boolean; message?: string; stimulus?: unknown; items?: unknown };
+      const bodyText = await res.text();
+      let data: GenerateResponse | null = null;
+      try {
+        data = JSON.parse(bodyText) as GenerateResponse;
+      } catch {
+        setGenerating(false);
+        setError(
+          bodyText.trim().length === 0
+            ? `생성 실패 (HTTP ${res.status}) — 서버가 빈 응답을 보냈습니다. 개수를 줄여 다시 시도해 보세요(생성이 60초를 넘기면 함수가 중단됩니다).`
+            : `생성 실패 (HTTP ${res.status}) — 응답이 JSON이 아닙니다: ${bodyText.slice(0, 200)}`
+        );
+        return;
+      }
       setGenerating(false);
-      if (!res.ok || !data.ok) { setError(data.message ?? "생성 실패"); return; }
+      if (!res.ok || !data?.ok) {
+        setError(data?.message ?? `생성 실패 (HTTP ${res.status})`);
+        return;
+      }
 
       // 유형마다 채워지는 칸이 달라 전부 optional 이다. 무엇이 필수인지는 저장 시
       // 서버의 생성기(toItemRow)가 판단하고, 비어 있는 문항만 건너뛴다.
