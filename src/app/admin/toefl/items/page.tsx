@@ -9,26 +9,20 @@ import Topbar from "@/components/toefl/admin/Topbar";
 import Pipeline from "@/components/toefl/admin/Pipeline";
 import { useAdminMe } from "@/lib/toefl/admin-me";
 import { createClient } from "@/lib/supabase/client";
+import { GENERATABLE_TASKS } from "@/lib/toefl/task-catalog";
+import type { ToeflSection, ToeflTaskType } from "@/lib/toefl/types";
 
-type Section = "reading" | "listening";
-type GenerableTaskType =
-  | "complete_the_words"
-  | "daily_life"
-  | "academic_passage"
-  | "choose_a_response"
-  | "conversation"
-  | "announcement"
-  | "academic_talk";
+// 유형 목록은 src/lib/toefl/task-catalog.ts 가 유일한 출처다 — 여기에 복제하지 않는다.
+// (예전엔 이 파일이 같은 배열을 따로 들고 있어서, 유형 추가 때 두 곳을 고쳐야 했다)
+type Section = ToeflSection;
+type GenerableTaskType = ToeflTaskType;
 
-const TASK_TYPES: { value: GenerableTaskType; label: string; section: Section; needsStimulus: boolean }[] = [
-  { value: "complete_the_words", label: "Complete the Words (빈칸 채우기)", section: "reading", needsStimulus: false },
-  { value: "daily_life", label: "Daily Life (생활문 독해)", section: "reading", needsStimulus: true },
-  { value: "academic_passage", label: "Academic Passage (학술 지문 독해)", section: "reading", needsStimulus: true },
-  { value: "choose_a_response", label: "Choose a Response (짧은 응답 고르기)", section: "listening", needsStimulus: false },
-  { value: "conversation", label: "Conversation (대화)", section: "listening", needsStimulus: true },
-  { value: "announcement", label: "Announcement (공지)", section: "listening", needsStimulus: true },
-  { value: "academic_talk", label: "Academic Talk (강의)", section: "listening", needsStimulus: true },
-];
+const TASK_TYPES = GENERATABLE_TASKS.map((e) => ({
+  value: e.taskType,
+  label: e.label,
+  section: e.section,
+  needsStimulus: e.needsStimulus,
+}));
 
 type ModuleOption = {
   id: string;
@@ -187,19 +181,25 @@ export default function AdminToeflItemsPage() {
       setGenerating(false);
       if (!res.ok || !data.ok) { setError(data.message ?? "생성 실패"); return; }
 
-      const result = data.result as
-        | { kind: "complete_the_words"; items: { paragraph: string; blanks: BlankD[]; explanation_ko: string; skill_tags: string[] }[] }
-        | { kind: "choose_a_response"; items: { spoken_text: string; options: OptionD[]; correct: string[]; explanation_ko: string; skill_tags: string[] }[] }
-        | { kind: "mcq_passage"; stimulus: { title: string; text: string }; items: { prompt: string; options: OptionD[]; correct: string[]; explanation_ko: string; skill_tags: string[] }[] };
+      // 유형마다 채워지는 칸이 달라 전부 optional 이다. 무엇이 필수인지는 저장 시
+      // 서버의 생성기(toItemRow)가 판단하고, 비어 있는 문항만 건너뛴다.
+      const stimulus = data.stimulus as { title: string; text: string } | null;
+      const generated = data.items as {
+        prompt?: string;
+        options?: OptionD[];
+        correct?: string[];
+        paragraph?: string;
+        blanks?: BlankD[];
+        spoken_text?: string;
+        explanation_ko: string;
+        skill_tags: string[];
+      }[];
 
-      if (result.kind === "mcq_passage") {
-        setStimulusTitle(result.stimulus.title);
-        setStimulusText(result.stimulus.text);
-      } else {
-        setStimulusTitle(""); setStimulusText("");
-      }
-      setItems(result.items.map((it) => ({ include: true, ...it })));
-      setMessage(`${result.items.length}문항을 생성했습니다. 검토·수정 후 저장하세요.`);
+      // 지문을 공유하는 유형이면 stimulus 가 오고, 아니면 null 이다.
+      setStimulusTitle(stimulus?.title ?? "");
+      setStimulusText(stimulus?.text ?? "");
+      setItems(generated.map((it) => ({ include: true, ...it })));
+      setMessage(`${generated.length}문항을 생성했습니다. 검토·수정 후 저장하세요.`);
     } catch (e) {
       setGenerating(false);
       setError(`생성 중 오류: ${(e as Error).message}`);

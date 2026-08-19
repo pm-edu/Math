@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { jsonError, requireToeflStaff } from "@/lib/toefl/server/auth";
 import { generateSpeechWav } from "@/lib/toefl/server/tts";
-import { taskTypeConfig } from "@/lib/toefl/server/item-generation";
+import { getGenerator } from "@/lib/toefl/server/generators/registry";
 
 // TOEFL P6: 검수를 마친 문항 초안을 실제 DB에 저장한다(spec §9 POST /api/admin/toefl/items/bulk).
 // 지문(stimulus)이 필요한 유형은 stimulus 1개 + item N개를 한 번에 저장한다.
@@ -44,8 +44,9 @@ export async function POST(req: Request) {
   const { client } = auth;
 
   const body = (await req.json().catch(() => ({}))) as RequestBody;
-  const config = taskTypeConfig(body.taskType ?? "");
-  if (!config) return jsonError(400, "지원하지 않는 문항 유형입니다.");
+  // 유형별 저장 형태(payload·answer_key·채점방식)는 생성기가 안다 — 여기서 분기하지 않는다.
+  const generator = getGenerator(body.taskType ?? "");
+  if (!generator) return jsonError(400, "지원하지 않는 문항 유형입니다.");
   if (!body.moduleId) return jsonError(400, "대상 모듈을 선택해주세요.");
 
   const items = (body.items ?? []).filter(Boolean);
@@ -59,14 +60,14 @@ export async function POST(req: Request) {
     .eq("id", body.moduleId)
     .maybeSingle();
   if (moduleErr || !moduleRow) return jsonError(404, "모듈을 찾을 수 없습니다.");
-  if (moduleRow.section !== config.section) {
-    return jsonError(400, `이 유형(${config.value})은 ${config.section} 모듈에만 등록할 수 있습니다.`);
+  if (moduleRow.section !== generator.section) {
+    return jsonError(400, `이 유형(${generator.taskType})은 ${generator.section} 모듈에만 등록할 수 있습니다.`);
   }
 
   const log: LogEntry[] = [];
 
   let stimulusId: string | null = null;
-  if (config.needsStimulus) {
+  if (generator.needsStimulus) {
     const text = (body.stimulus?.text ?? "").trim();
     if (!text) return jsonError(400, "지문/스크립트 내용이 비어 있습니다.");
     const title = (body.stimulus?.title ?? "").trim() || null;
@@ -80,12 +81,12 @@ export async function POST(req: Request) {
       .maybeSingle();
     const nextStimPosition = (maxStim?.position ?? 0) + 1;
 
-    const isListening = config.section === "listening";
+    const isListening = generator.section === "listening";
     const { data: stimRow, error: stimErr } = await client
       .from("toefl_stimulus")
       .insert({
         module_id: body.moduleId,
-        task_type: config.value,
+        task_type: generator.taskType,
         title,
         body: isListening ? null : text,
         transcript: isListening ? text : null,
@@ -128,55 +129,23 @@ export async function POST(req: Request) {
       continue;
     }
 
-    let prompt: string;
-    let payload: Record<string, unknown>;
-    let answerKey: Record<string, unknown>;
-    let spokenTextForAudio: string | null = null;
-
-    if (config.value === "complete_the_words") {
-      const paragraph = (raw.paragraph ?? "").trim();
-      const blanks = (raw.blanks ?? []).filter((b) => b.masked && b.answer);
-      if (!paragraph || blanks.length === 0) {
-        log.push({ kind: "item", status: "error", message: "빈칸 문항 내용이 비어 있어 건너뛰었습니다." });
-        continue;
-      }
-      prompt = "Fill in the missing letters to complete each word.";
-      payload = { paragraph, blanks: blanks.map((b) => ({ id: b.id, masked: b.masked, length: b.length })) };
-      answerKey = Object.fromEntries(blanks.map((b) => [b.id, b.answer.trim()]));
-    } else if (config.value === "choose_a_response") {
-      const options = (raw.options ?? []).filter((o) => o.text?.trim());
-      const correct = (raw.correct ?? []).filter((c) => options.some((o) => o.id === c));
-      const spokenText = (raw.spoken_text ?? "").trim();
-      if (options.length < 2 || correct.length === 0 || !spokenText) {
-        log.push({ kind: "item", status: "error", message: "응답 선택 문항 내용이 비어 있어 건너뛰었습니다." });
-        continue;
-      }
-      prompt = "Choose the best response to what you hear.";
-      payload = { clip_path: null, options };
-      answerKey = { correct };
-      spokenTextForAudio = spokenText;
-    } else {
-      const options = (raw.options ?? []).filter((o) => o.text?.trim());
-      const correct = (raw.correct ?? []).filter((c) => options.some((o) => o.id === c));
-      const questionPrompt = (raw.prompt ?? "").trim();
-      if (options.length < 2 || correct.length === 0 || !questionPrompt) {
-        log.push({ kind: "item", status: "error", message: "문항 내용이 비어 있어 건너뛰었습니다." });
-        continue;
-      }
-      prompt = questionPrompt;
-      payload = { format: "mcq", options, select_count: 1 };
-      answerKey = { correct };
+    const row = generator.toItemRow({ ...raw, skill_tags: raw.skill_tags ?? [] });
+    if (!row.ok) {
+      log.push({ kind: "item", status: "error", message: row.message });
+      continue;
     }
+    const { prompt, payload, answerKey } = row;
+    const spokenTextForAudio = row.spokenText;
 
     const { data: itemRow, error: itemErr } = await client
       .from("toefl_item")
       .insert({
         module_id: body.moduleId,
         stimulus_id: stimulusId,
-        task_type: config.value,
+        task_type: generator.taskType,
         position: nextPosition,
         difficulty,
-        scoring_mode: "auto_key",
+        scoring_mode: generator.scoringMode,
         prompt,
         payload,
         answer_key: answerKey,

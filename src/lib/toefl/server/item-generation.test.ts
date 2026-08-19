@@ -16,10 +16,10 @@ describe("parseGeneratedJson — complete_the_words", () => {
     const result = parseGeneratedJson("complete_the_words", json);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.result.kind).toBe("complete_the_words");
-    if (result.result.kind !== "complete_the_words") return;
-    expect(result.result.items).toHaveLength(1);
-    expect(result.result.items[0].blanks[0].answer).toBe("economy");
+    // 지문을 공유하지 않는 유형이라 stimulus 는 null 이다.
+    expect(result.stimulus).toBeNull();
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].blanks?.[0].answer).toBe("economy");
   });
 
   it("잘못된 JSON이면 실패를 반환한다", () => {
@@ -48,9 +48,9 @@ describe("parseGeneratedJson — choose_a_response", () => {
     });
     const result = parseGeneratedJson("choose_a_response", json);
     expect(result.ok).toBe(true);
-    if (!result.ok || result.result.kind !== "choose_a_response") return;
-    const item = result.result.items[0];
-    expect(item.options.map((o) => o.id)).toEqual(["A", "B", "C", "D"]);
+    if (!result.ok) return;
+    const item = result.items[0];
+    expect(item.options?.map((o) => o.id)).toEqual(["A", "B", "C", "D"]);
     expect(item.correct).toEqual(["B"]);
   });
 
@@ -68,8 +68,8 @@ describe("parseGeneratedJson — choose_a_response", () => {
     });
     const result = parseGeneratedJson("choose_a_response", json);
     expect(result.ok).toBe(true);
-    if (!result.ok || result.result.kind !== "choose_a_response") return;
-    expect(result.result.items[0].correct).toEqual(["A"]);
+    if (!result.ok) return;
+    expect(result.items[0].correct).toEqual(["A"]);
   });
 });
 
@@ -89,9 +89,9 @@ describe("parseGeneratedJson — mcq_passage(academic_passage 등)", () => {
     });
     const result = parseGeneratedJson("academic_passage", json);
     expect(result.ok).toBe(true);
-    if (!result.ok || result.result.kind !== "mcq_passage") return;
-    expect(result.result.stimulus.title).toBe("Coral Reefs");
-    expect(result.result.items[0].correct).toEqual(["B"]);
+    if (!result.ok) return;
+    expect(result.stimulus?.title).toBe("Coral Reefs");
+    expect(result.items[0].correct).toEqual(["B"]);
   });
 
   it("stimulus.text가 비어 있으면 실패를 반환한다", () => {

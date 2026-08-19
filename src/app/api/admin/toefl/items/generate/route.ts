@@ -33,5 +33,7 @@ export async function POST(req: Request) {
   const parsed = parseGeneratedJson(config.value, geminiRes.text);
   if (!parsed.ok) return jsonError(502, parsed.message);
 
-  return Response.json({ ok: true, result: parsed.result });
+  // stimulus 는 지문을 공유하는 유형에서만 채워지고, 나머지는 null 이다.
+  // 화면은 그 null 여부로 지문 입력칸을 보일지 정한다(예전 kind 판별을 대체).
+  return Response.json({ ok: true, stimulus: parsed.stimulus, items: parsed.items });
 }
