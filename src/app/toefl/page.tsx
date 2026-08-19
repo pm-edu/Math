@@ -12,6 +12,7 @@
 import Link from "next/link";
 import LandingHeader from "@/components/toefl/landing/LandingHeader";
 import RoutingRail from "@/components/toefl/landing/RoutingRail";
+import { LandingViewerProvider, useLandingViewer } from "@/lib/toefl/landing-viewer";
 
 // TODO: 유형별 연습 전용 라우트가 생기면 TYPE_HREF 를 유형별 경로로 교체한다.
 // 지금은 12개 유형 링크가 전부 폼 선택 화면으로 간다.
@@ -126,6 +127,17 @@ const CARD_SHADOW = "shadow-[0_1px_2px_rgba(24,42,78,.05),0_8px_24px_rgba(24,42,
 
 export default function ToeflLandingPage() {
   return (
+    <LandingViewerProvider>
+      <LandingContent />
+    </LandingViewerProvider>
+  );
+}
+
+function LandingContent() {
+  // 계정이 있는 사람에게는 샘플을 권하지 않는다 — 히어로·하단 CTA가 응시로 바뀐다.
+  const { loggedIn } = useLandingViewer();
+
+  return (
     <div data-theme="en" className="toefl-landing min-h-screen bg-[var(--en-paper)] text-[var(--en-ink)]">
       <LandingHeader />
 
@@ -155,14 +167,18 @@ export default function ToeflLandingPage() {
               >
                 풀 모의고사 시작 (90분)
               </Link>
-              <Link
-                href="/toefl/sample"
-                className="rounded-[10px] border-[1.5px] border-[var(--en-line)] bg-white px-[22px] py-3 text-[15px] font-bold text-[var(--en-ink)] transition-colors hover:border-[var(--en-ink)]"
-              >
-                로그인 없이 샘플 체험
-              </Link>
+              {loggedIn !== null && (
+                <Link
+                  href={loggedIn ? "/toefl/mypage" : "/toefl/sample"}
+                  className="rounded-[10px] border-[1.5px] border-[var(--en-line)] bg-white px-[22px] py-3 text-[15px] font-bold text-[var(--en-ink)] transition-colors hover:border-[var(--en-ink)]"
+                >
+                  {loggedIn ? "내 학습 보기" : "로그인 없이 샘플 체험"}
+                </Link>
+              )}
               <span className="mt-1 w-full text-[12.5px] text-[var(--en-ink-soft)]">
-                샘플은 12개 문항 유형을 각 1문항씩, 가입 없이 바로 풀 수 있습니다.
+                {loggedIn
+                  ? "지난 응시 기록과 밴드 추이는 내 학습에서 볼 수 있습니다."
+                  : "샘플은 12개 문항 유형을 각 1문항씩, 가입 없이 바로 풀 수 있습니다."}
               </span>
             </div>
           </div>
@@ -352,14 +368,18 @@ export default function ToeflLandingPage() {
           오늘 실력이 어느 밴드인지부터 확인하세요
         </h2>
         <p className="mx-auto mb-7 mt-3 max-w-[36em] text-[15.5px] text-[#B9C4DC]">
-          가입 없이 12개 유형을 체험하거나, 90분 풀 모의고사로 현재 밴드와 라우팅 결과를 받아보세요.
+          {loggedIn
+            ? "90분 풀 모의고사로 현재 밴드와 라우팅 결과를 받아보세요."
+            : "가입 없이 12개 유형을 체험하거나, 90분 풀 모의고사로 현재 밴드와 라우팅 결과를 받아보세요."}
         </p>
-        <Link
-          href="/toefl/sample"
-          className="inline-flex rounded-[10px] bg-[var(--en-gold)] px-7 py-3.5 text-[15.5px] font-bold text-[var(--en-on-gold)] shadow-[0_2px_8px_rgba(245,166,35,.35)] transition-transform hover:-translate-y-px"
-        >
-          무료 샘플 풀어보기
-        </Link>
+        {loggedIn !== null && (
+          <Link
+            href={loggedIn ? "/toefl/start" : "/toefl/sample"}
+            className="inline-flex rounded-[10px] bg-[var(--en-gold)] px-7 py-3.5 text-[15.5px] font-bold text-[var(--en-on-gold)] shadow-[0_2px_8px_rgba(245,166,35,.35)] transition-transform hover:-translate-y-px"
+          >
+            {loggedIn ? "모의고사 시작" : "무료 샘플 풀어보기"}
+          </Link>
+        )}
       </div>
 
       {/* ───────── 푸터 ───────── */}

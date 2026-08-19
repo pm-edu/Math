@@ -9,11 +9,10 @@
 // 햄버거는 재사용할 컴포넌트가 없어(수학 Header.tsx 안에 인라인으로만 존재) 같은 패턴으로 새로 둔다.
 // 메뉴 문구는 아직 한국어 하드코딩 — 번역 연결은 이후 단계에서 일괄 처리한다.
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
 import { useLang } from "@/lib/i18n";
-import { canManageMaterials } from "@/lib/roles";
+import { toeflLogout, useLandingViewer } from "@/lib/toefl/landing-viewer";
 
 // TODO: 유형별 연습 전용 라우트가 생기면 "#types" 앵커 대신 그 경로로 교체한다.
 // 영역 연습·모의고사는 아직 별도 라우트가 없어 둘 다 /toefl/start(폼 선택 화면)로 보낸다.
@@ -27,35 +26,10 @@ const MENU: { label: string; href: string }[] = [
 
 export default function LandingHeader() {
   const { lang, setLang } = useLang();
-  const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
   // 관리 링크는 자료관리 권한이 있을 때만 보인다. /admin/toefl 레이아웃이 같은 기준으로
   // 다시 막으므로(그리고 진짜 방어선은 DB의 RLS), 여기서는 표시 여부만 정한다.
-  const [canManage, setCanManage] = useState(false);
+  const { loggedIn, canManage } = useLandingViewer();
   const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    const supabase = createClient();
-
-    async function apply(user: { id?: string } | null | undefined) {
-      setLoggedIn(!!user);
-      if (!user?.id) {
-        setCanManage(false);
-        return;
-      }
-      const { data } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
-      setCanManage(canManageMaterials(data?.role));
-    }
-
-    supabase.auth.getUser().then(({ data }) => apply(data.user));
-    const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => apply(session?.user));
-    return () => listener.subscription.unsubscribe();
-  }, []);
-
-  async function handleLogout() {
-    await createClient().auth.signOut();
-    // 랜딩으로 되돌린다 — 로그아웃 후 마이페이지에 남아 있으면 곧바로 로그인으로 튕긴다.
-    window.location.href = "/toefl";
-  }
 
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--en-line)] bg-[rgba(247,249,253,.88)] backdrop-blur-[12px]">
@@ -110,19 +84,23 @@ export default function LandingHeader() {
           {loggedIn && (
             <button
               type="button"
-              onClick={handleLogout}
+              onClick={toeflLogout}
               className="hidden rounded-lg px-2.5 py-2 text-sm font-semibold text-[var(--en-ink-soft)] transition-colors hover:bg-[#EDF2FB] hover:text-[var(--en-ink)] min-[601px]:inline-flex"
             >
               로그아웃
             </button>
           )}
 
-          <Link
-            href="/toefl/sample"
-            className="hidden items-center rounded-lg bg-[var(--en-gold)] px-[18px] py-[9px] text-sm font-bold text-[var(--en-on-gold)] shadow-[0_2px_8px_rgba(245,166,35,.35)] transition-transform hover:-translate-y-px min-[601px]:inline-flex"
-          >
-            무료 샘플 풀어보기
-          </Link>
+          {/* 계정이 있는 사람에게는 샘플이 필요 없다 — 바로 응시로 보낸다.
+              확인 중(null)일 때는 라벨이 뒤바뀌지 않도록 아직 그리지 않는다. */}
+          {loggedIn !== null && (
+            <Link
+              href={loggedIn ? "/toefl/start" : "/toefl/sample"}
+              className="hidden items-center rounded-lg bg-[var(--en-gold)] px-[18px] py-[9px] text-sm font-bold text-[var(--en-on-gold)] shadow-[0_2px_8px_rgba(245,166,35,.35)] transition-transform hover:-translate-y-px min-[601px]:inline-flex"
+            >
+              {loggedIn ? "모의고사 시작" : "무료 샘플 풀어보기"}
+            </Link>
+          )}
 
           <button
             type="button"
@@ -169,18 +147,18 @@ export default function LandingHeader() {
               {loggedIn && (
                 <button
                   type="button"
-                  onClick={() => { setOpen(false); handleLogout(); }}
+                  onClick={() => { setOpen(false); toeflLogout(); }}
                   className="rounded-lg px-2 py-2 text-left text-[15px] font-semibold text-[var(--en-ink-soft)]"
                 >
                   로그아웃
                 </button>
               )}
               <Link
-                href="/toefl/sample"
+                href={loggedIn ? "/toefl/start" : "/toefl/sample"}
                 onClick={() => setOpen(false)}
                 className="rounded-lg bg-[var(--en-gold)] px-4 py-2.5 text-center text-sm font-bold text-[var(--en-on-gold)]"
               >
-                무료 샘플 풀어보기
+                {loggedIn ? "모의고사 시작" : "무료 샘플 풀어보기"}
               </Link>
             </div>
           </nav>
