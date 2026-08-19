@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { nextSection, SECTION_LABEL } from "@/lib/toefl/section-order";
 import type { ToeflSection } from "@/lib/toefl/types";
+import SubmitConfirmModal from "./SubmitConfirmModal";
 
 export default function SectionDoneActions({
   attemptId,
@@ -23,6 +24,7 @@ export default function SectionDoneActions({
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const next = mode === "full" ? nextSection(section) : null;
 
@@ -64,11 +66,13 @@ export default function SectionDoneActions({
       const data = await res.json();
       if (!res.ok || !data.ok) {
         setError(data.message ?? "Failed to submit.");
+        setConfirmOpen(false);
         return;
       }
       router.push(`/toefl/attempt/${attemptId}/submitted`);
     } catch (e) {
       setError(`Failed to submit: ${(e as Error).message}`);
+      setConfirmOpen(false);
     } finally {
       setBusy(false);
     }
@@ -86,7 +90,7 @@ export default function SectionDoneActions({
         </button>
       ) : (
         <button
-          onClick={submitAttempt}
+          onClick={() => setConfirmOpen(true)}
           disabled={busy}
           className="rounded-full bg-[var(--pink-dark)] px-8 py-3 text-sm font-medium text-white disabled:opacity-60"
         >
@@ -94,6 +98,12 @@ export default function SectionDoneActions({
         </button>
       )}
       {error && <p className="text-sm text-red-600">{error}</p>}
+      <SubmitConfirmModal
+        open={confirmOpen}
+        busy={busy}
+        onConfirm={submitAttempt}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </div>
   );
 }
