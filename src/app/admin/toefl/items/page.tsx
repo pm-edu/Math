@@ -293,10 +293,13 @@ export default function AdminToeflItemsPage() {
                 {config.needsStimulus ? "지문당 문항 수" : "생성 개수"}
               </label>
               <select value={itemsPerUnit} onChange={(e) => setItemsPerUnit(Number(e.target.value))} className={inputClass}>
-                {(config.needsStimulus ? [1, 2, 3, 4, 5, 6] : [1, 3, 5, 8, 10]).map((n) => (
+                {(config.needsStimulus ? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] : [1, 3, 5, 8, 10, 15, 20]).map((n) => (
                   <option key={n} value={n}>{n}개</option>
                 ))}
               </select>
+              {config.needsStimulus && (
+                <p className="mt-1 text-xs text-[var(--secondary)]">지문 하나에 딸린 문항 수입니다. 더 필요하면 생성을 여러 번 반복해 지문을 늘리세요.</p>
+              )}
             </div>
             <div>
               <label className="text-sm text-[var(--foreground)]">난이도 (1~5)</label>
