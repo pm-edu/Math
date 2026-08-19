@@ -5,11 +5,10 @@
 // docs/toefl-spec.md §6(데이터 계약)·§9(API)·§15(P6 DoD) 참고. [[toefl-ui-work-rules]] 8원칙 준수.
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import ToeflHeader from "@/components/toefl/ToeflHeader";
+import Topbar from "@/components/toefl/admin/Topbar";
+import Pipeline from "@/components/toefl/admin/Pipeline";
+import { useAdminMe } from "@/lib/toefl/admin-me";
 import { createClient } from "@/lib/supabase/client";
-import { canManageMaterials } from "@/lib/roles";
 
 type Section = "reading" | "listening";
 type GenerableTaskType =
@@ -59,8 +58,7 @@ type Progress = { taskMix: Record<string, number>; counts: Record<string, number
 type RegisteredItem = { id: string; task_type: string; prompt: string; is_active: boolean; position: number };
 
 export default function AdminToeflItemsPage() {
-  const router = useRouter();
-  const [allowed, setAllowed] = useState<boolean | null>(null);
+  const me = useAdminMe();
 
   const [taskType, setTaskType] = useState<GenerableTaskType>("academic_passage");
   const [modules, setModules] = useState<ModuleOption[]>([]);
@@ -87,12 +85,6 @@ export default function AdminToeflItemsPage() {
   useEffect(() => {
     const supabase = createClient();
     async function init() {
-      const { data: auth } = await supabase.auth.getUser();
-      if (!auth.user) { router.replace("/login"); return; }
-      const { data: me } = await supabase.from("profiles").select("role").eq("id", auth.user.id).maybeSingle();
-      if (!canManageMaterials(me?.role)) { setAllowed(false); return; }
-      setAllowed(true);
-
       const { data: forms } = await supabase.from("toefl_form").select("id, code, title, blueprint_version");
       const { data: mods } = await supabase.from("toefl_module").select("id, form_id, section, stage, route");
       const formById = new Map((forms ?? []).map((f) => [f.id, f]));
@@ -114,7 +106,7 @@ export default function AdminToeflItemsPage() {
       setModules(opts);
     }
     init();
-  }, [router]);
+  }, []);
 
   // 유형이 바뀌면 그 섹션의 모듈로 다시 고른다.
   useEffect(() => {
@@ -265,19 +257,21 @@ export default function AdminToeflItemsPage() {
     }
   }
 
-  if (allowed === null) return null;
-  if (!allowed) return <p className="p-10 text-center text-sm text-red-600">권한이 없습니다.</p>;
 
   const inputClass =
     "mt-1.5 w-full rounded-lg border border-[var(--border-c)] bg-white px-4 py-2.5 text-sm outline-none focus:border-[var(--pink)]";
 
   return (
-    <div data-theme="en" className="min-h-screen bg-[var(--background)]">
-      <ToeflHeader />
-      <main className="mx-auto max-w-5xl px-6 py-16">
-        <Link href="/admin/toefl" className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]">← TOEFL 관리로</Link>
-        <h1 className="mt-4 text-3xl font-medium text-[var(--foreground)]">TOEFL 문항 등록 (Reading · Listening)</h1>
-        <p className="mt-2 text-[var(--secondary)]">
+    <>
+      <Topbar
+        title="문항 생성"
+        crumb="생성물은 자동 저장되지 않습니다 — 검수 후 저장해야 노출"
+        role={me.role}
+        name={me.name}
+      />
+      <Pipeline here={["생성"]} />
+      <div>
+        <p className="text-[13px] text-[var(--en-ink-soft)]">
           AI가 원본 지문/스크립트와 객관식 문항을 생성합니다. <b>정답·해설을 반드시 검토</b>한 뒤 저장하세요.
           <br />
           Speaking·Writing 5개 유형은 아직 지원하지 않습니다.
@@ -469,8 +463,8 @@ export default function AdminToeflItemsPage() {
             ))}
           </ul>
         )}
-      </main>
-    </div>
+      </div>
+    </>
   );
 }
 

@@ -4,31 +4,17 @@
 // /api/admin/toefl/generate-demo-audio를 호출해 TOEFL_DEMO_001의 Listening 오디오를 만든다.
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import ToeflHeader from "@/components/toefl/ToeflHeader";
+import Topbar from "@/components/toefl/admin/Topbar";
+import { useAdminMe } from "@/lib/toefl/admin-me";
 import { createClient } from "@/lib/supabase/client";
-import { canManageMaterials } from "@/lib/roles";
 
 type LogEntry = { kind: string; id: string; status: string; message: string };
 
 export default function ToeflAudioAdminPage() {
-  const router = useRouter();
-  const [allowed, setAllowed] = useState<boolean | null>(null);
+  const me = useAdminMe();
   const [running, setRunning] = useState(false);
   const [log, setLog] = useState<LogEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const supabase = createClient();
-    async function init() {
-      const { data: auth } = await supabase.auth.getUser();
-      if (!auth.user) { router.replace("/login"); return; }
-      const { data: me } = await supabase.from("profiles").select("role").eq("id", auth.user.id).maybeSingle();
-      setAllowed(canManageMaterials(me?.role));
-    }
-    init();
-  }, [router]);
 
   async function run(force: boolean) {
     setRunning(true);
@@ -50,16 +36,11 @@ export default function ToeflAudioAdminPage() {
     setLog(data.log ?? []);
   }
 
-  if (allowed === null) return null;
-  if (!allowed) return <p className="p-10 text-center text-sm text-red-600">권한이 없습니다.</p>;
-
   return (
-    <div data-theme="en" className="min-h-screen bg-[var(--background)]">
-      <ToeflHeader />
-      <main className="mx-auto max-w-3xl px-6 py-16">
-        <Link href="/admin/toefl" className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]">← TOEFL 관리로</Link>
-        <h1 className="mt-4 text-3xl font-medium text-[var(--foreground)]">TOEFL Listening 데모 오디오 생성</h1>
-        <p className="mt-2 text-sm text-[var(--secondary)]">
+    <>
+      <Topbar title="오디오(TTS) 관리" crumb="Listening 지문·문항의 음성을 만듭니다" role={me.role} name={me.name} />
+      <div className="max-w-3xl">
+        <p className="text-[13px] text-[var(--en-ink-soft)]">
           TOEFL_DEMO_001의 Listening 지문·문항에 Gemini TTS로 실제 음성을 만들어 채웁니다. 이미 있는 항목은
           건너뜁니다(다시 만들려면 아래 "강제로 다시 생성" 사용).
         </p>
@@ -101,7 +82,7 @@ export default function ToeflAudioAdminPage() {
             ))}
           </ul>
         )}
-      </main>
-    </div>
+      </div>
+    </>
   );
 }

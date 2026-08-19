@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM EDU TOEFL — 관리자 v2 (생성·배포 포함)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>
+:root{
+  --en-ink:#182A4E; --en-ink-soft:#4A5A7A;
+  --en-paper:#F7F9FD; --en-card:#FFFFFF;
+  --en-gold:#F5A623; --en-gold-deep:#D98C0F; --en-gold-soft:#FFF4DF;
+  --en-line:#E3E9F4;
+  --en-read:#E85D75; --en-listen:#3E8BFF; --en-speak:#8B5CF6; --en-write:#0FA98E;
+  --risk-hi:#E23D3D; --risk-mid:#F5A623; --risk-lo:#19A97B;
+  --radius:12px;
+  --shadow:0 1px 2px rgba(24,42,78,.05),0 6px 18px rgba(24,42,78,.06);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+body{font-family:'Pretendard Variable',Pretendard,-apple-system,sans-serif;background:var(--en-paper);color:var(--en-ink);line-height:1.55;-webkit-font-smoothing:antialiased;font-size:14px}
+.num{font-family:'Space Grotesk','Pretendard Variable',sans-serif}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer}
+select,input[type=text],input[type=number],input[type=date]{font-family:inherit;font-size:13px;color:var(--en-ink);background:#fff;border:1px solid var(--en-line);border-radius:8px;padding:8px 10px;width:100%}
+:focus-visible{outline:3px solid var(--en-gold);outline-offset:2px;border-radius:4px}
+
+.app{display:grid;grid-template-columns:232px 1fr;min-height:100vh}
+aside{background:#fff;border-right:1px solid var(--en-line);padding:20px 14px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh}
+.side-logo{display:flex;align-items:baseline;gap:8px;font-weight:800;font-size:15px;padding:4px 10px 16px;letter-spacing:-.02em}
+.side-logo .lab{font-family:'Space Grotesk';font-weight:700;color:var(--en-gold-deep);font-size:11px;letter-spacing:.12em;border:1.5px solid var(--en-gold);border-radius:5px;padding:0 6px}
+.side-domain{font-size:11px;font-weight:800;color:var(--en-ink-soft);letter-spacing:.1em;text-transform:uppercase;padding:0 10px 8px}
+.snav{display:flex;flex-direction:column;gap:2px}
+.snav button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;font-size:13.5px;font-weight:600;color:var(--en-ink-soft);background:none;border:none;border-radius:9px;padding:9px 10px;transition:.13s}
+.snav button:hover{background:#EDF2FB;color:var(--en-ink)}
+.snav button.on{background:var(--en-ink);color:#fff}
+.snav button .cnt{margin-left:auto;font-family:'Space Grotesk';font-size:11px;font-weight:700;background:var(--en-gold);color:#231A05;border-radius:99px;padding:1px 7px}
+.snav .grp{font-size:10.5px;font-weight:800;letter-spacing:.1em;color:#9AA7BF;text-transform:uppercase;padding:14px 10px 5px}
+aside .foot{margin-top:auto;font-size:11.5px;color:var(--en-ink-soft);padding:10px;border-top:1px solid var(--en-line)}
+
+main{padding:0 28px 40px;min-width:0}
+.topbar{display:flex;align-items:center;gap:14px;height:60px;border-bottom:1px solid var(--en-line);margin-bottom:18px}
+.topbar h1{font-size:17px;font-weight:800;letter-spacing:-.02em}
+.crumb{font-size:12px;color:var(--en-ink-soft)}
+.search{margin-left:auto;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--en-line);border-radius:9px;padding:7px 12px;width:230px;color:var(--en-ink-soft);font-size:13px}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--en-ink);color:#fff;display:grid;place-items:center;font-weight:800;font-size:12px}
+.role-chip{font-size:11px;font-weight:700;color:var(--en-ink-soft);border:1px solid var(--en-line);background:#fff;border-radius:99px;padding:3px 9px}
+
+.view{display:none}.view.on{display:block}
+.btn{display:inline-flex;align-items:center;gap:6px;font-weight:700;border-radius:9px;border:none;transition:.13s}
+.btn-gold{font-size:13px;color:#231A05;background:var(--en-gold);padding:8px 14px}
+.btn-gold:hover{background:#FFB742}
+.btn-navy{font-size:13px;color:#fff;background:var(--en-ink);padding:8px 14px}
+.btn-line{font-size:12.5px;color:var(--en-ink);background:#fff;border:1px solid var(--en-line);padding:7px 12px}
+.btn-line:hover{border-color:var(--en-ink)}
+.btn-sm{font-size:12px;padding:5px 10px}
+
+/* 파이프라인 스트립 */
+.pipe{display:flex;align-items:center;gap:0;margin-bottom:18px;font-size:12px;font-weight:700}
+.pipe .p{display:flex;align-items:center;gap:7px;color:var(--en-ink-soft);background:#fff;border:1px solid var(--en-line);padding:7px 14px}
+.pipe .p:first-child{border-radius:9px 0 0 9px}
+.pipe .p:last-child{border-radius:0 9px 9px 0}
+.pipe .p+.p{border-left:none}
+.pipe .p.here{background:var(--en-gold-soft);color:#8A5B00;border-color:#F2DCAF}
+.pipe .p .n{font-family:'Space Grotesk';font-size:10.5px;background:#EFF3FA;border-radius:5px;padding:0 6px}
+.pipe .p.here .n{background:var(--en-gold);color:#231A05}
+
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.kpi{background:#fff;border:1px solid var(--en-line);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);cursor:pointer;transition:.15s;border-left:4px solid var(--en-line)}
+.kpi:hover{transform:translateY(-2px);border-color:var(--en-gold);border-left-color:var(--en-gold)}
+.kpi.urgent{border-left-color:var(--en-gold)} .kpi.alert{border-left-color:var(--risk-hi)}
+.kpi .lb{font-size:12px;font-weight:700;color:var(--en-ink-soft)}
+.kpi .v{font-family:'Space Grotesk';font-size:30px;font-weight:700;margin:2px 0}
+.kpi .sub{font-size:11.5px;color:var(--en-ink-soft)}
+.dash-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:16px;margin-top:16px}
+.panel{background:#fff;border:1px solid var(--en-line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.panel .ph{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:1px solid var(--en-line)}
+.panel .ph b{font-size:14px}
+.panel .ph a{font-size:12px;font-weight:700;color:var(--en-gold-deep)}
+.queue{list-style:none}
+.queue li{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--en-line);font-size:13px}
+.queue li:last-child{border-bottom:none}
+.queue li:hover{background:#FAFBFE}
+.qtag{flex:none;font-size:10.5px;font-weight:800;color:#fff;border-radius:6px;padding:3px 8px}
+.qtag.s{background:var(--en-speak)} .qtag.w{background:var(--en-write)}
+.qtag.r{background:var(--en-read)} .qtag.l{background:var(--en-listen)}
+.qtag.sys{background:var(--en-ink)}
+.queue .who{font-weight:700}
+.queue .meta{color:var(--en-ink-soft);font-size:12px}
+.queue .act{margin-left:auto}
+.mini-band{font-family:'Space Grotesk';font-weight:700;font-size:13px;background:var(--en-gold-soft);color:var(--en-gold-deep);border-radius:6px;padding:2px 8px}
+
+/* 학생 관리 */
+.filters{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.chip{font-size:12.5px;font-weight:700;color:var(--en-ink-soft);background:#fff;border:1px solid var(--en-line);border-radius:99px;padding:6px 14px;transition:.12s}
+.chip:hover{border-color:var(--en-ink);color:var(--en-ink)}
+.chip.on{background:var(--en-ink);border-color:var(--en-ink);color:#fff}
+.filters .right{margin-left:auto;display:flex;gap:8px;font-size:12px;color:var(--en-ink-soft);align-items:center}
+.tbl-wrap{background:#fff;border:1px solid var(--en-line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-size:11.5px;font-weight:800;letter-spacing:.04em;color:var(--en-ink-soft);text-transform:uppercase;text-align:left;padding:11px 14px;border-bottom:1px solid var(--en-line);background:#FAFBFE;white-space:nowrap}
+td{padding:12px 14px;border-bottom:1px solid var(--en-line);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#FAFBFE}
+.st-name{font-weight:700}
+.st-name span{display:block;font-size:11px;color:var(--en-ink-soft);font-weight:500}
+.band-chip{font-family:'Space Grotesk';font-weight:700;font-size:14px}
+.band-delta{font-size:11px;font-weight:700}
+.up{color:var(--risk-lo)} .dn{color:var(--risk-hi)} .fl{color:var(--en-ink-soft)}
+.mmeter{display:flex;gap:3px;margin-top:4px}
+.mmeter i{height:5px;flex:1;border-radius:3px;background:#EFF3FA;position:relative;overflow:hidden}
+.mmeter i em{position:absolute;inset:0;border-radius:3px}
+.route{display:inline-flex;gap:4px}
+.route b{font-family:'Space Grotesk';font-size:10.5px;font-weight:700;border-radius:5px;padding:2px 6px}
+.route .hi{background:var(--en-gold-soft);color:var(--en-gold-deep)}
+.route .lo{background:#EFF3FA;color:var(--en-ink-soft)}
+.risk{font-family:'Space Grotesk';font-weight:700;font-size:12.5px;border-radius:6px;padding:3px 9px;color:#fff}
+.risk.hi{background:var(--risk-hi)} .risk.mid{background:var(--risk-mid);color:#231A05} .risk.lo{background:var(--risk-lo)}
+.last{font-size:12px;color:var(--en-ink-soft);white-space:nowrap}
+.row-acts{display:flex;gap:6px;justify-content:flex-end}
+.bulkbar{display:flex;align-items:center;gap:10px;background:var(--en-ink);color:#fff;border-radius:10px;padding:10px 16px;margin-top:12px;font-size:13px}
+.bulkbar b{font-family:'Space Grotesk'}
+.bulkbar .btn-gold{margin-left:auto}
+.bulkbar .btn-line{background:transparent;color:#fff;border-color:#3C4E76}
+.hint{font-size:12px;color:var(--en-ink-soft);margin-top:10px}
+
+/* 문항 검수 */
+.review{display:grid;grid-template-columns:340px 1fr;gap:16px}
+.rq{background:#fff;border:1px solid var(--en-line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;align-self:start}
+.rq .ph{padding:13px 16px;border-bottom:1px solid var(--en-line);display:flex;justify-content:space-between;align-items:center}
+.rq .ph b{font-size:13.5px}
+.rq ul{list-style:none;max-height:520px;overflow:auto}
+.rq li{padding:12px 16px;border-bottom:1px solid var(--en-line);cursor:pointer;transition:.12s}
+.rq li:hover{background:#FAFBFE}
+.rq li.sel{background:var(--en-gold-soft);border-left:3px solid var(--en-gold)}
+.rq .t1{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px}
+.rq .t2{display:flex;gap:8px;margin-top:5px;font-size:11px;color:var(--en-ink-soft);align-items:center}
+.src{font-size:10px;font-weight:800;border-radius:5px;padding:2px 6px}
+.src.ai{background:#EEF2FF;color:#4756D6}
+.src.man{background:#EFF3FA;color:var(--en-ink-soft)}
+.tts{font-size:10.5px;font-weight:700}
+.tts.ok{color:var(--risk-lo)} .tts.wait{color:var(--risk-mid)}
+.rdetail{background:#fff;border:1px solid var(--en-line);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px 24px}
+.rdetail .rh{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.rdetail .rh h3{font-size:16px;margin-right:auto}
+.preview{border:1px dashed var(--en-line);border-radius:10px;padding:18px;background:var(--en-paper)}
+.preview .plabel{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--en-ink-soft);margin-bottom:10px;font-family:'Space Grotesk'}
+.preview .stem{font-size:14.5px;margin-bottom:12px}
+.preview .opts{display:flex;flex-direction:column;gap:7px}
+.preview .opt{display:flex;gap:10px;align-items:center;background:#fff;border:1px solid var(--en-line);border-radius:8px;padding:9px 12px;font-size:13.5px}
+.preview .opt .k{font-family:'Space Grotesk';font-weight:700;width:20px;color:var(--en-ink-soft)}
+.preview .opt.ans{border-color:var(--risk-lo);box-shadow:inset 0 0 0 1px var(--risk-lo)}
+.preview .opt.ans::after{content:"정답";margin-left:auto;font-size:10.5px;font-weight:800;color:var(--risk-lo)}
+.expl{margin-top:12px;font-size:13px;background:#fff;border:1px solid var(--en-line);border-radius:8px;padding:12px 14px}
+.expl b{font-size:11px;letter-spacing:.06em;color:var(--en-ink-soft);text-transform:uppercase;display:block;margin-bottom:4px;font-family:'Space Grotesk'}
+.verify-bar{display:flex;align-items:center;gap:12px;margin-top:16px;background:var(--en-gold-soft);border:1px solid #F2DCAF;border-radius:10px;padding:12px 16px}
+.verify-bar .note{font-size:12.5px;color:#8A5B00;font-weight:600}
+.verify-bar .btn-gold{margin-left:auto}
+.recheck{font-size:11px;font-weight:800;border-radius:6px;padding:3px 8px}
+.recheck.ok{background:#E6F7F0;color:var(--risk-lo)}
+.recheck.bad{background:#FDECEC;color:var(--risk-hi)}
+
+/* ═══ NEW: 문항 생성 ═══ */
+.gen{display:grid;grid-template-columns:380px 1fr;gap:16px}
+.gen-form{background:#fff;border:1px solid var(--en-line);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;align-self:start}
+.gen-form h3{font-size:15px;margin-bottom:14px}
+.fld{margin-bottom:13px}
+.fld label{display:block;font-size:11.5px;font-weight:800;letter-spacing:.04em;color:var(--en-ink-soft);text-transform:uppercase;margin-bottom:6px}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{font-size:12px;font-weight:700;color:var(--en-ink-soft);background:var(--en-paper);border:1px solid var(--en-line);border-radius:8px;padding:6px 11px;transition:.12s}
+.seg button.on{background:var(--en-ink);border-color:var(--en-ink);color:#fff}
+.type-pick{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.type-pick button{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;background:var(--en-paper);border:1px solid var(--en-line);border-radius:8px;padding:7px 9px;color:var(--en-ink);transition:.12s;text-align:left}
+.type-pick button .d{width:8px;height:8px;border-radius:3px;flex:none}
+.type-pick button.on{border-color:var(--en-gold);background:var(--en-gold-soft)}
+.gen-note{font-size:11.5px;color:var(--en-ink-soft);background:var(--en-paper);border:1px solid var(--en-line);border-radius:8px;padding:9px 11px;margin:6px 0 14px}
+.gen-note b{color:#8A5B00}
+.gen-form .btn-gold{width:100%;justify-content:center;padding:11px}
+.tpl-row{display:flex;gap:6px;margin-top:8px}
+.tpl-row .btn-line{flex:1;justify-content:center}
+.batch-status{display:flex;gap:8px;align-items:center;font-size:11px;font-weight:800}
+.bs{border-radius:6px;padding:3px 8px}
+.bs.wait{background:#FDF3DD;color:#8A5B00}
+.bs.done{background:#E6F7F0;color:var(--risk-lo)}
+.bs.run{background:#EEF2FF;color:#4756D6}
+.gen-batches td .num{font-weight:700}
+
+/* ═══ NEW: 세트·배포 ═══ */
+.forms-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px}
+.form-card{background:#fff;border:1px solid var(--en-line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px;cursor:pointer;transition:.13s}
+.form-card:hover{transform:translateY(-2px)}
+.form-card.sel{border-color:var(--en-gold);box-shadow:0 0 0 2px var(--en-gold-soft),var(--shadow)}
+.form-card .fh{display:flex;align-items:center;justify-content:space-between}
+.form-card .fh b{font-family:'Space Grotesk';font-size:13.5px}
+.fstat{font-size:10.5px;font-weight:800;border-radius:6px;padding:3px 8px}
+.fstat.pub{background:#E6F7F0;color:var(--risk-lo)}
+.fstat.draft{background:#FDF3DD;color:#8A5B00}
+.form-card .fm{font-size:12px;color:var(--en-ink-soft);margin-top:4px}
+.slotbar{display:flex;gap:3px;margin-top:10px}
+.slotbar i{height:6px;flex:1;border-radius:3px;background:#EFF3FA;overflow:hidden;position:relative}
+.slotbar i em{position:absolute;inset:0}
+.slot-table td,.slot-table th{padding:10px 14px}
+.slot-fill{display:flex;align-items:center;gap:10px}
+.slot-fill .bar{flex:1;height:8px;border-radius:99px;background:#EFF3FA;overflow:hidden;max-width:180px}
+.slot-fill .bar i{display:block;height:100%;border-radius:99px}
+.slot-fill .n{font-family:'Space Grotesk';font-weight:700;font-size:12.5px;white-space:nowrap}
+.ok-txt{color:var(--risk-lo);font-weight:800;font-size:11.5px}
+.warn-txt{color:#B07A10;font-weight:800;font-size:11.5px}
+.pub-bar{display:flex;align-items:center;gap:12px;margin-top:14px;background:var(--en-gold-soft);border:1px solid #F2DCAF;border-radius:10px;padding:12px 16px}
+.pub-bar .note{font-size:12.5px;color:#8A5B00;font-weight:600}
+.pub-bar .btn-gold{margin-left:auto}
+.assign-head{display:flex;align-items:center;justify-content:space-between;margin:26px 0 12px}
+.assign-head h3{font-size:15px}
+.prog{display:flex;align-items:center;gap:8px}
+.prog .bar{width:110px;height:8px;border-radius:99px;background:#EFF3FA;overflow:hidden}
+.prog .bar i{display:block;height:100%;background:var(--risk-lo);border-radius:99px}
+.prog .n{font-family:'Space Grotesk';font-size:12px;font-weight:700;color:var(--en-ink-soft)}
+.astat{font-size:10.5px;font-weight:800;border-radius:6px;padding:3px 8px}
+.astat.live{background:#E6F7F0;color:var(--risk-lo)}
+.astat.sched{background:#EEF2FF;color:#4756D6}
+.astat.end{background:#EFF3FA;color:var(--en-ink-soft)}
+
+@media (max-width:1080px){
+  .app{grid-template-columns:1fr}
+  aside{position:static;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;border-right:none;border-bottom:1px solid var(--en-line)}
+  .snav{flex-direction:row;flex-wrap:wrap}
+  aside .foot,.snav .grp{display:none}
+  .kpis,.forms-row{grid-template-columns:1fr 1fr}
+  .dash-grid,.review,.gen{grid-template-columns:1fr}
+  .search{width:150px}
+  .pipe{flex-wrap:wrap}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <aside>
+    <div class="side-logo"><span>PM EDU</span><span class="lab">TOEFL</span></div>
+    <div class="side-domain">영어 · TOEFL 어드민</div>
+    <nav class="snav" aria-label="관리자 메뉴">
+      <button class="on" data-v="dash">📊 대시보드 <span class="cnt">23</span></button>
+      <span class="grp">문항 파이프라인</span>
+      <button data-v="gen">✨ 문항 생성</button>
+      <button data-v="review">📝 문항 검수 <span class="cnt">8</span></button>
+      <button data-v="dist">📦 세트 · 배포</button>
+      <span class="grp">학습 운영</span>
+      <button data-v="students">👥 학생 관리</button>
+      <button>🎧 오디오(TTS) 관리</button>
+      <button>🧪 응시 관리</button>
+      <span class="grp">리포트</span>
+      <button>🏫 반별 리포트</button>
+      <button>📈 성적 추이</button>
+      <span class="grp">사이트</span>
+      <button>⚙️ 설정</button>
+    </nav>
+    <div class="foot">권한: 최종관리자<br>교사 계정은 담당 반만 표시됩니다</div>
+  </aside>
+
+  <main>
+
+    <!-- ═════════ VIEW 1: 대시보드 ═════════ -->
+    <section class="view on" id="v-dash">
+      <div class="topbar">
+        <h1>대시보드</h1><span class="crumb">오늘 처리할 일 기준으로 정렬됩니다</span>
+        <div class="search">🔍 학생·문항 검색</div>
+        <span class="role-chip">최종관리자</span><div class="avatar">최</div>
+      </div>
+      <div class="kpis">
+        <div class="kpi urgent"><div class="lb">AI 채점 검수 대기</div><div class="v num">12</div><div class="sub">Speaking 7 · Writing 5 — 저장해야 학생에게 공개</div></div>
+        <div class="kpi urgent"><div class="lb">문항 검수 대기</div><div class="v num">8</div><div class="sub">AI 생성 6 · 직접 등록 2 · TTS 대기 3</div></div>
+        <div class="kpi"><div class="lb">배포 중 콘텐츠</div><div class="v num">5</div><div class="sub">풀 모의 1 · 유형 세트 4 · 평균 응시율 71%</div></div>
+        <div class="kpi alert"><div class="lb">리스크 학생 (55+)</div><div class="v num">4</div><div class="sub">2주 미접속 2 · 밴드 하락 2</div></div>
+      </div>
+      <div class="dash-grid">
+        <div class="panel">
+          <div class="ph"><b>오늘의 작업 큐</b><a href="#">전체 보기</a></div>
+          <ul class="queue">
+            <li><span class="qtag s">SPK</span><span class="who">김서연</span><span class="meta">Take an Interview · AI 밴드 4.0 → 검수 필요</span><button class="btn btn-line btn-sm act">검수</button></li>
+            <li><span class="qtag w">WRT</span><span class="who">박지훈</span><span class="meta">Academic Discussion · AI 밴드 3.5 → 검수 필요</span><button class="btn btn-line btn-sm act">검수</button></li>
+            <li><span class="qtag r">READ</span><span class="meta"><b>AI 생성 문항 4건</b> · 재검증 불일치 1건 포함</span><button class="btn btn-line btn-sm act">검수 큐 열기</button></li>
+            <li><span class="qtag sys">FORM</span><span class="meta"><b>FORM_002</b> · L Stage2-Hard 슬롯 2문항 부족 — 게시 불가</span><button class="btn btn-line btn-sm act">세트 열기</button></li>
+            <li><span class="qtag sys">RISK</span><span class="who">이도윤</span><span class="meta">리스크 72 · 14일 미접속 · 밴드 4.0→3.5</span><button class="btn btn-line btn-sm act">학생 보기</button></li>
+          </ul>
+        </div>
+        <div class="panel">
+          <div class="ph"><b>최근 응시 완료</b><a href="#">응시 관리</a></div>
+          <ul class="queue">
+            <li><span class="who">정하은</span><span class="meta">풀 모의 · R상급 L상급</span><span class="mini-band act num">5.0 · C1</span></li>
+            <li><span class="who">최민준</span><span class="meta">풀 모의 · R상급 L하급</span><span class="mini-band act num">4.0 · B2</span></li>
+            <li><span class="who">김서연</span><span class="meta">Speaking 연습</span><span class="mini-band act num">4.0 · B2</span></li>
+            <li><span class="who">박지훈</span><span class="meta">Writing 연습</span><span class="mini-band act num">3.5 · B1</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════ VIEW 2: 문항 생성 ═════════ -->
+    <section class="view" id="v-gen">
+      <div class="topbar">
+        <h1>문항 생성</h1><span class="crumb">생성물은 자동 저장되지 않습니다 — 검수 후 저장해야 노출</span>
+        <div class="search">🔍 배치 검색</div>
+        <span class="role-chip">최종관리자</span><div class="avatar">최</div>
+      </div>
+
+      <div class="pipe" aria-label="문항 파이프라인 위치">
+        <span class="p here"><span class="n">1</span>생성</span>
+        <span class="p"><span class="n">2</span>검수</span>
+        <span class="p"><span class="n">3</span>세트 구성</span>
+        <span class="p"><span class="n">4</span>배포</span>
+        <span class="p"><span class="n">5</span>응시·리포트</span>
+      </div>
+
+      <div class="gen">
+        <div class="gen-form">
+          <h3>새 생성 배치</h3>
+          <div class="fld">
+            <label>영역</label>
+            <div class="seg">
+              <button class="on">Reading</button><button>Listening</button><button>Speaking</button><button>Writing</button>
+            </div>
+          </div>
+          <div class="fld">
+            <label>문항 유형</label>
+            <div class="type-pick">
+              <button class="on"><span class="d" style="background:var(--en-read)"></span>Complete the Words</button>
+              <button><span class="d" style="background:var(--en-read)"></span>Read in Daily Life</button>
+              <button><span class="d" style="background:var(--en-read)"></span>Academic Passage</button>
+            </div>
+          </div>
+          <div class="fld">
+            <label>모듈 난이도 (라우팅 슬롯)</label>
+            <div class="seg">
+              <button>Stage 1</button><button class="on">Stage 2 · Hard</button><button>Stage 2 · Easy</button>
+            </div>
+          </div>
+          <div class="fld">
+            <label>주제 영역</label>
+            <select><option>학술 — 과학·기술</option><option>학술 — 인문·사회</option><option>캠퍼스 생활</option><option>일상 (이메일·공지·메뉴)</option></select>
+          </div>
+          <div class="fld" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div><label>생성 개수</label><input type="number" value="5" min="1" max="20"></div>
+            <div><label>연동 단어장 (선택)</label><select><option>없음</option><option>TOEFL 핵심 L3</option><option>TOEFL 핵심 L4</option></select></div>
+          </div>
+          <div class="gen-note">생성 1회 + <b>독립 재검증 1회</b>로 AI를 2번 호출합니다. 불일치 문항은 검수 큐에서 우선 검토로 표시되며, 자동 저장은 절대 하지 않습니다.</div>
+          <button class="btn btn-gold">✨ 5문항 생성 시작</button>
+          <div class="tpl-row">
+            <button class="btn btn-line btn-sm">이 조건을 템플릿으로 저장</button>
+            <button class="btn btn-line btn-sm">템플릿 불러오기 (3)</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="ph"><b>생성 배치 이력</b><a href="#">전체</a></div>
+          <div class="tbl-wrap" style="border:none;box-shadow:none;border-radius:0">
+            <table class="gen-batches">
+              <thead><tr><th>배치</th><th>조건</th><th>결과</th><th>재검증</th><th>상태</th><th style="text-align:right">작업</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td class="num">#B-024</td>
+                  <td><span class="qtag r">READ</span> Complete the Words · S2-Hard · 5문항</td>
+                  <td class="num">5 생성</td>
+                  <td><span class="recheck ok">일치 4</span> <span class="recheck bad">불일치 1</span></td>
+                  <td><span class="batch-status"><span class="bs wait">검수 대기</span></span></td>
+                  <td><div class="row-acts"><button class="btn btn-line btn-sm">검수 큐로</button></div></td>
+                </tr>
+                <tr>
+                  <td class="num">#B-023</td>
+                  <td><span class="qtag l">LSTN</span> Announcement · Stage 1 · 3문항</td>
+                  <td class="num">3 생성</td>
+                  <td><span class="recheck ok">일치 3</span></td>
+                  <td><span class="batch-status"><span class="bs wait">TTS 대기 → 검수</span></span></td>
+                  <td><div class="row-acts"><button class="btn btn-line btn-sm">TTS 생성</button></div></td>
+                </tr>
+                <tr>
+                  <td class="num">#B-022</td>
+                  <td><span class="qtag w">WRT</span> Build a Sentence · Stage 1 · 6문항</td>
+                  <td class="num">6 생성</td>
+                  <td><span class="recheck ok">일치 6</span></td>
+                  <td><span class="batch-status"><span class="bs run">검수 중 2/6</span></span></td>
+                  <td><div class="row-acts"><button class="btn btn-line btn-sm">이어서 검수</button></div></td>
+                </tr>
+                <tr>
+                  <td class="num">#B-021</td>
+                  <td><span class="qtag s">SPK</span> Listen &amp; Repeat · Stage 1 · 7문항</td>
+                  <td class="num">7 생성</td>
+                  <td><span class="recheck ok">일치 7</span></td>
+                  <td><span class="batch-status"><span class="bs done">검수 완료 · 저장됨</span></span></td>
+                  <td><div class="row-acts"><button class="btn btn-line btn-sm">세트에 넣기</button></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="hint" style="padding:0 18px 14px">Gemini 무료 등급 TTS는 분당 3건 제한이 있어 Listening 배치는 자동 재시도 큐로 순차 처리됩니다.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════ VIEW 3: 문항 검수 ═════════ -->
+    <section class="view" id="v-review">
+      <div class="topbar">
+        <h1>문항 검수</h1><span class="crumb">저장 전까지 학생에게 노출되지 않습니다 (verified + RLS)</span>
+        <div class="search">🔍 문항 검색</div>
+        <span class="role-chip">최종관리자</span><div class="avatar">최</div>
+      </div>
+      <div class="pipe">
+        <span class="p"><span class="n">1</span>생성</span>
+        <span class="p here"><span class="n">2</span>검수</span>
+        <span class="p"><span class="n">3</span>세트 구성</span>
+        <span class="p"><span class="n">4</span>배포</span>
+        <span class="p"><span class="n">5</span>응시·리포트</span>
+      </div>
+      <div class="review">
+        <div class="rq">
+          <div class="ph"><b>검수 대기 8건</b><button class="btn btn-line btn-sm">+ 직접 등록</button></div>
+          <ul>
+            <li class="sel">
+              <div class="t1"><span class="qtag r">READ</span>Complete the Words #R-041</div>
+              <div class="t2"><span class="src ai">AI 생성 · B-024</span><span class="recheck bad">재검증 불일치</span></div>
+            </li>
+            <li><div class="t1"><span class="qtag r">READ</span>Read in Daily Life #R-042</div>
+              <div class="t2"><span class="src ai">AI 생성 · B-024</span><span class="recheck ok">재검증 일치</span></div></li>
+            <li><div class="t1"><span class="qtag l">LSTN</span>Announcement #L-018</div>
+              <div class="t2"><span class="src ai">AI 생성 · B-023</span><span class="tts wait">● TTS 대기</span></div></li>
+            <li><div class="t1"><span class="qtag l">LSTN</span>Academic Talk #L-019</div>
+              <div class="t2"><span class="src man">직접 등록</span><span class="tts ok">● TTS 완료</span></div></li>
+            <li><div class="t1"><span class="qtag w">WRT</span>Build a Sentence #W-011</div>
+              <div class="t2"><span class="src ai">AI 생성 · B-022</span><span class="recheck ok">재검증 일치</span></div></li>
+          </ul>
+        </div>
+        <div class="rdetail">
+          <div class="rh">
+            <span class="qtag r">READ</span><h3>Complete the Words #R-041</h3>
+            <span class="src ai">AI 생성 · B-024</span><span class="recheck bad">재검증 불일치 — 우선 검토</span>
+          </div>
+          <div class="preview">
+            <div class="plabel">학생 화면 미리보기 · Stage 2 Hard</div>
+            <p class="stem">Early water clocks measured time by the steady flow of water from one ves___ to another. The rate of fl___ stayed constant regardless of light or weather.</p>
+            <div class="opts">
+              <div class="opt"><span class="k">1</span>ves<b>sel</b> — 빈칸 정답 입력형</div>
+              <div class="opt ans"><span class="k">2</span>fl<b>ow</b></div>
+            </div>
+            <div class="expl"><b>해설 (검수·수정 가능)</b>문맥상 물의 '흐름'이 일정했다는 의미이므로 flow가 정답입니다. AI 재검증에서 1번 빈칸을 vestige로 판단해 불일치가 발생했습니다 — 정답 및 해설을 확인해 주세요.</div>
+          </div>
+          <div class="verify-bar">
+            <span class="note">⚠ 저장 버튼을 눌러야만 학생에게 노출됩니다. 저장 시 세트 구성 화면에서 선택 가능해집니다.</span>
+            <button class="btn btn-line btn-sm">수정</button>
+            <button class="btn btn-line btn-sm">반려(삭제)</button>
+            <button class="btn btn-gold">검수 완료 · 저장</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════ VIEW 4: 세트 · 배포 ═════════ -->
+    <section class="view" id="v-dist">
+      <div class="topbar">
+        <h1>세트 · 배포</h1><span class="crumb">검수 완료(저장된) 문항만 세트에 넣을 수 있습니다</span>
+        <div class="search">🔍 세트·배포 검색</div>
+        <span class="role-chip">최종관리자</span><div class="avatar">최</div>
+      </div>
+      <div class="pipe">
+        <span class="p"><span class="n">1</span>생성</span>
+        <span class="p"><span class="n">2</span>검수</span>
+        <span class="p here"><span class="n">3</span>세트 구성</span>
+        <span class="p here"><span class="n">4</span>배포</span>
+        <span class="p"><span class="n">5</span>응시·리포트</span>
+      </div>
+
+      <div class="forms-row">
+        <div class="form-card">
+          <div class="fh"><b>FORM_001 · 풀 모의</b><span class="fstat pub">게시됨</span></div>
+          <div class="fm">데모 폼 · 응시 27회 · 12유형 전체</div>
+          <div class="slotbar"><i><em style="width:100%;background:var(--en-read)"></em></i><i><em style="width:100%;background:var(--en-listen)"></em></i><i><em style="width:100%;background:var(--en-speak)"></em></i><i><em style="width:100%;background:var(--en-write)"></em></i></div>
+        </div>
+        <div class="form-card sel">
+          <div class="fh"><b>FORM_002 · 풀 모의</b><span class="fstat draft">작성 중</span></div>
+          <div class="fm">신규 폼 · 블루프린트 기준 2슬롯 부족</div>
+          <div class="slotbar"><i><em style="width:100%;background:var(--en-read)"></em></i><i><em style="width:78%;background:var(--en-listen)"></em></i><i><em style="width:100%;background:var(--en-speak)"></em></i><i><em style="width:100%;background:var(--en-write)"></em></i></div>
+        </div>
+        <div class="form-card" style="display:grid;place-items:center;color:var(--en-ink-soft);font-weight:700;min-height:96px;border-style:dashed">＋ 새 세트 (풀 모의 / 유형 연습)</div>
+      </div>
+
+      <div class="panel">
+        <div class="ph"><b>FORM_002 — 블루프린트 슬롯 현황</b><span style="font-size:12px;color:var(--en-ink-soft)">시간·문항수는 블루프린트(DB)를 따릅니다</span></div>
+        <div class="tbl-wrap" style="border:none;box-shadow:none;border-radius:0">
+          <table class="slot-table">
+            <thead><tr><th>영역 · 모듈</th><th>슬롯 충족</th><th>오디오</th><th>상태</th><th style="text-align:right">작업</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="qtag r">READ</span> Stage 1</td>
+                <td><div class="slot-fill"><div class="bar"><i style="width:100%;background:var(--en-read)"></i></div><span class="n">10 / 10</span></div></td>
+                <td>—</td><td><span class="ok-txt">충족</span></td>
+                <td><div class="row-acts"><button class="btn btn-line btn-sm">문항 교체</button></div></td>
+              </tr>
+              <tr>
+                <td><span class="qtag l">LSTN</span> Stage 2 · Hard</td>
+                <td><div class="slot-fill"><div class="bar"><i style="width:78%;background:var(--en-listen)"></i></div><span class="n">7 / 9</span></div></td>
+                <td><span class="tts wait">● 1건 대기</span></td><td><span class="warn-txt">2문항 부족</span></td>
+                <td><div class="row-acts"><button class="btn btn-line btn-sm">검수 완료 문항에서 채우기</button><button class="btn btn-line btn-sm">생성 요청</button></div></td>
+              </tr>
+              <tr>
+                <td><span class="qtag s">SPK</span> Listen &amp; Repeat</td>
+                <td><div class="slot-fill"><div class="bar"><i style="width:100%;background:var(--en-speak)"></i></div><span class="n">7 / 7</span></div></td>
+                <td><span class="tts ok">● 완료</span></td><td><span class="ok-txt">충족</span></td>
+                <td><div class="row-acts"><button class="btn btn-line btn-sm">문항 교체</button></div></td>
+              </tr>
+              <tr>
+                <td><span class="qtag w">WRT</span> Academic Discussion</td>
+                <td><div class="slot-fill"><div class="bar"><i style="width:100%;background:var(--en-write)"></i></div><span class="n">1 / 1</span></div></td>
+                <td>—</td><td><span class="ok-txt">충족</span></td>
+                <td><div class="row-acts"><button class="btn btn-line btn-sm">문항 교체</button></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pub-bar" style="margin:0 18px 16px">
+          <span class="note">⚠ 모든 슬롯이 충족되고 오디오가 완료되어야 게시할 수 있습니다. 게시 전 학생 화면 그대로 미리보기로 확인하세요.</span>
+          <button class="btn btn-line btn-sm">전체 미리보기</button>
+          <button class="btn btn-gold" disabled style="opacity:.5;cursor:not-allowed">폼 게시 (2슬롯 부족)</button>
+        </div>
+      </div>
+
+      <div class="assign-head">
+        <h3>배포 관리</h3>
+        <button class="btn btn-gold btn-sm">＋ 새 배포 (대상 반/학생 선택)</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>콘텐츠</th><th>대상</th><th>기간</th><th>응시율</th><th>상태</th><th style="text-align:right">작업</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><b>FORM_001</b> · 풀 모의고사</td>
+              <td>TOEFL 집중반 (9명)</td>
+              <td class="last">8/17 ~ 8/23</td>
+              <td><div class="prog"><div class="bar"><i style="width:78%"></i></div><span class="n">7/9</span></div></td>
+              <td><span class="astat live">진행 중</span></td>
+              <td><div class="row-acts"><button class="btn btn-line btn-sm">미응시자 메일</button><button class="btn btn-line btn-sm">결과 보기</button></div></td>
+            </tr>
+            <tr>
+              <td><b>Complete the Words 세트 A</b> · 유형 연습 10문항</td>
+              <td>TOEFL 기초반 (8명)</td>
+              <td class="last">8/18 ~ 8/25</td>
+              <td><div class="prog"><div class="bar"><i style="width:50%"></i></div><span class="n">4/8</span></div></td>
+              <td><span class="astat live">진행 중</span></td>
+              <td><div class="row-acts"><button class="btn btn-line btn-sm">미응시자 메일</button><button class="btn btn-line btn-sm">결과 보기</button></div></td>
+            </tr>
+            <tr>
+              <td><b>FORM_002</b> · 풀 모의고사</td>
+              <td>TOEFL 집중반 + 이도윤 외 2명</td>
+              <td class="last">8/24 ~ 8/30 (예약)</td>
+              <td><div class="prog"><div class="bar"><i style="width:0%"></i></div><span class="n">0/12</span></div></td>
+              <td><span class="astat sched">예약 — 폼 게시 필요</span></td>
+              <td><div class="row-acts"><button class="btn btn-line btn-sm">수정</button><button class="btn btn-line btn-sm">취소</button></div></td>
+            </tr>
+            <tr>
+              <td><b>Listen &amp; Repeat 세트 B</b> · 유형 연습 7문항</td>
+              <td>SAT 병행반 (7명)</td>
+              <td class="last">8/10 ~ 8/16</td>
+              <td><div class="prog"><div class="bar"><i style="width:100%"></i></div><span class="n">7/7</span></div></td>
+              <td><span class="astat end">종료</span></td>
+              <td><div class="row-acts"><button class="btn btn-line btn-sm">결과 보기</button><button class="btn btn-line btn-sm">재배포</button></div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="hint">배포는 기존 문제지 배포와 같은 패턴(반/학생 선별 + 순서 유지 + 미리보기)을 재사용합니다. 미응시자 메일은 기존 Resend 인프라로 발송됩니다.</p>
+    </section>
+
+    <!-- ═════════ VIEW 5: 학생 관리 ═════════ -->
+    <section class="view" id="v-students">
+      <div class="topbar">
+        <h1>학생 관리</h1><span class="crumb">리스크 높은 순 기본 정렬 · 교사는 담당 반만 표시</span>
+        <div class="search">🔍 이름·이메일 검색</div>
+        <span class="role-chip">최종관리자</span><div class="avatar">최</div>
+      </div>
+      <div class="filters">
+        <button class="chip on">전체 (24)</button>
+        <button class="chip">TOEFL 집중반 (9)</button>
+        <button class="chip">TOEFL 기초반 (8)</button>
+        <button class="chip">SAT 병행반 (7)</button>
+        <span class="right">정렬: <button class="chip on">리스크순</button><button class="chip">최근 밴드순</button><button class="chip">활동순</button></span>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th><input type="checkbox" aria-label="전체 선택"></th>
+            <th>학생</th><th>반</th><th>최근 밴드</th><th>영역별</th><th>Stage 2 라우팅</th><th>리스크</th><th>마지막 활동</th><th style="text-align:right">작업</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td><input type="checkbox" checked aria-label="이도윤 선택"></td>
+              <td class="st-name">이도윤<span>목표 5.0 · 응시 6회</span></td>
+              <td>TOEFL 집중반</td>
+              <td><span class="band-chip">3.5</span> <span class="band-delta dn">▼0.5</span></td>
+              <td><div class="mmeter"><i><em style="width:58%;background:var(--en-read)"></em></i><i><em style="width:50%;background:var(--en-listen)"></em></i><i><em style="width:66%;background:var(--en-speak)"></em></i><i><em style="width:62%;background:var(--en-write)"></em></i></div></td>
+              <td><span class="route"><b class="lo">R 하급</b><b class="lo">L 하급</b></span></td>
+              <td><span class="risk hi num">72</span></td>
+              <td class="last">14일 전</td>
+              <td><div class="row-acts"><button class="btn btn-line btn-sm">리포트</button><button class="btn btn-line btn-sm">학부모 링크</button></div></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox" checked aria-label="최민준 선택"></td>
+              <td class="st-name">최민준<span>목표 4.5 · 응시 4회</span></td>
+              <td>TOEFL 기초반</td>
+              <td><span class="band-chip">4.0</span> <span class="band-delta fl">—</span></td>
+              <td><div class="mmeter"><i><em style="width:75%;background:var(--en-read)"></em></i><i><em style="width:55%;background:var(--en-listen)"></em></i><i><em style="width:62%;background:var(--en-speak)"></em></i><i><em style="width:68%;background:var(--en-write)"></em></i></div></td>
+              <td><span class="route"><b class="hi">R 상급</b><b class="lo">L 하급</b></span></td>
+              <td><span class="risk mid num">58</span></td>
+              <td class="last">3일 전</td>
+              <td><div class="row-acts"><button class="btn btn-line btn-sm">리포트</button><button class="btn btn-line btn-sm">학부모 링크</button></div></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox" aria-label="김서연 선택"></td>
+              <td class="st-name">김서연<span>목표 5.0 · 응시 8회</span></td>
+              <td>TOEFL 집중반</td>
+              <td><span class="band-chip">4.5</span> <span class="band-delta up">▲0.5</span></td>
+              <td><div class="mmeter"><i><em style="width:82%;background:var(--en-read)"></em></i><i><em style="width:78%;background:var(--en-listen)"></em></i><i><em style="width:66%;background:var(--en-speak)"></em></i><i><em style="width:74%;background:var(--en-write)"></em></i></div></td>
+              <td><span class="route"><b class="hi">R 상급</b><b class="hi">L 상급</b></span></td>
+              <td><span class="risk lo num">21</span></td>
+              <td class="last">오늘</td>
+              <td><div class="row-acts"><button class="btn btn-line btn-sm">리포트</button><button class="btn btn-line btn-sm">학부모 링크</button></div></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox" aria-label="정하은 선택"></td>
+              <td class="st-name">정하은<span>목표 5.5 · 응시 9회</span></td>
+              <td>SAT 병행반</td>
+              <td><span class="band-chip">5.0</span> <span class="band-delta up">▲0.5</span></td>
+              <td><div class="mmeter"><i><em style="width:88%;background:var(--en-read)"></em></i><i><em style="width:85%;background:var(--en-listen)"></em></i><i><em style="width:76%;background:var(--en-speak)"></em></i><i><em style="width:80%;background:var(--en-write)"></em></i></div></td>
+              <td><span class="route"><b class="hi">R 상급</b><b class="hi">L 상급</b></span></td>
+              <td><span class="risk lo num">12</span></td>
+              <td class="last">오늘</td>
+              <td><div class="row-acts"><button class="btn btn-line btn-sm">리포트</button><button class="btn btn-line btn-sm">학부모 링크</button></div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="bulkbar">
+        <b>2명</b> 선택됨
+        <button class="btn btn-line btn-sm">세트 배포</button>
+        <button class="btn btn-line btn-sm">메일 발송</button>
+        <button class="btn btn-line btn-sm">단어 복습 배정</button>
+        <button class="btn btn-gold btn-sm">학부모 리포트 링크 일괄 생성</button>
+      </div>
+      <p class="hint">라우팅 열의 "하급"은 Stage 2에서 밴드 4.0 상한이 걸렸다는 뜻입니다. 하급 라우팅이 반복되는 학생이 우선 개입 대상입니다.</p>
+    </section>
+
+  </main>
+</div>
+
+<script>
+document.querySelectorAll('.snav [data-v]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.snav [data-v]').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+    document.getElementById('v-'+btn.dataset.v).classList.add('on');
+  });
+});
+// 세그먼트/유형 선택 목업 인터랙션
+document.querySelectorAll('.seg, .type-pick').forEach(grp=>{
+  grp.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+    grp.querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+  }));
+});
+</script>
+</body>
+</html>
