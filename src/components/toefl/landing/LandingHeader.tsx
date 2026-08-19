@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useLang } from "@/lib/i18n";
+import { canManageMaterials } from "@/lib/roles";
 
 // TODO: 유형별 연습 전용 라우트가 생기면 "#types" 앵커 대신 그 경로로 교체한다.
 // 영역 연습·모의고사는 아직 별도 라우트가 없어 둘 다 /toefl/start(폼 선택 화면)로 보낸다.
@@ -27,14 +28,34 @@ const MENU: { label: string; href: string }[] = [
 export default function LandingHeader() {
   const { lang, setLang } = useLang();
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
+  // 관리 링크는 자료관리 권한이 있을 때만 보인다. /admin/toefl 레이아웃이 같은 기준으로
+  // 다시 막으므로(그리고 진짜 방어선은 DB의 RLS), 여기서는 표시 여부만 정한다.
+  const [canManage, setCanManage] = useState(false);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => setLoggedIn(!!data.user));
-    const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => setLoggedIn(!!session?.user));
+
+    async function apply(user: { id?: string } | null | undefined) {
+      setLoggedIn(!!user);
+      if (!user?.id) {
+        setCanManage(false);
+        return;
+      }
+      const { data } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+      setCanManage(canManageMaterials(data?.role));
+    }
+
+    supabase.auth.getUser().then(({ data }) => apply(data.user));
+    const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => apply(session?.user));
     return () => listener.subscription.unsubscribe();
   }, []);
+
+  async function handleLogout() {
+    await createClient().auth.signOut();
+    // 랜딩으로 되돌린다 — 로그아웃 후 마이페이지에 남아 있으면 곧바로 로그인으로 튕긴다.
+    window.location.href = "/toefl";
+  }
 
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--en-line)] bg-[rgba(247,249,253,.88)] backdrop-blur-[12px]">
@@ -68,6 +89,15 @@ export default function LandingHeader() {
             한 / EN
           </button>
 
+          {canManage && (
+            <Link
+              href="/admin/toefl"
+              className="hidden rounded-lg border border-[var(--en-line)] bg-white px-3 py-1.5 text-[13px] font-bold text-[var(--en-ink)] transition-colors hover:border-[var(--en-ink)] min-[601px]:inline-flex"
+            >
+              관리
+            </Link>
+          )}
+
           {loggedIn !== null && (
             <Link
               href={loggedIn ? "/toefl/mypage" : "/login?toefl=1"}
@@ -75,6 +105,16 @@ export default function LandingHeader() {
             >
               {loggedIn ? "내 학습" : "로그인"}
             </Link>
+          )}
+
+          {loggedIn && (
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="hidden rounded-lg px-2.5 py-2 text-sm font-semibold text-[var(--en-ink-soft)] transition-colors hover:bg-[#EDF2FB] hover:text-[var(--en-ink)] min-[601px]:inline-flex"
+            >
+              로그아웃
+            </button>
           )}
 
           <Link
@@ -110,6 +150,15 @@ export default function LandingHeader() {
               </Link>
             ))}
             <div className="mt-2 flex flex-col gap-2 border-t border-[var(--en-line)] pt-3">
+              {canManage && (
+                <Link
+                  href="/admin/toefl"
+                  onClick={() => setOpen(false)}
+                  className="rounded-lg px-2 py-2 text-[15px] font-bold text-[var(--en-ink)]"
+                >
+                  관리
+                </Link>
+              )}
               <Link
                 href={loggedIn ? "/toefl/mypage" : "/login?toefl=1"}
                 onClick={() => setOpen(false)}
@@ -117,6 +166,15 @@ export default function LandingHeader() {
               >
                 {loggedIn ? "내 학습" : "로그인"}
               </Link>
+              {loggedIn && (
+                <button
+                  type="button"
+                  onClick={() => { setOpen(false); handleLogout(); }}
+                  className="rounded-lg px-2 py-2 text-left text-[15px] font-semibold text-[var(--en-ink-soft)]"
+                >
+                  로그아웃
+                </button>
+              )}
               <Link
                 href="/toefl/sample"
                 onClick={() => setOpen(false)}
