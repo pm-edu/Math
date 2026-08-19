@@ -381,6 +381,12 @@ export default function AdminPage() {
                 >
                   TOEFL 데모 오디오 생성
                 </Link>
+                <Link
+                  href="/admin/toefl/items"
+                  className="rounded-full bg-[var(--pink)] px-5 py-2.5 text-sm font-medium text-[var(--pink-dark)]"
+                >
+                  TOEFL 문항 등록
+                </Link>
               </div>
             </section>
           )}
