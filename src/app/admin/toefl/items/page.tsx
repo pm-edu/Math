@@ -10,6 +10,7 @@ import Pipeline from "@/components/toefl/admin/Pipeline";
 import { useAdminMe } from "@/lib/toefl/admin-me";
 import { createClient } from "@/lib/supabase/client";
 import { GENERATABLE_TASKS } from "@/lib/toefl/task-catalog";
+import { DraftEditor, ExplanationField } from "@/components/toefl/admin/drafts";
 import type { ToeflSection, ToeflTaskType } from "@/lib/toefl/types";
 
 // 유형 목록은 src/lib/toefl/task-catalog.ts 가 유일한 출처다 — 여기에 복제하지 않는다.
@@ -228,20 +229,6 @@ export default function AdminToeflItemsPage() {
   function updateItem(i: number, patch: Partial<ItemDraft>) {
     setItems((prev) => prev.map((it, idx) => (idx === i ? { ...it, ...patch } : it)));
   }
-  function updateOption(i: number, ci: number, text: string) {
-    setItems((prev) =>
-      prev.map((it, idx) =>
-        idx === i ? { ...it, options: (it.options ?? []).map((o, oi) => (oi === ci ? { ...o, text } : o)) } : it
-      )
-    );
-  }
-  function updateBlank(i: number, bi: number, patch: Partial<BlankD>) {
-    setItems((prev) =>
-      prev.map((it, idx) =>
-        idx === i ? { ...it, blanks: (it.blanks ?? []).map((b, bidx) => (bidx === bi ? { ...b, ...patch } : b)) } : it
-      )
-    );
-  }
 
   async function handleSave() {
     setError(null); setMessage(null);
@@ -428,45 +415,9 @@ export default function AdminToeflItemsPage() {
                     </label>
                   </div>
 
-                  {taskType === "complete_the_words" && (
-                    <>
-                      <label className="mt-3 block text-xs text-[var(--secondary)]">문단 (빈칸은 _ 로 표시)</label>
-                      <textarea rows={2} value={it.paragraph ?? ""} onChange={(e) => updateItem(i, { paragraph: e.target.value })} className={inputClass} />
-                      <label className="mt-3 block text-xs text-[var(--secondary)]">빈칸 정답</label>
-                      <div className="mt-1 space-y-2">
-                        {(it.blanks ?? []).map((b, bi) => (
-                          <div key={b.id} className="flex items-center gap-2 text-sm">
-                            <span className="w-24 truncate text-[var(--secondary)]">{b.masked}</span>
-                            <input
-                              type="text"
-                              value={b.answer}
-                              onChange={(e) => updateBlank(i, bi, { answer: e.target.value })}
-                              className="flex-1 rounded-lg border border-[var(--border-c)] bg-white px-3 py-2 text-sm outline-none focus:border-[var(--pink)]"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-
-                  {taskType === "choose_a_response" && (
-                    <>
-                      <label className="mt-3 block text-xs text-[var(--secondary)]">들려줄 문장 (음성으로 변환됩니다)</label>
-                      <textarea rows={2} value={it.spoken_text ?? ""} onChange={(e) => updateItem(i, { spoken_text: e.target.value })} className={inputClass} />
-                      <OptionsEditor item={it} onCorrect={(id) => updateItem(i, { correct: [id] })} onOptionText={(ci, text) => updateOption(i, ci, text)} />
-                    </>
-                  )}
-
-                  {(taskType === "daily_life" || taskType === "academic_passage" || taskType === "conversation" || taskType === "announcement" || taskType === "academic_talk") && (
-                    <>
-                      <label className="mt-3 block text-xs text-[var(--secondary)]">질문</label>
-                      <textarea rows={2} value={it.prompt ?? ""} onChange={(e) => updateItem(i, { prompt: e.target.value })} className={inputClass} />
-                      <OptionsEditor item={it} onCorrect={(id) => updateItem(i, { correct: [id] })} onOptionText={(ci, text) => updateOption(i, ci, text)} />
-                    </>
-                  )}
-
-                  <label className="mt-3 block text-xs text-[var(--secondary)]">해설 (한국어)</label>
-                  <textarea rows={2} value={it.explanation_ko} onChange={(e) => updateItem(i, { explanation_ko: e.target.value })} className={inputClass} />
+                  {/* 유형별 편집 화면은 drafts/ 디스패처가 고른다 — 여기에 if문을 늘리지 않는다(spec §10). */}
+                  <DraftEditor taskType={taskType} item={it} onChange={(patch) => updateItem(i, patch)} />
+                  <ExplanationField item={it} onChange={(patch) => updateItem(i, patch)} />
                 </li>
               ))}
             </ul>
@@ -482,36 +433,6 @@ export default function AdminToeflItemsPage() {
             ))}
           </ul>
         )}
-      </div>
-    </>
-  );
-}
-
-function OptionsEditor({
-  item,
-  onCorrect,
-  onOptionText,
-}: {
-  item: ItemDraft;
-  onCorrect: (id: string) => void;
-  onOptionText: (ci: number, text: string) => void;
-}) {
-  return (
-    <>
-      <label className="mt-3 block text-xs text-[var(--secondary)]">보기 (정답을 라디오로 선택)</label>
-      <div className="mt-1 space-y-2">
-        {(item.options ?? []).map((o, ci) => (
-          <div key={o.id} className="flex items-center gap-2">
-            <input type="radio" checked={(item.correct ?? [])[0] === o.id} onChange={() => onCorrect(o.id)} title="정답으로 지정" />
-            <span className="w-5 text-sm font-medium text-[var(--secondary)]">{o.id}</span>
-            <input
-              type="text"
-              value={o.text}
-              onChange={(e) => onOptionText(ci, e.target.value)}
-              className="flex-1 rounded-lg border border-[var(--border-c)] bg-white px-3 py-2 text-sm outline-none focus:border-[var(--pink)]"
-            />
-          </div>
-        ))}
       </div>
     </>
   );
