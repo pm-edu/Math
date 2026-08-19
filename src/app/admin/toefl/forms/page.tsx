@@ -184,12 +184,12 @@ export default function ToeflFormsPage() {
                           </td>
                           <td className="px-3.5 py-2.5">
                             <div className="flex items-center gap-2.5">
-                              <div className="h-2 w-full max-w-[180px] overflow-hidden rounded-full bg-[#EFF3FA]">
-                                <i className="block h-full rounded-full" style={{ width: `${pct}%`, background: SECTION_TAG[s.section].color }} />
-                              </div>
-                              <span className="num whitespace-nowrap text-[12.5px] font-bold">
+                              <span className={`num whitespace-nowrap text-[12.5px] font-bold ${ok ? "" : "text-[#B07A10]"}`}>
                                 {s.actual} / {s.required}
                               </span>
+                              <div className="h-2 w-full max-w-[140px] overflow-hidden rounded-full border border-[var(--en-line)] bg-[#EFF3FA]">
+                                <i className="block h-full rounded-full" style={{ width: `${pct}%`, background: SECTION_TAG[s.section].color }} />
+                              </div>
                             </div>
                           </td>
                           <td className="px-3.5 py-2.5">
@@ -228,9 +228,13 @@ export default function ToeflFormsPage() {
 
               <div className="m-[18px] flex flex-wrap items-center gap-3 rounded-[10px] border border-[#F2DCAF] bg-[var(--en-gold-soft)] px-4 py-3">
                 <span className="text-[12.5px] font-semibold text-[#8A5B00]">
-                  {selected.complete
-                    ? "모든 슬롯이 충족되었습니다. 게시하면 학생이 응시할 수 있습니다."
-                    : "⚠ 슬롯이 모두 충족되어야 게시할 수 있습니다."}
+                  {selected.is_published
+                    ? selected.complete
+                      ? "게시 중입니다 — 학생이 이 세트를 응시할 수 있습니다."
+                      : `게시 중입니다 — 다만 ${selected.shortage}문항이 부족합니다. 응시 시 블루프린트가 요구하는 만큼 문항을 못 뽑습니다.`
+                    : selected.complete
+                      ? "모든 슬롯이 충족되었습니다. 게시하면 학생이 응시할 수 있습니다."
+                      : "⚠ 슬롯이 모두 충족되어야 게시할 수 있습니다."}
                 </span>
                 <button
                   type="button"

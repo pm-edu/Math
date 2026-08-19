@@ -7,6 +7,7 @@
 // 순수 함수만 둔다 — Supabase 조회는 화면이 하고, 결과 행만 넘겨받는다(테스트 가능).
 
 import type { ToeflSection } from "@/lib/toefl/types";
+import { catalogEntry } from "@/lib/toefl/task-catalog";
 
 export type BlueprintRow = {
   section: ToeflSection;
@@ -17,6 +18,15 @@ export type BlueprintRow = {
 };
 
 export type ModuleRow = { id: string; section: ToeflSection; stage: string; route: string };
+
+/**
+ * task_mix 에는 문항 유형 말고 설정값도 섞여 있다 — 예: routing_threshold(다음 단계
+ * 난이도를 가르는 기준 점수)는 "6문항"이 아니라 "6점"이다. 카탈로그에 있는 유형만
+ * 문항 수로 센다. 그러지 않으면 영원히 채울 수 없는 부족분이 화면에 남는다.
+ */
+function isTaskType(key: string): boolean {
+  return catalogEntry(key) !== null;
+}
 
 /** 모듈별 실제 문항 수. { [module_id]: { [task_type]: 개수 } } */
 export type ItemCounts = Record<string, Record<string, number>>;
@@ -53,6 +63,7 @@ export function buildSlotStatus(
     const actual = Object.values(counts).reduce((sum, n) => sum + n, 0);
 
     const shortages = Object.entries(b.task_mix)
+      .filter(([taskType]) => isTaskType(taskType))
       .map(([taskType, required]) => ({ taskType, required, actual: counts[taskType] ?? 0 }))
       .filter((s) => s.actual < s.required);
 

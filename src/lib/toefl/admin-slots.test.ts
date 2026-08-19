@@ -54,4 +54,25 @@ describe("buildSlotStatus", () => {
   it("빈 블루프린트는 완성으로 보지 않는다", () => {
     expect(isFormComplete([])).toBe(false);
   });
+
+  // 실제 블루프린트(ETS-2026-04)의 task_mix 에는 routing_threshold 처럼 문항 유형이 아닌
+  // 설정값이 섞여 있다. 그걸 유형으로 세면 "routing_threshold 6문항 부족"이라는, 영원히
+  // 채울 수 없는 항목이 화면에 남는다.
+  it("task_mix 안의 설정값(routing_threshold)은 문항으로 세지 않는다", () => {
+    const bp: BlueprintRow[] = [
+      {
+        section: "reading",
+        stage: "stage1",
+        route: "base",
+        item_count: 9,
+        task_mix: { complete_the_words: 3, daily_life: 3, academic_passage: 3, routing_threshold: 6 },
+      },
+    ];
+    const mods: ModuleRow[] = [{ id: "m", section: "reading", stage: "stage1", route: "base" }];
+    const slots = buildSlotStatus(bp, mods, {
+      m: { complete_the_words: 3, daily_life: 3, academic_passage: 3 },
+    });
+    expect(slots[0].shortages).toEqual([]);
+    expect(isFormComplete(slots)).toBe(true);
+  });
 });
