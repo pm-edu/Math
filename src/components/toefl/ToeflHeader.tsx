@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { site } from "@/lib/site";
+import { SITE_URL } from "@/lib/subject";
 import { useLang } from "@/lib/i18n";
 import { canManageMaterials } from "@/lib/roles";
 
@@ -62,10 +63,15 @@ export default function ToeflHeader({ showLanguageToggle = true }: { showLanguag
   return (
     <header data-theme="en" className="border-b border-[var(--border-c)] bg-[var(--background)]">
       <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-3">
-        <Link href="/toefl" className="flex items-baseline gap-1.5 text-sm font-semibold tracking-wide text-[var(--foreground)]">
-          <span>{site.name}</span>
-          <span className="text-[var(--pink-dark)]">TOEFL</span>
-        </Link>
+        {/* 로고 두 조각은 각각 다른 곳으로 간다 — 브랜드명은 회사 메인, TOEFL은 이 사이트 메인. */}
+        <span className="flex items-baseline gap-1.5 text-sm font-semibold tracking-wide text-[var(--foreground)]">
+          <a href={SITE_URL.math} title="PM EDU 메인으로" className="hover:text-[var(--secondary)]">
+            {site.name}
+          </a>
+          <Link href="/toefl" title="TOEFL 메인으로" className="text-[var(--pink-dark)] hover:underline">
+            TOEFL
+          </Link>
+        </span>
         <div className="flex items-center gap-3">
           {showLanguageToggle && (
             <button

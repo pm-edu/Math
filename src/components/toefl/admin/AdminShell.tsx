@@ -11,6 +11,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SITE_URL } from "@/lib/subject";
 
 type Item = { label: string; icon: string; href?: string; count?: number };
 type Group = { title?: string; items: Item[] };
@@ -43,12 +44,19 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   return (
     <div data-theme="en" className="toefl-admin min-h-screen bg-[var(--en-paper)] text-[var(--en-ink)] lg:grid lg:grid-cols-[232px_1fr]">
       <aside className="flex flex-col gap-1 border-b border-[var(--en-line)] bg-white px-3.5 py-5 lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r">
-        <Link href="/toefl" className="flex items-baseline gap-2 px-2.5 pb-4 pt-1 text-[15px] font-extrabold tracking-[-.02em]">
-          <span>PM EDU</span>
-          <span className="num rounded-[5px] border-[1.5px] border-[var(--en-gold)] px-1.5 text-[11px] font-bold tracking-[.12em] text-[var(--en-gold-deep)]">
+        {/* 로고 두 조각은 각각 다른 곳으로 간다 — PM EDU는 회사 메인, TOEFL은 학생용 랜딩. */}
+        <span className="flex items-baseline gap-2 px-2.5 pb-4 pt-1 text-[15px] font-extrabold tracking-[-.02em]">
+          <a href={SITE_URL.math} title="PM EDU 메인으로" className="hover:text-[var(--en-ink-soft)]">
+            PM EDU
+          </a>
+          <Link
+            href="/toefl"
+            title="TOEFL 메인으로"
+            className="num rounded-[5px] border-[1.5px] border-[var(--en-gold)] px-1.5 text-[11px] font-bold tracking-[.12em] text-[var(--en-gold-deep)] hover:bg-[var(--en-gold-soft)]"
+          >
             TOEFL
-          </span>
-        </Link>
+          </Link>
+        </span>
         <p className="px-2.5 pb-2 text-[11px] font-extrabold uppercase tracking-[.1em] text-[var(--en-ink-soft)]">
           영어 · TOEFL 어드민
         </p>

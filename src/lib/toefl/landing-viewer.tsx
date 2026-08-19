@@ -16,23 +16,29 @@ export type LandingViewer = {
   /** null = 아직 확인 중. 확인 전에는 CTA 문구를 확정하지 않아 라벨이 뒤바뀌지 않는다. */
   loggedIn: boolean | null;
   canManage: boolean;
+  /** 헤더에 "누구로 로그인했는지" 표시하는 데 쓴다. 이름이 없으면 이메일로 대체한다. */
+  label: string | null;
 };
 
-const ViewerContext = createContext<LandingViewer>({ loggedIn: null, canManage: false });
+const ViewerContext = createContext<LandingViewer>({ loggedIn: null, canManage: false, label: null });
 
 export function LandingViewerProvider({ children }: { children: React.ReactNode }) {
-  const [viewer, setViewer] = useState<LandingViewer>({ loggedIn: null, canManage: false });
+  const [viewer, setViewer] = useState<LandingViewer>({ loggedIn: null, canManage: false, label: null });
 
   useEffect(() => {
     const supabase = createClient();
 
-    async function apply(user: { id?: string } | null | undefined) {
+    async function apply(user: { id?: string; email?: string | null } | null | undefined) {
       if (!user?.id) {
-        setViewer({ loggedIn: false, canManage: false });
+        setViewer({ loggedIn: false, canManage: false, label: null });
         return;
       }
-      const { data } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
-      setViewer({ loggedIn: true, canManage: canManageMaterials(data?.role) });
+      const { data } = await supabase.from("profiles").select("name, role").eq("id", user.id).maybeSingle();
+      setViewer({
+        loggedIn: true,
+        canManage: canManageMaterials(data?.role),
+        label: (data?.name as string | null) || user.email || null,
+      });
     }
 
     supabase.auth.getUser().then(({ data }) => apply(data.user));

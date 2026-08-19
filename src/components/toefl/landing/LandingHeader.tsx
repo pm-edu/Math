@@ -13,6 +13,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useLang } from "@/lib/i18n";
 import { toeflLogout, useLandingViewer } from "@/lib/toefl/landing-viewer";
+import { SITE_URL } from "@/lib/subject";
 
 // TODO: 유형별 연습 전용 라우트가 생기면 "#types" 앵커 대신 그 경로로 교체한다.
 // 영역 연습·모의고사는 아직 별도 라우트가 없어 둘 다 /toefl/start(폼 선택 화면)로 보낸다.
@@ -28,18 +29,30 @@ export default function LandingHeader() {
   const { lang, setLang } = useLang();
   // 관리 링크는 자료관리 권한이 있을 때만 보인다. /admin/toefl 레이아웃이 같은 기준으로
   // 다시 막으므로(그리고 진짜 방어선은 DB의 RLS), 여기서는 표시 여부만 정한다.
-  const { loggedIn, canManage } = useLandingViewer();
+  const { loggedIn, canManage, label } = useLandingViewer();
   const [open, setOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--en-line)] bg-[rgba(247,249,253,.88)] backdrop-blur-[12px]">
       <div className="mx-auto flex h-16 max-w-[1120px] items-center gap-7 px-6">
-        <Link href="/toefl" className="flex items-baseline gap-2 text-[17px] font-extrabold tracking-[-.02em]">
-          <span>PM EDU</span>
-          <span className="en-num rounded-md border-[1.5px] border-[var(--en-gold)] px-[7px] py-px text-[13px] font-bold uppercase tracking-[.12em] text-[var(--en-gold-deep)]">
+        {/* 로고는 두 개의 독립 링크다 — PM EDU는 회사 메인(수학 사이트), TOEFL은 이 사이트 메인.
+            하나로 묶여 있으면 TOEFL 랜딩에서 로고를 눌러도 같은 페이지라 아무 일도 안 일어난다. */}
+        <span className="flex items-baseline gap-2 text-[17px] font-extrabold tracking-[-.02em]">
+          <a
+            href={SITE_URL.math}
+            className="rounded transition-colors hover:text-[var(--en-ink-soft)]"
+            title="PM EDU 메인으로"
+          >
+            PM EDU
+          </a>
+          <Link
+            href="/toefl"
+            title="TOEFL 메인으로"
+            className="en-num rounded-md border-[1.5px] border-[var(--en-gold)] px-[7px] py-px text-[13px] font-bold uppercase tracking-[.12em] text-[var(--en-gold-deep)] transition-colors hover:bg-[var(--en-gold-soft)]"
+          >
             TOEFL
-          </span>
-        </Link>
+          </Link>
+        </span>
 
         <nav className="ml-2 hidden gap-1 min-[961px]:flex" aria-label="주 메뉴">
           {MENU.map((m) => (
@@ -62,6 +75,16 @@ export default function LandingHeader() {
           >
             한 / EN
           </button>
+
+          {/* 누구로 로그인했는지 항상 보이게 한다(이름 없으면 이메일). 좁은 화면에서는 숨긴다. */}
+          {loggedIn && label && (
+            <span
+              title={label}
+              className="hidden max-w-[160px] truncate text-[12.5px] font-semibold text-[var(--en-ink-soft)] min-[861px]:inline"
+            >
+              {label}
+            </span>
+          )}
 
           {canManage && (
             <Link
@@ -128,6 +151,11 @@ export default function LandingHeader() {
               </Link>
             ))}
             <div className="mt-2 flex flex-col gap-2 border-t border-[var(--en-line)] pt-3">
+              {loggedIn && label && (
+                <span className="truncate px-2 pb-1 text-xs font-semibold text-[var(--en-ink-soft)]">
+                  {label} 님으로 로그인
+                </span>
+              )}
               {canManage && (
                 <Link
                   href="/admin/toefl"
