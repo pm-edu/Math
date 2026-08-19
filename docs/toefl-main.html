@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM EDU TOEFL — 2026 개정 TOEFL 준비</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>
+:root{
+  /* ── EN theme tokens: 밝게 재조정한 TOEFL Lab 팔레트 ── */
+  --en-ink:#182A4E;          /* 잉크 네이비 → 살짝 밝게, 텍스트 앵커 */
+  --en-ink-soft:#4A5A7A;     /* 보조 텍스트 */
+  --en-paper:#F7F9FD;        /* 배경: 아주 밝은 쿨화이트 */
+  --en-card:#FFFFFF;
+  --en-gold:#F5A623;         /* 브라스 → 마리골드 (채도·명도 ↑) */
+  --en-gold-deep:#D98C0F;
+  --en-gold-soft:#FFF4DF;
+  --en-line:#E3E9F4;
+  /* 영역 컬러 (문항유형 그룹 인코딩) */
+  --en-read:#E85D75;
+  --en-listen:#3E8BFF;
+  --en-speak:#8B5CF6;
+  --en-write:#0FA98E;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(24,42,78,.05),0 8px 24px rgba(24,42,78,.07);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}}
+body{
+  font-family:'Pretendard Variable',Pretendard,-apple-system,sans-serif;
+  background:var(--en-paper);color:var(--en-ink);
+  line-height:1.6;-webkit-font-smoothing:antialiased;
+}
+.en-num{font-family:'Space Grotesk','Pretendard Variable',sans-serif}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:3px solid var(--en-gold);outline-offset:2px;border-radius:4px}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+
+/* ───────── Header ───────── */
+header{
+  position:sticky;top:0;z-index:50;
+  background:rgba(247,249,253,.88);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--en-line);
+}
+.nav{display:flex;align-items:center;gap:28px;height:64px}
+.logo{display:flex;align-items:baseline;gap:8px;font-weight:800;font-size:17px;letter-spacing:-.02em}
+.logo .lab{font-family:'Space Grotesk';font-weight:700;color:var(--en-gold-deep);font-size:13px;letter-spacing:.12em;text-transform:uppercase;border:1.5px solid var(--en-gold);border-radius:6px;padding:1px 7px}
+.menu{display:flex;gap:4px;margin-left:8px}
+.menu a{font-size:14.5px;font-weight:600;color:var(--en-ink-soft);padding:7px 12px;border-radius:8px;transition:.15s}
+.menu a:hover,.menu a.on{color:var(--en-ink);background:#EDF2FB}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.lang{font-size:12.5px;font-weight:700;color:var(--en-ink-soft);border:1px solid var(--en-line);border-radius:999px;padding:5px 12px;background:#fff;cursor:pointer}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:700;border-radius:10px;cursor:pointer;border:none;transition:.15s;font-family:inherit}
+.btn-ghost{font-size:14px;color:var(--en-ink);padding:8px 14px;background:transparent}
+.btn-ghost:hover{background:#EDF2FB}
+.btn-gold{font-size:14px;color:#231A05;background:var(--en-gold);padding:9px 18px;box-shadow:0 2px 8px rgba(245,166,35,.35)}
+.btn-gold:hover{background:#FFB742;transform:translateY(-1px)}
+.btn-navy{font-size:15px;color:#fff;background:var(--en-ink);padding:13px 24px}
+.btn-navy:hover{background:#22375F;transform:translateY(-1px)}
+.btn-line{font-size:15px;color:var(--en-ink);background:#fff;border:1.5px solid var(--en-line);padding:12px 22px}
+.btn-line:hover{border-color:var(--en-ink)}
+.hamb{display:none;background:none;border:none;font-size:22px;cursor:pointer;color:var(--en-ink)}
+
+/* ───────── Hero ───────── */
+.hero{padding:64px 0 56px;position:relative;overflow:hidden}
+.hero .wrap{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:800;color:var(--en-gold-deep);background:var(--en-gold-soft);border-radius:999px;padding:6px 14px;letter-spacing:.02em}
+.eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--en-gold)}
+h1{font-size:clamp(30px,4.4vw,46px);line-height:1.22;letter-spacing:-.035em;font-weight:850;margin:18px 0 16px}
+h1 .u{box-shadow:inset 0 -0.42em 0 var(--en-gold-soft)}
+.hero p.sub{font-size:16.5px;color:var(--en-ink-soft);max-width:34em;margin-bottom:28px}
+.hero-cta{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.cta-note{font-size:12.5px;color:var(--en-ink-soft);width:100%;margin-top:4px}
+
+/* 시그니처: 적응형 라우팅 레일 */
+.rail-card{background:var(--en-card);border:1px solid var(--en-line);border-radius:20px;box-shadow:var(--shadow);padding:26px 26px 22px}
+.rail-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.rail-title{font-size:13px;font-weight:800;letter-spacing:.08em;color:var(--en-ink-soft);text-transform:uppercase;font-family:'Space Grotesk'}
+.rail-live{font-size:11.5px;font-weight:700;color:var(--en-gold-deep)}
+.rail-svg{width:100%;height:auto;display:block}
+.rail-caption{display:flex;justify-content:space-between;font-size:12px;color:var(--en-ink-soft);margin-top:10px}
+.band-scale{display:flex;gap:5px;margin-top:16px}
+.band-scale .b{flex:1;text-align:center;font-family:'Space Grotesk';font-weight:700;font-size:13px;padding:7px 0;border-radius:8px;background:#F0F4FB;color:var(--en-ink-soft);transition:.15s;cursor:default}
+.band-scale .b.hit{background:var(--en-gold);color:#231A05;transform:translateY(-2px);box-shadow:0 3px 8px rgba(245,166,35,.4)}
+.band-cefr{display:flex;gap:5px;margin-top:4px}
+.band-cefr span{flex:1;text-align:center;font-size:10.5px;color:var(--en-ink-soft);letter-spacing:.04em}
+
+/* ───────── 사실 스트립 ───────── */
+.facts{border-block:1px solid var(--en-line);background:#fff}
+.facts .wrap{display:grid;grid-template-columns:repeat(4,1fr);gap:0}
+.fact{padding:22px 18px;display:flex;flex-direction:column;gap:2px;border-left:1px solid var(--en-line)}
+.fact:first-child{border-left:none}
+.fact b{font-family:'Space Grotesk';font-size:22px;font-weight:700;letter-spacing:-.01em}
+.fact span{font-size:12.5px;color:var(--en-ink-soft)}
+
+/* ───────── 섹션 공통 ───────── */
+section{padding:72px 0}
+.sec-eyebrow{font-family:'Space Grotesk';font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--en-gold-deep);margin-bottom:10px}
+h2{font-size:clamp(24px,3vw,32px);letter-spacing:-.03em;font-weight:800;line-height:1.3}
+.sec-sub{color:var(--en-ink-soft);margin-top:10px;max-width:44em;font-size:15.5px}
+
+/* ───────── 학습 경로 (3단계) ───────── */
+.path{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:38px}
+.step{background:var(--en-card);border:1px solid var(--en-line);border-radius:var(--radius);padding:26px 24px;position:relative;box-shadow:var(--shadow);transition:.2s}
+.step:hover{transform:translateY(-4px);border-color:var(--en-gold)}
+.step .no{font-family:'Space Grotesk';font-weight:700;font-size:13px;color:var(--en-gold-deep);letter-spacing:.1em}
+.step h3{font-size:19px;font-weight:800;margin:8px 0 8px;letter-spacing:-.02em}
+.step p{font-size:14px;color:var(--en-ink-soft);min-height:66px}
+.step .go{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:700;color:var(--en-ink);margin-top:14px}
+.step .go::after{content:"→";transition:.15s}
+.step:hover .go::after{transform:translateX(3px)}
+.step .free-tag{position:absolute;top:20px;right:20px;font-size:11px;font-weight:800;color:var(--en-gold-deep);background:var(--en-gold-soft);border-radius:6px;padding:3px 8px}
+
+/* ───────── 12 문항유형 ───────── */
+.types-sec{background:#fff;border-block:1px solid var(--en-line)}
+.type-groups{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:36px}
+.tg{border-radius:var(--radius);border:1px solid var(--en-line);background:var(--en-paper);overflow:hidden}
+.tg-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;color:#fff}
+.tg-head .nm{font-weight:800;font-size:15px;display:flex;align-items:center;gap:8px}
+.tg-head .cnt{font-family:'Space Grotesk';font-size:12px;font-weight:700;opacity:.85}
+.tg.read .tg-head{background:var(--en-read)}
+.tg.listen .tg-head{background:var(--en-listen)}
+.tg.speak .tg-head{background:var(--en-speak)}
+.tg.write .tg-head{background:var(--en-write)}
+.tg ul{list-style:none;padding:10px 8px}
+.tg li a{display:flex;justify-content:space-between;align-items:center;font-size:13.5px;font-weight:600;color:var(--en-ink);padding:9px 10px;border-radius:8px;transition:.12s}
+.tg li a:hover{background:#fff;box-shadow:0 1px 4px rgba(24,42,78,.08)}
+.tg li a::after{content:"↗";font-size:11px;color:var(--en-ink-soft);opacity:0;transition:.12s}
+.tg li a:hover::after{opacity:1}
+.tg li .en{font-size:11px;color:var(--en-ink-soft);display:block;font-weight:500}
+
+/* ───────── 리포트 미리보기 ───────── */
+.report .wrap{display:grid;grid-template-columns:.9fr 1.1fr;gap:56px;align-items:center}
+.diff-list{list-style:none;margin-top:26px;display:flex;flex-direction:column;gap:16px}
+.diff-list li{display:flex;gap:14px;align-items:flex-start}
+.diff-list .ic{flex:none;width:38px;height:38px;border-radius:10px;background:var(--en-gold-soft);display:grid;place-items:center;font-size:17px}
+.diff-list b{display:block;font-size:15.5px;letter-spacing:-.01em}
+.diff-list p{font-size:13.5px;color:var(--en-ink-soft)}
+.rep-card{background:var(--en-card);border:1px solid var(--en-line);border-radius:20px;box-shadow:var(--shadow);padding:26px;transform:rotate(.6deg)}
+.rep-top{display:flex;justify-content:space-between;align-items:center;border-bottom:1px dashed var(--en-line);padding-bottom:14px;margin-bottom:16px}
+.rep-top .t{font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;font-family:'Space Grotesk';color:var(--en-ink-soft)}
+.rep-band{display:flex;align-items:baseline;gap:8px}
+.rep-band .big{font-family:'Space Grotesk';font-size:44px;font-weight:700;letter-spacing:-.02em}
+.rep-band .cefr{font-size:13px;font-weight:800;color:#fff;background:var(--en-ink);border-radius:6px;padding:2px 8px}
+.rep-rows{display:flex;flex-direction:column;gap:12px}
+.rep-row{display:grid;grid-template-columns:86px 1fr 40px;gap:12px;align-items:center;font-size:13.5px}
+.rep-row .lb{font-weight:700}
+.meter{height:9px;border-radius:99px;background:#EFF3FA;overflow:hidden}
+.meter i{display:block;height:100%;border-radius:99px}
+.rep-row .sc{font-family:'Space Grotesk';font-weight:700;text-align:right}
+.rep-route{margin-top:16px;font-size:12.5px;background:var(--en-paper);border:1px solid var(--en-line);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:8px;color:var(--en-ink-soft)}
+.rep-route b{color:var(--en-ink)}
+.rep-vocab{margin-top:10px;display:flex;align-items:center;justify-content:space-between;background:var(--en-gold-soft);border-radius:10px;padding:10px 14px;font-size:13px;font-weight:700}
+.rep-vocab button{font-size:12px;padding:6px 12px}
+
+/* ───────── 최종 CTA ───────── */
+.final{background:var(--en-ink);color:#fff;text-align:center;border-radius:24px;margin:0 24px;padding:64px 24px}
+.final h2{color:#fff}
+.final p{color:#B9C4DC;margin:12px auto 28px;max-width:36em;font-size:15.5px}
+.final .btn-gold{font-size:15.5px;padding:14px 28px}
+
+footer{padding:44px 0 56px;color:var(--en-ink-soft);font-size:13px}
+footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+footer nav{display:flex;gap:18px}
+footer nav a:hover{color:var(--en-ink)}
+
+/* ───────── 반응형 ───────── */
+@media (max-width:960px){
+  .menu{display:none}
+  .hamb{display:block}
+  .hero .wrap,.report .wrap{grid-template-columns:1fr;gap:36px}
+  .path,.type-groups{grid-template-columns:1fr 1fr}
+  .facts .wrap{grid-template-columns:1fr 1fr}
+  .fact:nth-child(3){border-left:none}
+  .fact{border-top:1px solid var(--en-line)}
+  .fact:nth-child(-n+2){border-top:none}
+  .rep-card{transform:none}
+}
+@media (max-width:600px){
+  .path,.type-groups{grid-template-columns:1fr}
+  .step p{min-height:0}
+  section{padding:52px 0}
+  .hero{padding:44px 0}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="logo" href="#"><span>PM EDU</span><span class="lab">TOEFL</span></a>
+    <nav class="menu" aria-label="주 메뉴">
+      <a href="#about">시험 안내</a>
+      <a href="#types">유형별 연습</a>
+      <a href="#path">영역 연습</a>
+      <a href="#path">모의고사</a>
+      <a href="#report">내 학습</a>
+    </nav>
+    <div class="nav-right">
+      <button class="lang" aria-label="언어 전환">한 / EN</button>
+      <a class="btn btn-ghost" href="#">로그인</a>
+      <a class="btn btn-gold" href="#types">무료 샘플 풀어보기</a>
+      <button class="hamb" aria-label="메뉴 열기">☰</button>
+    </div>
+  </div>
+</header>
+
+<!-- ───────── Hero ───────── -->
+<section class="hero" id="about">
+  <div class="wrap">
+    <div>
+      <span class="eyebrow"><span class="dot"></span>2026년 1월 21일 개정 시행 · 최신 형식 반영</span>
+      <h1>새로워진 TOEFL,<br><span class="u">시험이 갈리는 지점</span>부터<br>연습하세요</h1>
+      <p class="sub">2026 개정 TOEFL은 첫 모듈 성적이 다음 모듈의 난이도와 점수 상한을 결정합니다. PM EDU는 실제 시험과 같은 적응형 라우팅으로 연습하고, 어느 갈림길로 갔는지까지 리포트로 보여드립니다.</p>
+      <div class="hero-cta">
+        <a class="btn btn-navy" href="#">풀 모의고사 시작 (90분)</a>
+        <a class="btn btn-line" href="#types">로그인 없이 샘플 체험</a>
+        <span class="cta-note">샘플은 12개 문항 유형을 각 1문항씩, 가입 없이 바로 풀 수 있습니다.</span>
+      </div>
+    </div>
+
+    <!-- 시그니처: 적응형 라우팅 레일 -->
+    <div class="rail-card" aria-label="적응형 라우팅 구조 그림">
+      <div class="rail-head">
+        <span class="rail-title">Adaptive Routing</span>
+        <span class="rail-live">Reading · Listening 적용</span>
+      </div>
+      <svg class="rail-svg" viewBox="0 0 460 190" role="img" aria-label="1단계 모듈 성적에 따라 상급 경로는 밴드 6.0까지, 하급 경로는 밴드 4.0까지로 갈라지는 구조">
+        <defs>
+          <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#182A4E"/></marker>
+          <marker id="ahg" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#F5A623"/></marker>
+        </defs>
+        <!-- Stage 1 -->
+        <rect x="10" y="72" width="118" height="46" rx="12" fill="#182A4E"/>
+        <text x="69" y="91" text-anchor="middle" fill="#fff" font-size="12.5" font-weight="700" font-family="Pretendard Variable">Stage 1</text>
+        <text x="69" y="107" text-anchor="middle" fill="#B9C4DC" font-size="10.5" font-family="Pretendard Variable">전원 동일 난이도</text>
+        <!-- 갈림길 -->
+        <path d="M128,95 C170,95 175,45 218,45" fill="none" stroke="#F5A623" stroke-width="3.5" marker-end="url(#ahg)"/>
+        <path d="M128,95 C170,95 175,148 218,148" fill="none" stroke="#C6CFDF" stroke-width="3" stroke-dasharray="6 5" marker-end="url(#ah)"/>
+        <!-- 상급 -->
+        <rect x="224" y="22" width="128" height="46" rx="12" fill="#FFF4DF" stroke="#F5A623" stroke-width="1.8"/>
+        <text x="288" y="41" text-anchor="middle" fill="#8A5B00" font-size="12.5" font-weight="700" font-family="Pretendard Variable">상급 모듈</text>
+        <text x="288" y="57" text-anchor="middle" fill="#B07A10" font-size="10.5" font-family="Pretendard Variable">Stage 2 · Hard</text>
+        <!-- 하급 -->
+        <rect x="224" y="125" width="128" height="46" rx="12" fill="#F0F4FB" stroke="#C6CFDF" stroke-width="1.5"/>
+        <text x="288" y="144" text-anchor="middle" fill="#4A5A7A" font-size="12.5" font-weight="700" font-family="Pretendard Variable">하급 모듈</text>
+        <text x="288" y="160" text-anchor="middle" fill="#7C8AA5" font-size="10.5" font-family="Pretendard Variable">Stage 2 · Easy</text>
+        <!-- 결과 -->
+        <text x="368" y="40" fill="#182A4E" font-size="13" font-weight="700" font-family="Space Grotesk">Band ≤ 6.0</text>
+        <text x="368" y="56" fill="#B07A10" font-size="10.5" font-family="Pretendard Variable">상한 없음</text>
+        <text x="368" y="143" fill="#4A5A7A" font-size="13" font-weight="700" font-family="Space Grotesk">Band ≤ 4.0</text>
+        <text x="368" y="159" fill="#7C8AA5" font-size="10.5" font-family="Pretendard Variable">만점도 4.0</text>
+      </svg>
+      <div class="rail-caption"><span>첫 모듈이 점수 상한을 결정합니다</span><span>목표 밴드를 눌러보세요 ↓</span></div>
+      <div class="band-scale" role="group" aria-label="목표 밴드 선택">
+        <button class="b">1.0</button><button class="b">2.0</button><button class="b">3.0</button><button class="b hit">4.0</button><button class="b">5.0</button><button class="b">6.0</button>
+      </div>
+      <div class="band-cefr" aria-hidden="true">
+        <span>A1</span><span>A2</span><span>B1</span><span>B2</span><span>C1</span><span>C2</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── 시험 사실 스트립 ───────── -->
+<div class="facts">
+  <div class="wrap">
+    <div class="fact"><b class="en-num">90분</b><span>총 시험 시간 (기존 116분)</span></div>
+    <div class="fact"><b class="en-num">4영역 12유형</b><span>R · L · S · W 전면 개편</span></div>
+    <div class="fact"><b class="en-num">1.0–6.0</b><span>밴드 점수 · CEFR 연동</span></div>
+    <div class="fact"><b class="en-num">2단계 적응형</b><span>Reading · Listening 라우팅</span></div>
+  </div>
+</div>
+
+<!-- ───────── 학습 경로 ───────── -->
+<section id="path">
+  <div class="wrap">
+    <p class="sec-eyebrow">Learning Path</p>
+    <h2>유형에서 시작해 실전으로 끝냅니다</h2>
+    <p class="sec-sub">막연히 문제만 푸는 대신, 개정 시험의 12개 유형을 하나씩 익히고 → 영역 단위로 감각을 붙이고 → 실제 시험과 같은 조건의 모의고사로 완성하는 3단계입니다.</p>
+    <div class="path">
+      <a class="step" href="#types">
+        <span class="free-tag">무료 샘플</span>
+        <span class="no">STEP 1</span>
+        <h3>유형별 연습</h3>
+        <p>Complete the Words, Listen &amp; Repeat, Build a Sentence… 낯선 신유형을 유형 하나 단위로 반복 연습합니다.</p>
+        <span class="go">12개 유형 보기</span>
+      </a>
+      <a class="step" href="#">
+        <span class="no">STEP 2</span>
+        <h3>영역 연습</h3>
+        <p>Reading · Listening · Speaking · Writing을 영역 단위로, 실제와 같은 서버 타이머와 자동저장 환경에서 연습합니다.</p>
+        <span class="go">영역 선택하기</span>
+      </a>
+      <a class="step" href="#">
+        <span class="no">STEP 3</span>
+        <h3>풀 모의고사</h3>
+        <p>4개 영역을 끊김 없이 90분에 응시하고, 밴드 점수·라우팅 결과·문항별 리뷰까지 종합 리포트를 받습니다.</p>
+        <span class="go">모의고사 시작</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── 12 문항유형 ───────── -->
+<section class="types-sec" id="types">
+  <div class="wrap">
+    <p class="sec-eyebrow">12 Task Types</p>
+    <h2>2026 개정 문항 유형, 전부 연습할 수 있습니다</h2>
+    <p class="sec-sub">유형 이름을 누르면 해당 유형만 골라 연습합니다. 각 유형의 첫 문항은 로그인 없이 체험할 수 있습니다.</p>
+    <div class="type-groups">
+      <div class="tg read">
+        <div class="tg-head"><span class="nm">Reading</span><span class="cnt">3 유형 · 적응형</span></div>
+        <ul>
+          <li><a href="#">단어 완성하기<span class="en">Complete the Words</span></a></li>
+          <li><a href="#">실생활 지문 읽기<span class="en">Read in Daily Life</span></a></li>
+          <li><a href="#">학술 지문 읽기<span class="en">Read an Academic Passage</span></a></li>
+        </ul>
+      </div>
+      <div class="tg listen">
+        <div class="tg-head"><span class="nm">Listening</span><span class="cnt">4 유형 · 적응형</span></div>
+        <ul>
+          <li><a href="#">응답 고르기<span class="en">Listen &amp; Choose a Response</span></a></li>
+          <li><a href="#">일상 대화 듣기<span class="en">Daily-life Conversation</span></a></li>
+          <li><a href="#">공지 듣기<span class="en">Announcement</span></a></li>
+          <li><a href="#">학술 강의 듣기<span class="en">Academic Talk</span></a></li>
+        </ul>
+      </div>
+      <div class="tg speak">
+        <div class="tg-head"><span class="nm">Speaking</span><span class="cnt">2 유형 · 8분</span></div>
+        <ul>
+          <li><a href="#">듣고 따라 말하기<span class="en">Listen &amp; Repeat</span></a></li>
+          <li><a href="#">인터뷰 응답<span class="en">Take an Interview</span></a></li>
+        </ul>
+      </div>
+      <div class="tg write">
+        <div class="tg-head"><span class="nm">Writing</span><span class="cnt">3 유형</span></div>
+        <ul>
+          <li><a href="#">문장 완성하기<span class="en">Build a Sentence</span></a></li>
+          <li><a href="#">이메일 작성<span class="en">Write an E-mail</span></a></li>
+          <li><a href="#">토론 글쓰기<span class="en">Academic Discussion</span></a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── 리포트 ───────── -->
+<section class="report" id="report">
+  <div class="wrap">
+    <div>
+      <p class="sec-eyebrow">Report &amp; Review</p>
+      <h2>점수만 주지 않습니다.<br>왜 그 점수인지 보여줍니다</h2>
+      <ul class="diff-list">
+        <li>
+          <span class="ic">🔀</span>
+          <div><b>라우팅 결과 공개</b><p>Stage 2에서 상급·하급 어느 모듈로 갔는지 공개합니다. 점수 상한이 어디서 정해졌는지 알아야 다음 전략이 나옵니다.</p></div>
+        </li>
+        <li>
+          <span class="ic">📝</span>
+          <div><b>문항별 리뷰</b><p>내 답과 정답·해설, 듣기 스크립트 다시 듣기, 말하기 녹음 재생까지 시험이 끝난 뒤 전부 열립니다.</p></div>
+        </li>
+        <li>
+          <span class="ic">🔁</span>
+          <div><b>오답 단어 → 자동 복습</b><p>리뷰에서 몰랐던 단어를 한 번에 단어 복습(간격 반복)에 추가합니다. 모의고사가 단어장까지 이어집니다.</p></div>
+        </li>
+      </ul>
+    </div>
+    <div class="rep-card" aria-label="종합 리포트 예시">
+      <div class="rep-top">
+        <span class="t">Score Report · 예시</span>
+        <div class="rep-band"><span class="big en-num">4.5</span><span class="cefr">B2</span></div>
+      </div>
+      <div class="rep-rows">
+        <div class="rep-row"><span class="lb">Reading</span><span class="meter"><i style="width:83%;background:var(--en-read)"></i></span><span class="sc en-num">5.0</span></div>
+        <div class="rep-row"><span class="lb">Listening</span><span class="meter"><i style="width:75%;background:var(--en-listen)"></i></span><span class="sc en-num">4.5</span></div>
+        <div class="rep-row"><span class="lb">Speaking</span><span class="meter"><i style="width:66%;background:var(--en-speak)"></i></span><span class="sc en-num">4.0</span></div>
+        <div class="rep-row"><span class="lb">Writing</span><span class="meter"><i style="width:75%;background:var(--en-write)"></i></span><span class="sc en-num">4.5</span></div>
+      </div>
+      <div class="rep-route">🔀 <span>Reading은 <b>상급 모듈</b>, Listening은 <b>상급 모듈</b>로 라우팅되었습니다.</span></div>
+      <div class="rep-vocab"><span>몰랐던 단어 7개</span><button class="btn btn-gold">복습에 추가</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── 최종 CTA ───────── -->
+<div class="final">
+  <h2>오늘 실력이 어느 밴드인지부터 확인하세요</h2>
+  <p>가입 없이 12개 유형을 체험하거나, 90분 풀 모의고사로 현재 밴드와 라우팅 결과를 받아보세요.</p>
+  <a class="btn btn-gold" href="#types">무료 샘플 풀어보기</a>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span>© PM EDU · toefl.pmedu4u.com — TOEFL®는 ETS의 등록상표이며, 본 사이트의 문항은 자체 제작 콘텐츠입니다.</span>
+    <nav>
+      <a href="#">이용약관</a><a href="#">개인정보처리방침</a><a href="#">문의</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+// 목표 밴드 선택 (목업 인터랙션)
+document.querySelectorAll('.band-scale .b').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.band-scale .b').forEach(b=>b.classList.remove('hit'));
+    btn.classList.add('hit');
+  });
+});
+</script>
+</body>
+</html>

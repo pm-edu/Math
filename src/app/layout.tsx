@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { cookies, headers } from "next/headers";
-import { Inter } from "next/font/google";
+import { Inter, Space_Grotesk } from "next/font/google";
 import { site } from "@/lib/site";
 import { LanguageProvider, type Lang } from "@/lib/i18n";
 import { SubjectProvider } from "@/lib/subject";
@@ -9,6 +9,11 @@ import "./globals.css";
 
 // 영어 화면용 영문 폰트. CSS 변수로 노출해 lang=en 일 때만 쓴다.
 const inter = Inter({ subsets: ["latin"], variable: "--font-en", display: "swap" });
+
+// TOEFL 랜딩의 숫자·라벨 전용 폰트(docs/toefl-main.html의 .en-num, Space Grotesk).
+// next/font로 셀프호스팅하므로 새 패키지 설치나 외부 CDN 요청이 없다.
+// 변수만 노출하고 실제 사용은 [data-theme="en"] 안의 .en-num 뿐이라 수학 화면에는 영향이 없다.
+const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["400", "500", "700"], variable: "--font-en-num", display: "swap" });
 
 // 접속 도메인(미들웨어가 세팅한 subject 쿠키)에 따라 탭 제목·설명이 달라진다.
 // pmedu4u.com=수학, english.pmedu4u.com=영어, toefl.pmedu4u.com=독립 사이트처럼 별도 문구.
@@ -39,7 +44,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const initialSubject = await getSubject();
 
   return (
-    <html lang={initialLang} className={`h-full antialiased ${inter.variable}`}>
+    <html lang={initialLang} className={`h-full antialiased ${inter.variable} ${spaceGrotesk.variable}`}>
       <body className="min-h-full flex flex-col">
         <LanguageProvider initialLang={initialLang}>
           <SubjectProvider initialSubject={initialSubject}>{children}</SubjectProvider>
