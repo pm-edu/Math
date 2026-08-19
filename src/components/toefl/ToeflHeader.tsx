@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { site } from "@/lib/site";
 import { useLang } from "@/lib/i18n";
+import { canManageMaterials } from "@/lib/roles";
 
 // TOEFL 전용 헤더. 수학 사이트의 공용 Header(과목전환·언어토글·강좌메뉴)는 TOEFL과 무관해서
 // 안 가져오고, TOEFL만의 최소 요소(브랜드 로고 + 로그인 상태)로 새로 만든다.
@@ -26,13 +27,26 @@ export default function ToeflHeader({ showLanguageToggle = true }: { showLanguag
   const { lang, setLang, t } = useLang();
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
   const [email, setEmail] = useState<string | null>(null);
+  // 관리 링크는 자료관리 권한이 있을 때만 보인다. 실제 차단은 화면이 아니라 RLS와
+  // /admin/toefl 각 화면의 권한 검사가 하므로, 여기서는 표시 여부만 정한다.
+  const [canManage, setCanManage] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
 
-    function applyUser(user: { email?: string | null } | null | undefined) {
+    async function checkRole(userId: string | undefined) {
+      if (!userId) {
+        setCanManage(false);
+        return;
+      }
+      const { data } = await supabase.from("profiles").select("role").eq("id", userId).maybeSingle();
+      setCanManage(canManageMaterials(data?.role));
+    }
+
+    function applyUser(user: { id?: string; email?: string | null } | null | undefined) {
       setLoggedIn(!!user);
       setEmail(user?.email ?? null);
+      checkRole(user?.id);
     }
 
     supabase.auth.getUser().then(({ data }) => applyUser(data.user));
@@ -66,6 +80,14 @@ export default function ToeflHeader({ showLanguageToggle = true }: { showLanguag
           {loggedIn && (
             <>
               {email && <span className="hidden text-xs text-[var(--secondary)] sm:inline">{email}</span>}
+              {canManage && (
+                <Link
+                  href="/admin/toefl"
+                  className="rounded-full border border-[var(--border-c)] bg-white px-3 py-1.5 text-xs font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--pink)]/30"
+                >
+                  {t("admin")}
+                </Link>
+              )}
               <Link
                 href="/toefl/mypage"
                 className="text-xs font-medium text-[var(--secondary)] underline hover:text-[var(--foreground)]"

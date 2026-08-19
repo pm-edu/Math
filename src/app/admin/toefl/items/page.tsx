@@ -7,8 +7,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import ToeflHeader from "@/components/toefl/ToeflHeader";
 import { createClient } from "@/lib/supabase/client";
 import { canManageMaterials } from "@/lib/roles";
 
@@ -273,10 +272,10 @@ export default function AdminToeflItemsPage() {
     "mt-1.5 w-full rounded-lg border border-[var(--border-c)] bg-white px-4 py-2.5 text-sm outline-none focus:border-[var(--pink)]";
 
   return (
-    <>
-      <Header />
-      <main data-theme="en" className="mx-auto max-w-5xl bg-[var(--background)] px-6 py-16">
-        <Link href="/admin" className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]">← 관리자 메뉴로</Link>
+    <div data-theme="en" className="min-h-screen bg-[var(--background)]">
+      <ToeflHeader />
+      <main className="mx-auto max-w-5xl px-6 py-16">
+        <Link href="/admin/toefl" className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]">← TOEFL 관리로</Link>
         <h1 className="mt-4 text-3xl font-medium text-[var(--foreground)]">TOEFL 문항 등록 (Reading · Listening)</h1>
         <p className="mt-2 text-[var(--secondary)]">
           AI가 원본 지문/스크립트와 객관식 문항을 생성합니다. <b>정답·해설을 반드시 검토</b>한 뒤 저장하세요.
@@ -471,8 +470,7 @@ export default function AdminToeflItemsPage() {
           </ul>
         )}
       </main>
-      <Footer />
-    </>
+    </div>
   );
 }
 

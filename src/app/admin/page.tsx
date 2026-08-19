@@ -375,17 +375,12 @@ export default function AdminPage() {
                 >
                   영어 단어
                 </Link>
+                {/* TOEFL 관리는 toefl.pmedu4u.com에서 하는 게 기본이라 개별 화면 대신 허브 하나만 건다. */}
                 <Link
-                  href="/admin/toefl-audio"
+                  href="/admin/toefl"
                   className="rounded-full bg-[var(--pink)] px-5 py-2.5 text-sm font-medium text-[var(--pink-dark)]"
                 >
-                  TOEFL 데모 오디오 생성
-                </Link>
-                <Link
-                  href="/admin/toefl/items"
-                  className="rounded-full bg-[var(--pink)] px-5 py-2.5 text-sm font-medium text-[var(--pink-dark)]"
-                >
-                  TOEFL 문항 등록
+                  TOEFL 관리
                 </Link>
               </div>
             </section>

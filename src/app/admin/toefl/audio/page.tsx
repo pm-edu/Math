@@ -4,9 +4,9 @@
 // /api/admin/toefl/generate-demo-audio를 호출해 TOEFL_DEMO_001의 Listening 오디오를 만든다.
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import ToeflHeader from "@/components/toefl/ToeflHeader";
 import { createClient } from "@/lib/supabase/client";
 import { canManageMaterials } from "@/lib/roles";
 
@@ -54,10 +54,11 @@ export default function ToeflAudioAdminPage() {
   if (!allowed) return <p className="p-10 text-center text-sm text-red-600">권한이 없습니다.</p>;
 
   return (
-    <>
-      <Header />
-      <main data-theme="en" className="mx-auto max-w-3xl bg-[var(--background)] px-6 py-16">
-        <h1 className="text-3xl font-medium text-[var(--foreground)]">TOEFL Listening 데모 오디오 생성</h1>
+    <div data-theme="en" className="min-h-screen bg-[var(--background)]">
+      <ToeflHeader />
+      <main className="mx-auto max-w-3xl px-6 py-16">
+        <Link href="/admin/toefl" className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]">← TOEFL 관리로</Link>
+        <h1 className="mt-4 text-3xl font-medium text-[var(--foreground)]">TOEFL Listening 데모 오디오 생성</h1>
         <p className="mt-2 text-sm text-[var(--secondary)]">
           TOEFL_DEMO_001의 Listening 지문·문항에 Gemini TTS로 실제 음성을 만들어 채웁니다. 이미 있는 항목은
           건너뜁니다(다시 만들려면 아래 "강제로 다시 생성" 사용).
@@ -101,7 +102,6 @@ export default function ToeflAudioAdminPage() {
           </ul>
         )}
       </main>
-      <Footer />
-    </>
+    </div>
   );
 }

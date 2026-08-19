@@ -8,7 +8,19 @@ import type { Subject } from "@/lib/subject";
 // toefl.pmedu4u.com은 완전히 별개 사이트처럼 보이게 /toefl 경로만 남기고 나머지는
 // 전부 그리로 리다이렉트한다(로그인류 경로만 예외 — TOEFL 화면도 같은 로그인을 쓰므로).
 // 화면(TOEFL 페이지들)은 이미 공용 Header/Footer를 안 쓰고 있어 이것만으로 독립된 사이트처럼 보인다.
-const TOEFL_ALLOWED_PREFIXES = ["/toefl", "/api/toefl", "/login", "/signup", "/reset-password"];
+//
+// 관리 화면은 "/admin/toefl" 접두사만 허용한다(2026-08-19). TOEFL 사이트에서 TOEFL 문항·오디오를
+// 직접 관리하되, /admin 허브나 /admin/problems 같은 다른 과목 관리 화면은 계속 막힌다 —
+// 접두사가 정확히 /admin/toefl 이라 "토플 사이트에서는 토플만"이 경로 수준에서 보장된다.
+const TOEFL_ALLOWED_PREFIXES = [
+  "/toefl",
+  "/api/toefl",
+  "/admin/toefl",
+  "/api/admin/toefl",
+  "/login",
+  "/signup",
+  "/reset-password",
+];
 
 export function middleware(request: NextRequest) {
   const hostname = request.headers.get("host") || "";
