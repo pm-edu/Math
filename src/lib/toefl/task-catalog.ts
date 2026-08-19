@@ -31,17 +31,17 @@ export const TASK_CATALOG: TaskCatalogEntry[] = [
   { taskType: "announcement", section: "listening", label: "Announcement (공지)", needsStimulus: true, generatable: true },
   { taskType: "academic_talk", section: "listening", label: "Academic Talk (강의)", needsStimulus: true, generatable: true },
 
-  // ───── Speaking (생성기 미구현) ─────
+  // ───── Speaking ─────
   // 둘 다 학생 음성을 받는다. listen_and_repeat 는 목표 문장과 대조(auto_transcript),
   // take_an_interview 는 루브릭 채점(ai_rubric)이라 answer_key 가 없다.
-  { taskType: "listen_and_repeat", section: "speaking", label: "Listen & Repeat (듣고 따라 말하기)", needsStimulus: false, generatable: false },
-  { taskType: "take_an_interview", section: "speaking", label: "Take an Interview (인터뷰 응답)", needsStimulus: false, generatable: false },
+  { taskType: "listen_and_repeat", section: "speaking", label: "Listen & Repeat (듣고 따라 말하기)", needsStimulus: false, generatable: true },
+  { taskType: "take_an_interview", section: "speaking", label: "Take an Interview (인터뷰 응답)", needsStimulus: false, generatable: true },
 
-  // ───── Writing (생성기 미구현) ─────
+  // ───── Writing ─────
   // build_a_sentence 는 단어 조각 순서(auto_sequence), 나머지 둘은 루브릭 채점.
-  { taskType: "build_a_sentence", section: "writing", label: "Build a Sentence (문장 완성)", needsStimulus: false, generatable: false },
-  { taskType: "write_an_email", section: "writing", label: "Write an E-mail (이메일 작성)", needsStimulus: false, generatable: false },
-  { taskType: "academic_discussion", section: "writing", label: "Academic Discussion (토론 글쓰기)", needsStimulus: true, generatable: false },
+  { taskType: "build_a_sentence", section: "writing", label: "Build a Sentence (문장 완성)", needsStimulus: false, generatable: true },
+  { taskType: "write_an_email", section: "writing", label: "Write an E-mail (이메일 작성)", needsStimulus: false, generatable: true },
+  { taskType: "academic_discussion", section: "writing", label: "Academic Discussion (토론 글쓰기)", needsStimulus: false, generatable: true },
 ];
 
 const BY_TYPE = new Map(TASK_CATALOG.map((e) => [e.taskType, e]));

@@ -44,6 +44,23 @@ export type ItemDraft = {
   blanks?: BlankDraft[];
   // choose_a_response
   spoken_text?: string;
+  // listen_and_repeat
+  target_sentence?: string;
+  // take_an_interview
+  question_text?: string;
+  turn_type?: string;
+  // build_a_sentence
+  chunks?: { id: string; text: string }[];
+  order?: string[];
+  accepted_alternatives?: string[][];
+  // write_an_email
+  scenario?: string;
+  required_points?: string[];
+  // academic_discussion
+  professor_post?: string;
+  student_posts?: { name: string; text: string }[];
+  // 상황 설명(듣고 따라 말하기·문장 배열에서 화면 지시문으로 쓴다)
+  context?: string;
   // 공통
   explanation_ko: string;
   skill_tags: string[];
@@ -57,7 +74,15 @@ export type ParsedDrafts =
 
 /** toefl_item 한 행으로 저장할 형태. spokenText 가 있으면 문항별 음성 클립을 만든다. */
 export type ItemRow =
-  | { ok: true; prompt: string; payload: Record<string, unknown>; answerKey: Record<string, unknown>; spokenText: string | null }
+  | {
+      ok: true;
+      prompt: string;
+      payload: Record<string, unknown>;
+      /** 루브릭 채점(ai_rubric) 유형은 정답이 없어 null 이다 — spec §6. */
+      answerKey: Record<string, unknown> | null;
+      /** 채워져 있으면 저장 후 이 문장으로 문항 음성을 만든다. */
+      spokenText: string | null;
+    }
   | { ok: false; message: string };
 
 export type ItemGenerator = {

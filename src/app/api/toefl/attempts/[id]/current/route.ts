@@ -111,14 +111,25 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         clip_path?: string | null;
         question_audio_path?: string | null;
         target_sentence?: string;
+        question_text?: string;
       } | null;
       let nextPayload = payload;
-      // listen_and_repeat의 target_sentence는 정답 그 자체다(§5) — toefl_item_public 뷰는
-      // answer_key/explanation만 걸러내고 payload 내부까지는 못 걸러내므로 여기서 직접 제거한다.
-      // finish 채점은 service role로 toefl_item을 다시 읽어 원본 payload를 쓰므로 영향 없다.
-      if (it.task_type === "listen_and_repeat" && nextPayload && "target_sentence" in nextPayload) {
-        const { target_sentence: _target_sentence, ...rest } = nextPayload;
-        nextPayload = rest;
+      // "들어야 알 수 있는 것"을 글자로 내려보내면 시험이 성립하지 않는다(§5·§10).
+      // toefl_item_public 뷰는 answer_key/explanation만 걸러내고 payload 내부까지는 못 걸러내므로
+      // 여기서 직접 제거한다. finish 채점과 TTS는 service role로 원본 payload를 다시 읽으므로 영향 없다.
+      //   listen_and_repeat.target_sentence  따라 말할 문장 = 정답 그 자체
+      //   take_an_interview.question_text    질문은 음성으로만 전달한다(텍스트 표시 금지)
+      // payload에 새 필드를 넣을 때 이 목록도 함께 갱신할 것.
+      const SECRET_PAYLOAD_FIELDS: Record<string, string[]> = {
+        listen_and_repeat: ["target_sentence"],
+        take_an_interview: ["question_text"],
+      };
+      for (const field of SECRET_PAYLOAD_FIELDS[it.task_type] ?? []) {
+        if (nextPayload && field in nextPayload) {
+          const rest = { ...nextPayload } as Record<string, unknown>;
+          delete rest[field];
+          nextPayload = rest as typeof nextPayload;
+        }
       }
       if (payload?.clip_path) {
         const { data: signed } = await service.storage

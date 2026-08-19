@@ -4,16 +4,17 @@
 // 실제 생성기를 붙인다 — 붙일 게 없으면 모듈을 읽는 시점에 바로 터진다. 그래야 화면에는
 // 보이는데 생성이 안 되는 어긋남이 배포까지 살아남지 않는다.
 //
-// 지금 등록: Reading 3 · Listening 4 = 7종.
-// 남은 5종(Speaking 2 · Writing 3)은 카탈로그에 generatable: false 로 있다. 그 유형들은
-// answer_key 가 없거나(ai_rubric) 순서 채점(auto_sequence)이라, 저장 로직이 "정답 필수"를
-// 전제하지 않도록 각 생성기의 toItemRow 가 스스로 판단하게 설계했다.
+// 지금 등록: Reading 3 · Listening 4 · Speaking 2 · Writing 3 = 12종(전부).
+// ai_rubric 유형(take_an_interview · write_an_email · academic_discussion)은 정답이 없어
+// toItemRow 가 answerKey: null 을 돌려준다 — 저장 라우트가 "정답 필수"를 전제하지 않는다.
 
 import type { ToeflSection, ToeflTaskType } from "@/lib/toefl/types";
 import { GENERATABLE_TASKS } from "@/lib/toefl/task-catalog";
 import { chooseAResponseGenerator } from "./choose-a-response";
 import { completeTheWordsGenerator } from "./complete-the-words";
 import { createMcqPassageGenerator, MCQ_PASSAGE_SPECS } from "./mcq-passage";
+import { listenAndRepeatGenerator, takeAnInterviewGenerator } from "./speaking";
+import { academicDiscussionGenerator, buildASentenceGenerator, writeAnEmailGenerator } from "./writing";
 import type { ItemGenerator } from "./types";
 
 // 지문+객관식으로 만들어지는 유형들
@@ -23,6 +24,11 @@ const MCQ_BY_TYPE = new Map(MCQ_PASSAGE_SPECS.map((s) => [s.taskType, s]));
 const STANDALONE: Partial<Record<ToeflTaskType, ItemGenerator>> = {
   complete_the_words: completeTheWordsGenerator,
   choose_a_response: chooseAResponseGenerator,
+  listen_and_repeat: listenAndRepeatGenerator,
+  take_an_interview: takeAnInterviewGenerator,
+  build_a_sentence: buildASentenceGenerator,
+  write_an_email: writeAnEmailGenerator,
+  academic_discussion: academicDiscussionGenerator,
 };
 
 const ALL: ItemGenerator[] = GENERATABLE_TASKS.map((entry) => {

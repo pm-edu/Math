@@ -11,7 +11,9 @@ describe("프롬프트가 리팩터 전과 동일하다", () => {
 
   it("스냅샷이 7개 유형 × 2가지 조건을 덮는다", () => {
     expect(cases).toHaveLength(14);
-    expect(GENERATOR_LIST).toHaveLength(7);
+    // 스냅샷은 리팩터 시점의 7종만 덮는다. 이후 추가된 Speaking·Writing 5종은
+    // 그때 없던 유형이라 "동일성" 비교 대상이 아니다.
+    expect(GENERATOR_LIST).toHaveLength(12);
   });
 
   for (const key of cases) {
@@ -57,15 +59,8 @@ describe("카탈로그와 레지스트리가 어긋나지 않는다", () => {
     expect(new Set(TASK_CATALOG.map((e) => e.taskType)).size).toBe(12);
   });
 
-  it("아직 생성기가 없는 5종은 Speaking 2 · Writing 3 이다", () => {
-    const pending = TASK_CATALOG.filter((e) => !e.generatable).map((e) => e.taskType);
-    expect(pending).toEqual([
-      "listen_and_repeat",
-      "take_an_interview",
-      "build_a_sentence",
-      "write_an_email",
-      "academic_discussion",
-    ]);
+  it("이제 12종 전부에 생성기가 있다", () => {
+    expect(TASK_CATALOG.filter((e) => !e.generatable)).toEqual([]);
   });
 });
 
@@ -84,9 +79,16 @@ describe("영역별 조회", () => {
     ]);
   });
 
-  it("생성기가 없는 영역은 빈 배열", () => {
-    expect(generatorsForSection("speaking")).toEqual([]);
-    expect(generatorsForSection("writing")).toEqual([]);
+  it("Speaking 2종 · Writing 3종", () => {
+    expect(generatorsForSection("speaking").map((g) => g.taskType)).toEqual([
+      "listen_and_repeat",
+      "take_an_interview",
+    ]);
+    expect(generatorsForSection("writing").map((g) => g.taskType)).toEqual([
+      "build_a_sentence",
+      "write_an_email",
+      "academic_discussion",
+    ]);
   });
 });
 
