@@ -61,15 +61,27 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const allModuleIds = moduleGroups.flatMap((g) => g.moduleIds);
   const moduleToSection = new Map(moduleGroups.flatMap((g) => g.moduleIds.map((id) => [id, g.section] as const)));
 
+  // 모듈에 등록된 문항이 이 attempt가 실제로 뽑은 것보다 많을 수 있다(P6, 관리자가 계속
+  // 등록하므로) — current(GET)가 응시 중 저장해둔 조합(toefl_attempt_item_selection)을 그대로
+  // 써서 "실제로 본 문항"만 리뷰에 보여준다. 저장된 조합이 없는 모듈이 하나라도 있으면(예전
+  // 데이터 등) 안전하게 예전 방식(모듈 전체)으로 되돌아간다.
+  const { data: selectionRows } = allModuleIds.length
+    ? await service.from("toefl_attempt_item_selection").select("module_id, item_ids").eq("attempt_id", attemptId).in("module_id", allModuleIds)
+    : { data: [] as { module_id: string; item_ids: string[] }[] };
+  const selectedIdsByModule = new Map((selectionRows ?? []).map((r) => [r.module_id, r.item_ids as string[]]));
+  const hasFullSelectionCoverage = allModuleIds.length > 0 && allModuleIds.every((mid) => selectedIdsByModule.has(mid));
+  const reviewItemIds = hasFullSelectionCoverage ? allModuleIds.flatMap((mid) => selectedIdsByModule.get(mid) ?? []) : null;
+
+  const itemColumns =
+    "id, module_id, stimulus_id, task_type, position, points, scoring_mode, prompt, payload, answer_key, explanation_ko, skill_tags, vocab_ids";
   const [{ data: items }, { data: stimuli }] = await Promise.all([
-    allModuleIds.length
-      ? service
-          .from("toefl_item")
-          .select(
-            "id, module_id, stimulus_id, task_type, position, points, scoring_mode, prompt, payload, answer_key, explanation_ko, skill_tags, vocab_ids"
-          )
-          .in("module_id", allModuleIds)
-      : Promise.resolve({ data: [] }),
+    reviewItemIds
+      ? reviewItemIds.length
+        ? service.from("toefl_item").select(itemColumns).in("id", reviewItemIds)
+        : Promise.resolve({ data: [] })
+      : allModuleIds.length
+        ? service.from("toefl_item").select(itemColumns).in("module_id", allModuleIds)
+        : Promise.resolve({ data: [] }),
     allModuleIds.length
       ? service
           .from("toefl_stimulus")

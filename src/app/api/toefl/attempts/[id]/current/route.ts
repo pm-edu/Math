@@ -1,6 +1,6 @@
 import { jsonError, requireToeflUser } from "@/lib/toefl/server/auth";
 import { createToeflServiceClient } from "@/lib/toefl/server/service-client";
-import { resolveCurrentModule } from "@/lib/toefl/server/modules";
+import { resolveCurrentModule, resolveModuleItemIds } from "@/lib/toefl/server/modules";
 
 // 현재 모듈 문항 + 잔여시간 + 기존 답안. docs/toefl-spec.md §9, §11.
 // 새로고침 복구는 전적으로 이 엔드포인트에 의존한다(로컬스토리지에 의존하지 않음, §11 3번 규칙) —
@@ -15,10 +15,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   const { data: attempt } = await client
     .from("toefl_attempt")
-    .select("id, user_id, form_id, status, mode")
+    .select("id, user_id, form_id, status, mode, toefl_form(blueprint_version)")
     .eq("id", attemptId)
     .maybeSingle();
   if (!attempt || attempt.user_id !== auth.userId) return jsonError(404, "시험 응시 기록을 찾을 수 없습니다.");
+  const blueprintVersion = (attempt.toefl_form as unknown as { blueprint_version: string } | null)?.blueprint_version ?? "";
 
   // section_practice 모드는 attempt당 section_attempt가 정확히 1개라 attempt_id만으로 찾는다.
   // (URL에 section이 없는 이유: 어느 영역이든 이 엔드포인트 하나로 "현재 상태"를 알려주기 위함)
@@ -55,8 +56,22 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const module = await resolveCurrentModule(service, attempt.form_id, section, sectionAttempt.routed_to);
   if (!module) return jsonError(500, "현재 모듈을 찾을 수 없습니다.");
 
+  // 모듈에 등록된 문항이 블루프린트 목표치보다 많을 수 있다(관리자가 계속 등록하므로, P6) —
+  // 매번 전부 보여주지 않고 목표 개수만큼 무작위로 뽑되, 이 attempt 안에서는 항상 같은 조합을 쓴다.
+  const selectedItemIds = await resolveModuleItemIds(
+    service,
+    attemptId,
+    module.id,
+    section,
+    module.stage,
+    module.route,
+    blueprintVersion
+  );
+
   const [{ data: items }, { data: stimuli }] = await Promise.all([
-    client.from("toefl_item_public").select("*").eq("module_id", module.id).order("position"),
+    selectedItemIds.length
+      ? client.from("toefl_item_public").select("*").in("id", selectedItemIds).order("position")
+      : Promise.resolve({ data: [] as never[] }),
     client.from("toefl_stimulus_public").select("*").eq("module_id", module.id).order("position"),
   ]);
 

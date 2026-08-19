@@ -57,6 +57,7 @@ type ItemDraft = {
 };
 
 type Progress = { taskMix: Record<string, number>; counts: Record<string, number> } | null;
+type RegisteredItem = { id: string; task_type: string; prompt: string; is_active: boolean; position: number };
 
 export default function AdminToeflItemsPage() {
   const router = useRouter();
@@ -74,6 +75,7 @@ export default function AdminToeflItemsPage() {
   const [items, setItems] = useState<ItemDraft[]>([]);
 
   const [progress, setProgress] = useState<Progress>(null);
+  const [registeredItems, setRegisteredItems] = useState<RegisteredItem[]>([]);
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -122,8 +124,9 @@ export default function AdminToeflItemsPage() {
   }, [taskType, modules, config.section]);
 
   useEffect(() => {
-    if (!moduleId) { setProgress(null); return; }
+    if (!moduleId) { setProgress(null); setRegisteredItems([]); return; }
     loadProgress(moduleId);
+    loadRegisteredItems(moduleId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moduleId]);
 
@@ -139,12 +142,39 @@ export default function AdminToeflItemsPage() {
       .eq("stage", mod.stage)
       .eq("route", mod.route)
       .maybeSingle();
-    const { data: existingItems } = await supabase.from("toefl_item").select("task_type").eq("module_id", mid);
+    // 실제로 학생에게 뽑힐 수 있는 건 활성 문항뿐이라, 진행률은 활성 개수 기준으로 보여준다.
+    const { data: existingItems } = await supabase.from("toefl_item").select("task_type").eq("module_id", mid).eq("is_active", true);
     const counts: Record<string, number> = {};
     for (const it of existingItems ?? []) counts[it.task_type] = (counts[it.task_type] ?? 0) + 1;
     const taskMix = { ...(bp?.task_mix as Record<string, number> | undefined) };
     delete taskMix.routing_threshold;
     setProgress({ taskMix, counts });
+  }
+
+  // 등록된 문항이 아무리 쌓여도 목록 자체는 module_id로 좁혀서 가져오므로 가볍다.
+  // 다만 화면이 무한정 길어지지 않게 최근 200개까지만 보여준다.
+  async function loadRegisteredItems(mid: string) {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("toefl_item")
+      .select("id, task_type, prompt, is_active, position")
+      .eq("module_id", mid)
+      .order("task_type")
+      .order("position")
+      .limit(200);
+    setRegisteredItems((data ?? []) as RegisteredItem[]);
+  }
+
+  async function toggleActive(id: string, nextActive: boolean) {
+    setRegisteredItems((prev) => prev.map((it) => (it.id === id ? { ...it, is_active: nextActive } : it)));
+    const supabase = createClient();
+    const { error: updateErr } = await supabase.from("toefl_item").update({ is_active: nextActive }).eq("id", id);
+    if (updateErr) {
+      setRegisteredItems((prev) => prev.map((it) => (it.id === id ? { ...it, is_active: !nextActive } : it)));
+      setError(`활성 상태 변경 실패: ${updateErr.message}`);
+      return;
+    }
+    if (moduleId) loadProgress(moduleId);
   }
 
   async function authHeader() {
@@ -229,6 +259,7 @@ export default function AdminToeflItemsPage() {
       setMessage(`${(data.itemIds ?? []).length}문항을 저장했습니다.`);
       setItems([]); setStimulusTitle(""); setStimulusText("");
       loadProgress(moduleId);
+      loadRegisteredItems(moduleId);
     } catch (e) {
       setSaving(false);
       setError(`저장 중 오류: ${(e as Error).message}`);
@@ -324,6 +355,31 @@ export default function AdminToeflItemsPage() {
             {generating ? "생성 중... (수십 초)" : "AI로 생성"}
           </button>
         </div>
+
+        {moduleId && registeredItems.length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-lg font-medium text-[var(--foreground)]">
+              이 모듈에 등록된 문항 {registeredItems.length}개
+            </h2>
+            <p className="mt-1 text-xs text-[var(--secondary)]">
+              끄면(비활성) 학생 응시 시 무작위 추출 대상에서 빠집니다 — 삭제되지는 않습니다.
+            </p>
+            <ul className="mt-3 divide-y divide-[var(--border-c)] rounded-2xl border border-[var(--border-c)] bg-white">
+              {registeredItems.map((it) => (
+                <li key={it.id} className="flex items-center gap-3 px-4 py-2.5 text-sm">
+                  <span className="w-36 shrink-0 truncate text-xs text-[var(--secondary)]">{it.task_type}</span>
+                  <span className={`flex-1 truncate ${it.is_active ? "text-[var(--foreground)]" : "text-[var(--secondary)] line-through"}`}>
+                    {it.prompt}
+                  </span>
+                  <label className="flex shrink-0 items-center gap-1.5 text-xs text-[var(--secondary)]">
+                    <input type="checkbox" checked={it.is_active} onChange={(e) => toggleActive(it.id, e.target.checked)} />
+                    활성
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {items.length > 0 && (
           <>

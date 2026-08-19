@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { jsonError, requireToeflUser } from "@/lib/toefl/server/auth";
 import { createToeflServiceClient } from "@/lib/toefl/server/service-client";
-import { fetchBlueprint, resolveCurrentModule } from "@/lib/toefl/server/modules";
+import { fetchBlueprint, resolveCurrentModule, resolveModuleItemIds } from "@/lib/toefl/server/modules";
 import { ADAPTIVE_SECTIONS } from "@/lib/toefl/section-order";
 import { gradeWritingResponse } from "@/lib/toefl/server/ai-grading";
 import { gradeInterviewAudio, scoreListenAndRepeatFromTranscript, transcribeAudio } from "@/lib/toefl/server/audio-grading";
@@ -90,8 +90,9 @@ export async function POST(
     const stage1Module = await resolveCurrentModule(service, attempt.form_id, section, null);
     if (!stage1Module) return jsonError(500, "Stage1 모듈을 찾을 수 없습니다.");
 
-    const { data: stage1Items } = await service.from("toefl_item").select("id").eq("module_id", stage1Module.id);
-    const stage1ItemIds = (stage1Items ?? []).map((i) => i.id);
+    // current(GET)에서 이미 뽑아 저장해둔 조합을 그대로 쓴다(§ 블루프린트 목표치만큼 무작위
+    // 추출 — 등록된 문항이 더 많아도 학생이 실제로 본 문항만 채점 대상이어야 한다).
+    const stage1ItemIds = await resolveModuleItemIds(service, attemptId, stage1Module.id, section, "stage1", "base", form.blueprint_version);
 
     const { data: stage1Responses } = stage1ItemIds.length
       ? await client
@@ -129,11 +130,12 @@ export async function POST(
   const stage2Module = await resolveCurrentModule(service, attempt.form_id, section, routedTo);
   if (!stage1Module || !stage2Module) return jsonError(500, "모듈을 찾을 수 없습니다.");
 
-  const { data: allItems } = await service
-    .from("toefl_item")
-    .select("id, points")
-    .in("module_id", [stage1Module.id, stage2Module.id]);
-  const allItemIds = (allItems ?? []).map((i) => i.id);
+  const stage1ItemIds = await resolveModuleItemIds(service, attemptId, stage1Module.id, section, "stage1", "base", form.blueprint_version);
+  const stage2ItemIds = await resolveModuleItemIds(service, attemptId, stage2Module.id, section, "stage2", routedTo, form.blueprint_version);
+  const allItemIds = [...stage1ItemIds, ...stage2ItemIds];
+  const { data: allItems } = allItemIds.length
+    ? await service.from("toefl_item").select("id, points").in("id", allItemIds)
+    : { data: [] as { id: string; points: number }[] };
   const maxPoints = (allItems ?? []).reduce((sum, i) => sum + Number(i.points), 0);
 
   const { data: allResponses } = allItemIds.length
@@ -193,12 +195,11 @@ async function finishNonAdaptiveSection(params: {
   const module = await resolveCurrentModule(service, attempt.form_id, section, null);
   if (!module) return jsonError(500, "모듈을 찾을 수 없습니다.");
 
-  const { data: items } = await service
-    .from("toefl_item")
-    .select("id, task_type, scoring_mode, points, prompt, payload")
-    .eq("module_id", module.id);
+  const itemIds = await resolveModuleItemIds(service, attempt.id, module.id, section, "stage1", "base", blueprintVersion);
+  const { data: items } = itemIds.length
+    ? await service.from("toefl_item").select("id, task_type, scoring_mode, points, prompt, payload").in("id", itemIds)
+    : { data: [] as { id: string; task_type: string; scoring_mode: string; points: number; prompt: string; payload: unknown }[] };
   const itemList = items ?? [];
-  const itemIds = itemList.map((i) => i.id);
 
   const { data: responses } = itemIds.length
     ? await client
