@@ -11,6 +11,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { canManageMaterials } from "@/lib/roles";
+import { totalSummary, type BlueprintSummaryRow } from "@/lib/toefl/blueprint-summary";
 
 export type LandingViewer = {
   /** null = 아직 확인 중. 확인 전에는 CTA 문구를 확정하지 않아 라벨이 뒤바뀌지 않는다. */
@@ -18,32 +19,49 @@ export type LandingViewer = {
   canManage: boolean;
   /** 헤더에 "누구로 로그인했는지" 표시하는 데 쓴다. 이름이 없으면 이메일로 대체한다. */
   label: string | null;
+  /** 풀 모의고사 총 소요 분. null = 아직 조회 중(하드코딩 금지 — toefl_form_blueprint에서 계산). */
+  totalMinutes: number | null;
 };
 
-const ViewerContext = createContext<LandingViewer>({ loggedIn: null, canManage: false, label: null });
+const ViewerContext = createContext<LandingViewer>({ loggedIn: null, canManage: false, label: null, totalMinutes: null });
 
 export function LandingViewerProvider({ children }: { children: React.ReactNode }) {
-  const [viewer, setViewer] = useState<LandingViewer>({ loggedIn: null, canManage: false, label: null });
+  const [viewer, setViewer] = useState<LandingViewer>({ loggedIn: null, canManage: false, label: null, totalMinutes: null });
 
   useEffect(() => {
     const supabase = createClient();
 
     async function apply(user: { id?: string; email?: string | null } | null | undefined) {
       if (!user?.id) {
-        setViewer({ loggedIn: false, canManage: false, label: null });
+        setViewer((v) => ({ ...v, loggedIn: false, canManage: false, label: null }));
         return;
       }
       const { data } = await supabase.from("profiles").select("name, role").eq("id", user.id).maybeSingle();
-      setViewer({
+      setViewer((v) => ({
+        ...v,
         loggedIn: true,
         canManage: canManageMaterials(data?.role),
         label: (data?.name as string | null) || user.email || null,
-      });
+      }));
     }
 
     supabase.auth.getUser().then(({ data }) => apply(data.user));
     const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => apply(session?.user));
     return () => listener.subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("toefl_form_blueprint")
+      .select("section, stage, time_limit_sec, item_count")
+      .eq("is_active", true)
+      .then(({ data }) => {
+        const rows = (data ?? []) as BlueprintSummaryRow[];
+        if (rows.length === 0) return;
+        const minutes = Math.round(totalSummary(rows).timeSec / 60);
+        setViewer((v) => ({ ...v, totalMinutes: minutes }));
+      });
   }, []);
 
   return <ViewerContext.Provider value={viewer}>{children}</ViewerContext.Provider>;

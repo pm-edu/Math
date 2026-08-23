@@ -22,7 +22,7 @@ const GROUPS: Group[] = [
     title: "문항 파이프라인",
     items: [
       { label: "문항 생성", icon: "✨", href: "/admin/toefl/items" },
-      { label: "문항 검수", icon: "📝" }, // B단계 — toefl_item 검수 상태 컬럼이 생겨야 가능
+      { label: "문항 검수", icon: "📝", href: "/admin/toefl/review" },
       { label: "세트 · 배포", icon: "📦", href: "/admin/toefl/forms" },
     ],
   },
@@ -31,7 +31,7 @@ const GROUPS: Group[] = [
     items: [
       { label: "학생 관리", icon: "👥", href: "/admin/toefl/students" },
       { label: "오디오(TTS) 관리", icon: "🎧", href: "/admin/toefl/audio" },
-      { label: "응시 관리", icon: "🧪" },
+      { label: "응시 관리", icon: "🧪", href: "/admin/toefl/attempts" },
     ],
   },
   { title: "리포트", items: [{ label: "반별 리포트", icon: "🏫" }, { label: "성적 추이", icon: "📈" }] },

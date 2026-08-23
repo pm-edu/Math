@@ -18,37 +18,49 @@ import { LandingViewerProvider, useLandingViewer } from "@/lib/toefl/landing-vie
 // 지금은 12개 유형 링크가 전부 폼 선택 화면으로 간다.
 const TYPE_HREF = "/toefl/start";
 
-const FACTS: { value: string; label: string }[] = [
-  { value: "90분", label: "총 시험 시간 (기존 116분)" },
-  { value: "4영역 12유형", label: "R · L · S · W 전면 개편" },
-  { value: "1.0–6.0", label: "밴드 점수 · CEFR 연동" },
-  { value: "2단계 적응형", label: "Reading · Listening 라우팅" },
-];
+// 시간은 하드코딩하지 않는다 — toefl_form_blueprint에서 조회한 totalMinutes로 채운다
+// (landing-viewer.tsx, [[toefl-ui-work-rules]] 2번). 조회 전에는 "–"로 표시.
+function minutesText(totalMinutes: number | null): string {
+  return totalMinutes == null ? "–" : `${totalMinutes}분`;
+}
 
-const STEPS: { no: string; title: string; body: string; go: string; href: string; free?: boolean }[] = [
-  {
-    no: "STEP 1",
-    title: "유형별 연습",
-    body: "Complete the Words, Listen & Repeat, Build a Sentence… 낯선 신유형을 유형 하나 단위로 반복 연습합니다.",
-    go: "12개 유형 보기",
-    href: "#types",
-    free: true,
-  },
-  {
-    no: "STEP 2",
-    title: "영역 연습",
-    body: "Reading · Listening · Speaking · Writing을 영역 단위로, 실제와 같은 서버 타이머와 자동저장 환경에서 연습합니다.",
-    go: "영역 선택하기",
-    href: "/toefl/start",
-  },
-  {
-    no: "STEP 3",
-    title: "풀 모의고사",
-    body: "4개 영역을 끊김 없이 90분에 응시하고, 밴드 점수·라우팅 결과·문항별 리뷰까지 종합 리포트를 받습니다.",
-    go: "모의고사 시작",
-    href: "/toefl/start",
-  },
-];
+function buildFacts(totalMinutes: number | null): { value: string; label: string }[] {
+  return [
+    { value: minutesText(totalMinutes), label: "총 시험 시간" },
+    { value: "4영역 12유형", label: "R · L · S · W 전면 개편" },
+    { value: "1.0–6.0", label: "밴드 점수 · CEFR 연동" },
+    { value: "2단계 적응형", label: "Reading · Listening 라우팅" },
+  ];
+}
+
+function buildSteps(
+  totalMinutes: number | null
+): { no: string; title: string; body: string; go: string; href: string; free?: boolean }[] {
+  return [
+    {
+      no: "STEP 1",
+      title: "유형별 연습",
+      body: "Complete the Words, Listen & Repeat, Build a Sentence… 낯선 신유형을 유형 하나 단위로 반복 연습합니다.",
+      go: "12개 유형 보기",
+      href: "#types",
+      free: true,
+    },
+    {
+      no: "STEP 2",
+      title: "영역 연습",
+      body: "Reading · Listening · Speaking · Writing을 영역 단위로, 실제와 같은 서버 타이머와 자동저장 환경에서 연습합니다.",
+      go: "영역 선택하기",
+      href: "/toefl/start",
+    },
+    {
+      no: "STEP 3",
+      title: "풀 모의고사",
+      body: `4개 영역을 끊김 없이 ${minutesText(totalMinutes)}에 응시하고, 밴드 점수·라우팅 결과·문항별 리뷰까지 종합 리포트를 받습니다.`,
+      go: "모의고사 시작",
+      href: "/toefl/start",
+    },
+  ];
+}
 
 const TYPE_GROUPS: { key: string; name: string; count: string; color: string; items: { ko: string; en: string }[] }[] = [
   {
@@ -135,7 +147,9 @@ export default function ToeflLandingPage() {
 
 function LandingContent() {
   // 계정이 있는 사람에게는 샘플을 권하지 않는다 — 히어로·하단 CTA가 응시로 바뀐다.
-  const { loggedIn } = useLandingViewer();
+  const { loggedIn, totalMinutes } = useLandingViewer();
+  const FACTS = buildFacts(totalMinutes);
+  const STEPS = buildSteps(totalMinutes);
 
   return (
     <div data-theme="en" className="toefl-landing min-h-screen bg-[var(--en-paper)] text-[var(--en-ink)]">
@@ -165,7 +179,7 @@ function LandingContent() {
                 href="/toefl/start"
                 className="rounded-[10px] bg-[var(--en-ink)] px-6 py-[13px] text-[15px] font-bold text-white transition-transform hover:-translate-y-px"
               >
-                풀 모의고사 시작 (90분)
+                풀 모의고사 시작 ({minutesText(totalMinutes)})
               </Link>
               {loggedIn !== null && (
                 <Link
@@ -369,8 +383,8 @@ function LandingContent() {
         </h2>
         <p className="mx-auto mb-7 mt-3 max-w-[36em] text-[15.5px] text-[#B9C4DC]">
           {loggedIn
-            ? "90분 풀 모의고사로 현재 밴드와 라우팅 결과를 받아보세요."
-            : "가입 없이 12개 유형을 체험하거나, 90분 풀 모의고사로 현재 밴드와 라우팅 결과를 받아보세요."}
+            ? `${minutesText(totalMinutes)} 풀 모의고사로 현재 밴드와 라우팅 결과를 받아보세요.`
+            : `가입 없이 12개 유형을 체험하거나, ${minutesText(totalMinutes)} 풀 모의고사로 현재 밴드와 라우팅 결과를 받아보세요.`}
         </p>
         {loggedIn !== null && (
           <Link

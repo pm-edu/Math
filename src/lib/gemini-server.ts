@@ -2,7 +2,6 @@
 // Gemini가 "지금 사용량이 많다"(503 UNAVAILABLE)고 일시적으로 거절하는 경우가 종종 있어서,
 // 그럴 때는 잠깐 기다렸다가 자동으로 다시 시도한다(관리자가 매번 버튼을 다시 누를 필요 없게).
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? "";
 const MODEL = "gemini-flash-latest";
 
 export type GeminiPart = Record<string, unknown>;
@@ -56,14 +55,17 @@ export async function callGemini(
   parts: GeminiPart[],
   options: { temperature?: number; json?: boolean; maxOutputTokens?: number } = {}
 ): Promise<GeminiResult> {
-  if (!GEMINI_API_KEY) return { ok: false, status: 500, message: "아직 설정되지 않았습니다. (GEMINI_API_KEY 없음)" };
+  // 읽는 시점을 호출 시점으로 미룬다 — 모듈 로드 시점에 한 번만 읽으면, 이 모듈을 가져오는
+  // 쪽(예: CLI 스크립트)이 .env.local을 나중에 로드할 때 항상 빈 값을 캡처해버린다.
+  const apiKey = process.env.GEMINI_API_KEY ?? "";
+  if (!apiKey) return { ok: false, status: 500, message: "아직 설정되지 않았습니다. (GEMINI_API_KEY 없음)" };
 
   let lastMessage = "";
   let lastStatus = 502;
 
   for (let attempt = 0; attempt < RETRY_DELAYS_MS.length + 1; attempt++) {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

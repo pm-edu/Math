@@ -43,6 +43,29 @@ export async function POST(req: Request) {
     .maybeSingle();
   if (!form) return jsonError(404, "시험 폼을 찾을 수 없습니다.");
 
+  // 풀 모의고사는 실제 시험처럼 폼당 1회다(재응시하면 문항을 외워서 다시 풀 수 있음).
+  // 영역 연습(section_practice)은 반복 연습이 목적이라 제한하지 않는다.
+  // abandoned(마이페이지에서 폐기)는 세지 않는다 — 폐기하면 다시 시작할 수 있어야 한다.
+  if (mode === "full") {
+    const { data: existing } = await client
+      .from("toefl_attempt")
+      .select("id, status")
+      .eq("user_id", auth.userId)
+      .eq("form_id", form_id)
+      .eq("mode", "full")
+      .in("status", ["in_progress", "submitted", "scored"])
+      .limit(1)
+      .maybeSingle();
+    if (existing) {
+      return jsonError(
+        409,
+        existing.status === "in_progress"
+          ? "이미 진행 중인 풀 모의고사가 있습니다. 마이페이지에서 이어하기 해주세요."
+          : "이 시험은 이미 응시를 완료했습니다. 같은 폼으로 다시 응시할 수 없습니다."
+      );
+    }
+  }
+
   const blueprint = await fetchBlueprint(client, form.blueprint_version, targetSection, "stage1", "base");
   if (!blueprint) return jsonError(500, "시험 구성(블루프린트)이 없습니다.");
 
