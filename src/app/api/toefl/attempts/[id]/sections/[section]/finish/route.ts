@@ -155,7 +155,10 @@ export async function POST(
   const scaled = rawToScaled(rawPercent, conversionRows);
   const band = applyRouteCap(scaledToBand(scaled, conversionRows), routedTo);
 
-  const { error: finishErr } = await client
+  // finished_at is null 조건을 update 자체에 걸어서(2026-08-27 재검증 B2) 중복 제출을 원자적으로
+  // 막는다 — 이전엔 함수 맨 앞의 SELECT로만 판정해서, 거의 동시에 두 번 호출되면(더블클릭 등)
+  // 둘 다 "아직 안 끝남"으로 보고 통과해 같은 섹션을 두 번 채점·덮어쓸 수 있었다.
+  const { data: updated, error: finishErr } = await client
     .from("toefl_section_attempt")
     .update({
       raw_score: totalRaw,
@@ -163,8 +166,11 @@ export async function POST(
       band,
       finished_at: new Date().toISOString(),
     })
-    .eq("id", sectionAttempt.id);
+    .eq("id", sectionAttempt.id)
+    .is("finished_at", null)
+    .select("id");
   if (finishErr) return jsonError(500, `채점 저장에 실패했습니다: ${finishErr.message}`);
+  if (!updated || updated.length === 0) return jsonError(409, "이미 처리된 요청입니다.");
 
   return Response.json({ ok: true, done: true, raw_score: totalRaw, scaled_score: scaled, band });
 }
@@ -239,11 +245,15 @@ async function finishNonAdaptiveSection(params: {
   const scaled = rawToScaled(rawPercent, conversionRows);
   const band = scaledToBand(scaled, conversionRows);
 
-  const { error: finishErr } = await client
+  // 위 stage2 종료 경로와 같은 이유로(2026-08-27 재검증 B2) finished_at is null 조건을 건다.
+  const { data: updated, error: finishErr } = await client
     .from("toefl_section_attempt")
     .update({ raw_score: totalRaw, scaled_score: scaled, band, finished_at: new Date().toISOString() })
-    .eq("id", sectionAttempt.id);
+    .eq("id", sectionAttempt.id)
+    .is("finished_at", null)
+    .select("id");
   if (finishErr) return jsonError(500, `채점 저장에 실패했습니다: ${finishErr.message}`);
+  if (!updated || updated.length === 0) return jsonError(409, "이미 처리된 요청입니다.");
 
   return Response.json({ ok: true, done: true, raw_score: totalRaw, scaled_score: scaled, band, warnings });
 }

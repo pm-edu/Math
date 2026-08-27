@@ -25,9 +25,10 @@ const writingRubricSchema = z.object({
   feedback_ko: z.string().min(1),
   strengths: z.array(z.string()).default([]),
   improvements: z.array(z.string()).default([]),
+  // 프롬프트가 "0~3개"라고 명시하는데 스키마 상한이 5였다(2026-08-27 재검증 B3 지적) — 통일.
   corrected_excerpts: z
     .array(z.object({ original: z.string(), corrected: z.string(), reason_ko: z.string() }))
-    .max(5)
+    .max(3)
     .default([]),
 });
 

@@ -2,7 +2,8 @@ import { z } from "zod";
 import { jsonError, requireToeflUser } from "@/lib/toefl/server/auth";
 import { createToeflServiceClient } from "@/lib/toefl/server/service-client";
 import { resolveCurrentModule } from "@/lib/toefl/server/modules";
-import { scoreItem, type ScoreableItem } from "@/lib/toefl/scoring";
+import { scoreItem } from "@/lib/toefl/scoring";
+import { scoreableDbItemSchema } from "@/lib/toefl/zod-schemas";
 
 // 답안 저장(배치, idempotent upsert). docs/toefl-spec.md §9, §11 2번(자동저장) 규칙.
 // 채점을 위해 answer_key가 필요하지만 학생 세션으로는 절대 조회할 수 없으므로(§5) service
@@ -75,7 +76,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     .in("id", requestedIds);
   if (itemsErr) return jsonError(500, `문항 조회에 실패했습니다: ${itemsErr.message}`);
 
-  const itemById = new Map((items ?? []).map((i) => [i.id, i]));
+  // DB에서 온 행은 그대로 믿지 않고 zod로 확인한다(2026-08-27 교차검증 C2 — 예전엔
+  // "as ScoreableItem"으로 통째로 우겼다). task_type/scoring_mode가 스키마에 없는 값이면(마이그레이션
+  // 안 된 enum 등) 이 문항은 채점 대상에서 제외한다 — 잘못된 값으로 조용히 채점하는 것보다 낫다.
+  const itemById = new Map<string, z.infer<typeof scoreableDbItemSchema>>();
+  for (const raw of items ?? []) {
+    const parsed = scoreableDbItemSchema.safeParse(raw);
+    if (parsed.success) itemById.set(parsed.data.id, parsed.data);
+  }
   if (itemById.size !== requestedIds.length) {
     return jsonError(400, "현재 모듈에 속하지 않는 문항이 포함되어 있습니다.");
   }
@@ -92,10 +100,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const now = new Date().toISOString();
   const rows = responses.map((r) => {
-    const item = itemById.get(r.item_id) as ScoreableItem & { id: string };
+    // 위에서 이미 검증했으므로(size 비교) 여기선 반드시 존재한다.
+    const item = itemById.get(r.item_id)!;
     // 녹음만 있고 아직 transcript가 없는 Speaking 응답은 scoreItem이 0점을 매긴다 —
     // finish 시점에 실제 STT/AI 루브릭 채점 후 points_earned가 갱신된다(writing과 동일 패턴).
-    const { isCorrect, pointsEarned } = scoreItem(item, { answer: (r.answer ?? null) as never });
+    // r.answer는 zod에서 z.unknown()으로 받은 값 그대로 넘긴다 — scoreItem 내부 타입가드가 확인한다.
+    const { isCorrect, pointsEarned } = scoreItem(item, { answer: r.answer ?? null });
     return {
       attempt_id: attemptId,
       item_id: r.item_id,

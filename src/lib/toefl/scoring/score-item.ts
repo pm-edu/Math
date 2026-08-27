@@ -3,52 +3,53 @@
 // ai_rubric(take_an_interview/write_an_email/academic_discussion)은 자동채점 대상이 아니다
 // (§12 AI 채점 파이프라인은 P3/P4에서 별도로 구현) — 여기서는 pointsEarned 0, isCorrect null을 반환한다.
 
-import type {
-  BuildASentenceAnswer,
-  CompleteTheWordsAnswerKey,
-  EssayAnswer,
-  ReadingMcqAnswer,
-  ToeflAnswer,
-  ToeflAnswerKey,
-  ToeflItemPayload,
-  ToeflScoringMode,
-  ToeflTaskType,
-} from "../types";
+import type { ToeflScoringMode, ToeflTaskType } from "../types";
+import type { ReadingMcqAnswer, BuildASentenceAnswer, EssayAnswer, CompleteTheWordsAnswerKey } from "../types";
+import {
+  buildASentenceAnswerKeySchema,
+  completeTheWordsAnswerKeySchema,
+  listenAndRepeatAnswerKeySchema,
+  mcqAnswerKeySchema,
+} from "../zod-schemas";
 import { round2 } from "./round";
 
 export type ScoreableItem = {
   task_type: ToeflTaskType;
   scoring_mode: ToeflScoringMode;
   points: number;
-  answer_key: ToeflAnswerKey | null;
+  // DB jsonb 컬럼이라 실제로는 unknown이다(2026-08-27 교차검증 C2) — 호출부가 ToeflAnswerKey로
+  // 우기지 않고 그대로 넘기면, 여기 채점 함수들이 zod-schemas.ts 스키마로 확인한다.
+  answer_key: unknown;
   // scoreMcqLike가 multi_select인지 판정하는 데 쓴다(§6). listen_and_repeat 등 payload가 채점에
   // 안 쓰이는 유형은 호출자가 안 넘겨도 되게 optional로 뒀다(server/audio-grading.ts 참고).
-  payload?: ToeflItemPayload;
+  payload?: unknown;
 };
 
-// 2026-08-27 교차검증(B2) — ToeflAnswer에 있던 `Record<string, unknown>` 탈출구를 없앤 대신,
-// 여기서 실제 형태를 확인하는 타입가드를 쓴다. 형태가 안 맞으면(버그·손상된 데이터) 조용히
-// 잘못된 값을 채점에 쓰는 대신 "빈 답안"으로 취급해 0점 처리한다.
-function isReadingMcqAnswer(a: ToeflAnswer | null): a is ReadingMcqAnswer {
+// 2026-08-27 교차검증(B2, C2) — answer/answer_key 둘 다 DB jsonb에서 오는 실제로는 unknown인
+// 값이다. 예전엔 ToeflAnswer 유니온 타입을 믿고 `as`로 한 멤버를 우겼는데(호출부가 실은 unknown을
+// 넘기면서 as never로 눈속임), 여기서부터 unknown으로 받고 실제로 형태를 확인한다(타입가드는
+// score-item.ts에, answer_key는 zod-schemas.ts 스키마로 — record 계열은 구조가 모호해 타입가드로,
+// 나머지는 스키마로 나눴다).
+function isReadingMcqAnswer(a: unknown): a is ReadingMcqAnswer {
   return !!a && typeof a === "object" && Array.isArray((a as ReadingMcqAnswer).selected);
 }
 
-function isBuildASentenceAnswer(a: ToeflAnswer | null): a is BuildASentenceAnswer {
+function isBuildASentenceAnswer(a: unknown): a is BuildASentenceAnswer {
   return !!a && typeof a === "object" && Array.isArray((a as BuildASentenceAnswer).order);
 }
 
-function isEssayAnswer(a: ToeflAnswer | null): a is EssayAnswer {
+function isEssayAnswer(a: unknown): a is EssayAnswer {
   return !!a && typeof a === "object" && typeof (a as EssayAnswer).text === "string";
 }
 
 // complete_the_words 답안({b1:"economy", b2:"introduced"})은 blank id가 스키마마다 달라 구조로
 // 구분할 수 없다 — 위 세 타입 중 어느 것도 아니면(selected/order/text 키가 없으면) 이 형태로 본다.
-function isBlankAnswer(a: ToeflAnswer | null): a is CompleteTheWordsAnswerKey {
+function isBlankAnswer(a: unknown): a is CompleteTheWordsAnswerKey {
   return !!a && typeof a === "object" && !isReadingMcqAnswer(a) && !isBuildASentenceAnswer(a) && !isEssayAnswer(a);
 }
 
 export type ScoreableResponse = {
-  answer: ToeflAnswer | null;
+  answer: unknown; // 실제 형태는 위 타입가드가 채점 시점에 확인한다.
   transcript?: string | null; // auto_transcript(listen_and_repeat) 전용 — STT 결과
 };
 
@@ -75,7 +76,8 @@ export function scoreItem(item: ScoreableItem, response: ScoreableResponse): Sco
 }
 
 function scoreCompleteTheWords(item: ScoreableItem, response: ScoreableResponse): ScoreResult {
-  const key = (item.answer_key ?? {}) as Record<string, string>;
+  const keyParsed = completeTheWordsAnswerKeySchema.safeParse(item.answer_key);
+  const key = keyParsed.success ? keyParsed.data : {};
   const ans: CompleteTheWordsAnswerKey = isBlankAnswer(response.answer) ? response.answer : {};
   const blankIds = Object.keys(key);
   if (blankIds.length === 0) return { isCorrect: null, pointsEarned: 0 };
@@ -87,15 +89,18 @@ function scoreCompleteTheWords(item: ScoreableItem, response: ScoreableResponse)
 }
 
 function scoreMcqLike(item: ScoreableItem, response: ScoreableResponse): ScoreResult {
-  const key = (item.answer_key ?? {}) as { correct?: string[] };
-  const correct = key.correct ?? [];
+  const keyParsed = mcqAnswerKeySchema.safeParse(item.answer_key);
+  const correct = keyParsed.success ? keyParsed.data.correct : [];
   if (correct.length === 0) return { isCorrect: null, pointsEarned: 0 };
 
   const selected = isReadingMcqAnswer(response.answer) ? response.answer.selected : [];
   // format은 §6 계약대로 payload에서 판정한다(2026-08-27 교차검증 B3) — 이전엔 answer_key의
   // correct 배열 길이(1개면 단일, 2개+면 multi)로 암묵 추정했는데, payload가 진짜 출처다.
   // choose_a_response(payload에 format 자체가 없음)는 항상 단일 정답이라 기본값이 그대로 맞는다.
-  const format = (item.payload as { format?: string } | undefined)?.format;
+  // payload도 unknown이라(C2) as로 우기지 않고 typeof로 안전하게 읽는다.
+  const payloadRecord =
+    item.payload && typeof item.payload === "object" ? (item.payload as Record<string, unknown>) : undefined;
+  const format = typeof payloadRecord?.format === "string" ? payloadRecord.format : undefined;
   const isMultiSelect = format === "multi_select";
 
   if (!isMultiSelect) {
@@ -116,9 +121,10 @@ function scoreMcqLike(item: ScoreableItem, response: ScoreableResponse): ScoreRe
 }
 
 function scoreBuildASentence(item: ScoreableItem, response: ScoreableResponse): ScoreResult {
-  const key = (item.answer_key ?? {}) as { order?: string[]; accepted_alternatives?: string[][] };
+  const keyParsed = buildASentenceAnswerKeySchema.safeParse(item.answer_key);
   const order = isBuildASentenceAnswer(response.answer) ? response.answer.order : [];
-  if (!key.order || key.order.length === 0) return { isCorrect: null, pointsEarned: 0 };
+  if (!keyParsed.success || keyParsed.data.order.length === 0) return { isCorrect: null, pointsEarned: 0 };
+  const key = keyParsed.data;
 
   const isCorrect =
     arraysEqualOrdered(order, key.order) ||
@@ -127,10 +133,10 @@ function scoreBuildASentence(item: ScoreableItem, response: ScoreableResponse): 
 }
 
 function scoreListenAndRepeat(item: ScoreableItem, response: ScoreableResponse): ScoreResult {
-  const key = (item.answer_key ?? {}) as { target_sentence?: string };
-  if (!key.target_sentence) return { isCorrect: null, pointsEarned: 0 };
+  const keyParsed = listenAndRepeatAnswerKeySchema.safeParse(item.answer_key);
+  if (!keyParsed.success) return { isCorrect: null, pointsEarned: 0 };
 
-  const accuracy = wordAccuracy(response.transcript ?? "", key.target_sentence);
+  const accuracy = wordAccuracy(response.transcript ?? "", keyParsed.data.target_sentence);
   // 0.9는 스펙에 근거 수치가 없는 임의 값이다(2026-08-27 교차검증 확인 — 필요하면 실사용
   // 데이터가 쌓인 뒤 조정할 것, 지금은 "거의 정확히 따라 말함"의 상식적 기준으로 잡아둔 것).
   // Delivery(발음)는 별도 ai_rubric이 참고용으로 병합한다(§12).

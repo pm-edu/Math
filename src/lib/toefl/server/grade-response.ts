@@ -7,11 +7,23 @@
 // 실패(재시도까지 다 실패)하면 조용히 0점으로 남기지 않고 toefl_ai_score에 status='pending_manual'
 // 행을 남긴다(spec §12, 2026-08-27 교차검증 A5 — 이 컬럼 자체가 없어서 미구현이었던 부분).
 
+import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { gradeWritingResponse } from "./ai-grading";
 import { gradeInterviewAudio, scoreListenAndRepeatFromTranscript, transcribeAudio } from "./audio-grading";
 import { aiRubricToPoints } from "../scoring";
-import type { AcademicDiscussionPayload, ListenAndRepeatPayload, TakeAnInterviewPayload, WriteAnEmailPayload } from "../types";
+import {
+  academicDiscussionPayloadSchema,
+  listenAndRepeatPayloadSchema,
+  takeAnInterviewPayloadSchema,
+  writeAnEmailPayloadSchema,
+} from "../zod-schemas";
+
+// item.payload/response.answer는 DB jsonb라 실제로는 unknown이다 — 예전엔 as로 우겼는데
+// (2026-08-27 교차검증 C2), 여기서 저장 시점 계약(§6)과 실제로 맞는지 zod로 확인한다.
+// 이 값들은 우리 자신의 생성기(server/generators/*)가 저장한 서버 신뢰 데이터라 안 맞으면
+// 진짜 버그(스펙 계약 위반) — 조용히 넘어가지 않고 pending_manual로 남겨 관리자에게 알린다.
+const essayAnswerTextSchema = z.object({ text: z.string() }).partial();
 
 export type GradableItem = {
   id: string;
@@ -43,13 +55,22 @@ export async function gradeSingleResponse(
   if (item.task_type === "write_an_email" || item.task_type === "academic_discussion") {
     if (!options.force && (await hasGradedScore(service, response.id))) return {};
 
-    const answerText = ((response.answer as { text?: string } | null)?.text ?? "").trim();
+    const answerParsed = essayAnswerTextSchema.safeParse(response.answer);
+    const answerText = (answerParsed.success ? answerParsed.data.text : "")?.trim() ?? "";
     if (!answerText) return {}; // 미응답 — 0점 그대로, AI 호출 자체를 안 한다
+
+    const payloadSchema = item.task_type === "write_an_email" ? writeAnEmailPayloadSchema : academicDiscussionPayloadSchema;
+    const payloadParsed = payloadSchema.safeParse(item.payload);
+    if (!payloadParsed.success) {
+      const message = `문항 payload가 §6 계약과 안 맞습니다: ${payloadParsed.error.issues[0]?.message ?? "형식 오류"}`;
+      await savePendingManualScore(service, response.id, message);
+      return { warning: `${item.task_type} 채점 실패: ${message}` };
+    }
 
     const result = await gradeWritingResponse({
       taskType: item.task_type,
       prompt: item.prompt,
-      payload: item.payload as WriteAnEmailPayload | AcademicDiscussionPayload,
+      payload: payloadParsed.data,
       responseText: answerText,
     });
 
@@ -75,12 +96,17 @@ export async function gradeSingleResponse(
       return { warning: `take_an_interview 채점 실패: ${message}` };
     }
 
-    const payload = item.payload as TakeAnInterviewPayload;
+    const payloadParsed = takeAnInterviewPayloadSchema.safeParse(item.payload);
+    if (!payloadParsed.success) {
+      const message = `문항 payload가 §6 계약과 안 맞습니다: ${payloadParsed.error.issues[0]?.message ?? "형식 오류"}`;
+      await savePendingManualScore(service, response.id, message);
+      return { warning: `take_an_interview 채점 실패: ${message}` };
+    }
     const result = await gradeInterviewAudio({
       audioBase64,
       mimeType: guessAudioMimeType(response.audio_path),
       question: item.prompt,
-      turnType: payload.turn_type,
+      turnType: payloadParsed.data.turn_type,
     });
     if (!result.ok) {
       await savePendingManualScore(service, response.id, result.message);
@@ -104,9 +130,12 @@ export async function gradeSingleResponse(
     const sttResult = await transcribeAudio(audioBase64, guessAudioMimeType(response.audio_path));
     if (!sttResult.ok) return { warning: `listen_and_repeat 채점 실패: ${sttResult.message}` };
 
-    const payload = item.payload as ListenAndRepeatPayload;
+    const payloadParsed = listenAndRepeatPayloadSchema.safeParse(item.payload);
+    if (!payloadParsed.success) {
+      return { warning: `listen_and_repeat 채점 실패: 문항 payload가 §6 계약과 안 맞습니다.` };
+    }
     const { isCorrect, pointsEarned } = scoreListenAndRepeatFromTranscript(
-      payload.target_sentence,
+      payloadParsed.data.target_sentence,
       Number(item.points),
       sttResult.transcript
     );

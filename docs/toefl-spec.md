@@ -272,6 +272,20 @@ answer:     { "selected":["B"] }
 scoring:    auto_key. multi_select는 정답 2개 중 1개만 맞으면 0.5점(부분점수 규칙 명시)
 ```
 
+> **multi_select 채점 공식(2026-08-27 확정, 교차검증 A항목)**: `format`이 `multi_select`가
+> 아니면(mcq/insert_text/replay, payload에 format 자체가 없는 choose_a_response 포함) 완전
+> 일치만 정답으로 인정하고 부분점수가 없다. `multi_select`만 아래 공식으로 부분점수를 준다:
+> ```
+> matched = 선택한 것 중 정답인 개수
+> wrong   = 선택한 것 중 오답인 개수
+> ratio   = max(0, matched - wrong) / 정답 개수      // 0 미만으로 내려가지 않음
+> pointsEarned = round(ratio * 배점, 소수 2자리)
+> isCorrect    = (ratio === 1 && wrong === 0)
+> ```
+> 즉 오답을 추가로 고르면 맞춘 개수에서 그만큼 뺀 뒤 비율을 낸다 — 정답만 전부 고르거나(만점),
+> 정답 일부만 고르면(부분점수) 되지만, 오답을 하나라도 섞으면 그 오답 개수만큼 점수가 깎인다.
+> 구현: `src/lib/toefl/scoring/score-item.ts`의 `scoreMcqLike`.
+
 ### Listening
 
 **choose_a_response** — 짧은 발화 듣고 최적 응답 고르기
@@ -375,6 +389,13 @@ Reading·Listening에만 적용.
 5. 라우팅 결과는 `toefl_section_attempt.routed_to`에 기록, 클라이언트에는 **어느 경로인지 알려주지 않는다**
 
 > 라우팅 계산은 반드시 서버(Route Handler 또는 Postgres 함수)에서. 클라이언트 계산 금지.
+
+> **예외(2026-08-27 확정, 교차검증 A항목)**: 위 5번 규칙은 **응시 중**(아직 그 섹션을 제출하기
+> 전)의 클라이언트 응답에만 적용된다. **제출을 마친 뒤의 종합 리포트**(`GET
+> /api/toefl/attempts/:id/insights`)는 예외로 `routed_to`를 그대로 공개한다 — 어느 모듈로
+> 라우팅됐는지 알아야 "왜 이 점수가 나왔는지" 학생이 이해할 수 있고, 이미 그 섹션이 끝나
+> 라우팅을 바꿔치기할 방법이 없어 부정행위 우려도 없다. 이 예외를 쓰는 화면은 리포트뿐이며,
+> 응시 화면(`test/[attemptId]/...`)에는 여전히 어떤 형태로도 노출하지 않는다.
 
 ---
 
