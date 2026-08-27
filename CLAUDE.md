@@ -90,6 +90,13 @@ ElevenLabs 가정은 실제 프로젝트와 안 맞아 Gemini로 대체하기로
 
 ---
 
+## 교차검증 절차
+
+(1) `/review-pack 기능명` 실행 → (2) `review/` 폴더에 생성된 파일을 외부 AI(ChatGPT 등)에 업로드
+→ (3) `review/REVIEW_PROMPT.md` 내용을 함께 붙여넣기.
+
+---
+
 ## 공통 작업 규칙
 
 **해야 할 것**
