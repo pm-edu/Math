@@ -44,4 +44,12 @@ union all select '202608191600 생성배치',
        to_regclass('public.toefl_generation_batch') is not null
 union all select '202608191600 공개뷰가 verified를 거르는가',
        exists (select 1 from pg_views
-                where viewname = 'toefl_item_public' and definition like '%verified%');
+                where viewname = 'toefl_item_public' and definition like '%verified%')
+union all select '202608271200 점수변환표 cefr 컬럼',
+       exists (select 1 from information_schema.columns
+                where table_name = 'toefl_scale_conversion' and column_name = 'cefr')
+union all select '202608271200 밴드6.0 최상단 scaled=30 보정',
+       not exists (select 1 from toefl_scale_conversion where scaled = 29)
+union all select '202608271300 AI채점 status 컬럼',
+       exists (select 1 from information_schema.columns
+                where table_name = 'toefl_ai_score' and column_name = 'status');

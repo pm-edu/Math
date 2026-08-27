@@ -29,11 +29,14 @@ describe("scoreItem — complete_the_words", () => {
 });
 
 describe("scoreItem — mcq(단일 정답)", () => {
+  // format이 없거나(choose_a_response처럼 payload 자체에 format이 없는 유형) "mcq"/"insert_text"면
+  // 단일 정답 취급이 기본값이다(score-item.ts scoreMcqLike 참고).
   const item: ScoreableItem = {
     task_type: "academic_passage",
     scoring_mode: "auto_key",
     points: 1,
     answer_key: { correct: ["B"] },
+    payload: { format: "mcq", options: [] },
   };
 
   it("정답 선택", () => {
@@ -45,14 +48,41 @@ describe("scoreItem — mcq(단일 정답)", () => {
     const r = scoreItem(item, { answer: { selected: ["A"] } });
     expect(r).toEqual({ isCorrect: false, pointsEarned: 0 });
   });
+
+  it("payload가 없어도(choose_a_response 등) 단일 정답으로 채점", () => {
+    const itemNoPayload: ScoreableItem = { ...item, payload: undefined };
+    const r = scoreItem(itemNoPayload, { answer: { selected: ["B"] } });
+    expect(r).toEqual({ isCorrect: true, pointsEarned: 1 });
+  });
 });
 
-describe("scoreItem — multi_select 부분점수", () => {
+describe("scoreItem — insert_text(단일 정답, mcq와 같은 답안 형태)", () => {
+  const item: ScoreableItem = {
+    task_type: "academic_passage",
+    scoring_mode: "auto_key",
+    points: 1,
+    answer_key: { correct: ["p2"] },
+    payload: { format: "insert_text", options: [], insert_positions: ["p1", "p2", "p3"] },
+  };
+
+  it("정답 위치 선택", () => {
+    const r = scoreItem(item, { answer: { selected: ["p2"] } });
+    expect(r).toEqual({ isCorrect: true, pointsEarned: 1 });
+  });
+
+  it("다른 위치 선택은 오답", () => {
+    const r = scoreItem(item, { answer: { selected: ["p1"] } });
+    expect(r).toEqual({ isCorrect: false, pointsEarned: 0 });
+  });
+});
+
+describe("scoreItem — multi_select 부분점수(payload.format 기준)", () => {
   const item: ScoreableItem = {
     task_type: "academic_passage",
     scoring_mode: "auto_key",
     points: 1,
     answer_key: { correct: ["A", "B"] },
+    payload: { format: "multi_select", options: [], select_count: 2 },
   };
 
   it("정답 2개 중 1개만 맞으면 0.5점", () => {
@@ -66,10 +96,15 @@ describe("scoreItem — multi_select 부분점수", () => {
     expect(r).toEqual({ isCorrect: true, pointsEarned: 1 });
   });
 
-  it("오답을 추가로 골랐으면 만점 인정 안 함", () => {
+  it("오답을 추가로 고르면 그만큼 감점된다(2026-08-27 수정 — 예전엔 만점이 나가던 버그)", () => {
     const r = scoreItem(item, { answer: { selected: ["A", "B", "C"] } });
     expect(r.isCorrect).toBe(false);
-    expect(r.pointsEarned).toBe(1); // matchedCount 2/2 비율은 만점이지만 오답 포함으로 isCorrect false
+    expect(r.pointsEarned).toBe(0.5); // 맞음 2 - 틀림 1 = 1, /정답개수 2 = 0.5
+  });
+
+  it("오답만 잔뜩 고르면 0점(음수로 내려가지 않음)", () => {
+    const r = scoreItem(item, { answer: { selected: ["C", "D", "E"] } });
+    expect(r).toEqual({ isCorrect: false, pointsEarned: 0 });
   });
 });
 
@@ -124,6 +159,17 @@ describe("scoreItem — listen_and_repeat(auto_transcript)", () => {
     expect(r.pointsEarned).toBeGreaterThan(0);
     expect(r.pointsEarned).toBeLessThan(1);
     expect(r.isCorrect).toBe(false);
+  });
+
+  it("목표 문장에 없는 단어를 덧붙여 말하면 감점된다(WER 삽입 오류, 2026-08-27 수정)", () => {
+    const r = scoreItem(item, {
+      answer: null,
+      transcript: "Well actually The museum will be closed for renovations next month you know",
+    });
+    // 이전 LCS 방식이면 목표 문장이 순서대로 다 들어있어서 만점(1.0)이 나왔다 — 이제는 덧붙인
+    // 5단어(well/actually/you/know 등)가 삽입 오류로 잡혀 감점된다.
+    expect(r.pointsEarned).toBeLessThan(1);
+    expect(r.pointsEarned).toBeGreaterThan(0);
   });
 });
 

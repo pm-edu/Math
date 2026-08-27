@@ -70,7 +70,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const requestedIds = responses.map((r) => r.item_id);
   const { data: items, error: itemsErr } = await service
     .from("toefl_item")
-    .select("id, task_type, scoring_mode, points, answer_key")
+    .select("id, task_type, scoring_mode, points, answer_key, payload")
     .eq("module_id", module.id)
     .in("id", requestedIds);
   if (itemsErr) return jsonError(500, `문항 조회에 실패했습니다: ${itemsErr.message}`);

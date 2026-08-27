@@ -5,7 +5,7 @@ export { aggregateRaw } from "./aggregate";
 export type { AggregatableResponse } from "./aggregate";
 export { routeStage2 } from "./routing";
 export { rawToScaled, scaledToBand, applyRouteCap, bandToCefr, bandDescription } from "./scale";
-export type { ScaleConversionRow } from "./scale";
+export type { ScaleConversionRow, BandLookupRow, CefrLookupRow } from "./scale";
 export { round2 } from "./round";
 export { aiRubricToPoints } from "./ai-rubric";
 export { summarizeSkillTags } from "./skill-tags";

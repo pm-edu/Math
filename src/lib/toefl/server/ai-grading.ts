@@ -3,10 +3,33 @@
 // 확정했다(toefl-subsystem-plan 메모, P0 결정사항과 동일). src/lib/gemini-server.ts의 callGemini를
 // 그대로 재사용(503/429 재시도는 이미 내장) — JSON 파싱 실패(형식 오류)는 별도로 최대 2회 재시도한다.
 
+import { z } from "zod";
 import { callGemini } from "@/lib/gemini-server";
 import type { AcademicDiscussionPayload, WriteAnEmailPayload, WritingRubricScore } from "../types";
 
 const MAX_PARSE_ATTEMPTS = 2;
+
+// Gemini가 돌려주는 JSON을 검증한다. 예전엔 값이 이상해도(예: 문자열, 빠진 필드) num()/clamp()로
+// 조용히 0이나 기본값으로 때워서, "AI가 진짜 0점을 줬다"와 "응답이 애초에 깨졌다"를 구분할 수
+// 없었다(2026-08-27 교차검증 A5) — 이제 형태가 안 맞으면 파싱 자체를 실패시켜 재시도로 넘기고,
+// 재시도까지 다 실패하면 호출부가 pending_manual로 남긴다.
+//
+// overall_band 하한을 0으로 뒀다(예전엔 1.0으로 clamp — TOEFL 공식 밴드 표시는 1.0부터지만,
+// 채점 파이프라인 내부값으로는 완전 무응답/무관 답변이 진짜 0점을 받을 수 있어야 한다).
+const writingRubricSchema = z.object({
+  task_achievement: z.number().min(0).max(5),
+  coherence: z.number().min(0).max(5),
+  lexical_resource: z.number().min(0).max(5),
+  grammar: z.number().min(0).max(5),
+  overall_band: z.number().min(0).max(6),
+  feedback_ko: z.string().min(1),
+  strengths: z.array(z.string()).default([]),
+  improvements: z.array(z.string()).default([]),
+  corrected_excerpts: z
+    .array(z.object({ original: z.string(), corrected: z.string(), reason_ko: z.string() }))
+    .max(5)
+    .default([]),
+});
 
 export type GradeResult = { ok: true; rubric: WritingRubricScore } | { ok: false; message: string };
 
@@ -63,7 +86,8 @@ ${responseText}
 """
 
 지표: task_achievement(과제 수행), coherence(논리적 흐름), lexical_resource(어휘), grammar(문법).
-overall_band는 위 4개 지표를 종합한 1.0~6.0 사이 TOEFL 밴드 점수(0.5 단위)입니다.
+overall_band는 위 4개 지표를 종합한 0~6 사이 TOEFL 밴드 점수(0.5 단위)이며, 답안이 사실상
+무의미하거나(예: 무관한 텍스트, 한두 단어만 있음) 과제와 전혀 관련이 없으면 0으로 주세요.
 feedback_ko는 한국어로 한두 문단, strengths/improvements는 한국어 짧은 문장 배열,
 corrected_excerpts는 답안에서 고칠 만한 부분을 원문/수정본/한국어 이유로 짝지은 배열(0~3개)입니다.
 
@@ -72,41 +96,12 @@ corrected_excerpts는 답안에서 고칠 만한 부분을 원문/수정본/한�
 }
 
 function parseRubric(text: string): WritingRubricScore | null {
+  let raw: unknown;
   try {
-    const raw = JSON.parse(text) as Record<string, unknown>;
-    const num = (v: unknown, fallback = 0) => (typeof v === "number" && Number.isFinite(v) ? v : fallback);
-    const strArr = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x) => typeof x === "string") : []);
-
-    const overallBand = clamp(num(raw.overall_band), 1.0, 6.0);
-    if (typeof raw.feedback_ko !== "string" || !raw.feedback_ko.trim()) return null;
-
-    return {
-      task_achievement: clamp(num(raw.task_achievement), 0, 5),
-      coherence: clamp(num(raw.coherence), 0, 5),
-      lexical_resource: clamp(num(raw.lexical_resource), 0, 5),
-      grammar: clamp(num(raw.grammar), 0, 5),
-      overall_band: overallBand,
-      feedback_ko: raw.feedback_ko,
-      strengths: strArr(raw.strengths),
-      improvements: strArr(raw.improvements),
-      corrected_excerpts: Array.isArray(raw.corrected_excerpts)
-        ? (raw.corrected_excerpts as unknown[])
-            .filter(
-              (e): e is { original: string; corrected: string; reason_ko: string } =>
-                !!e &&
-                typeof e === "object" &&
-                typeof (e as Record<string, unknown>).original === "string" &&
-                typeof (e as Record<string, unknown>).corrected === "string" &&
-                typeof (e as Record<string, unknown>).reason_ko === "string"
-            )
-            .slice(0, 5)
-        : [],
-    };
+    raw = JSON.parse(text);
   } catch {
     return null;
   }
-}
-
-function clamp(n: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, n));
+  const parsed = writingRubricSchema.safeParse(raw);
+  return parsed.success ? parsed.data : null;
 }

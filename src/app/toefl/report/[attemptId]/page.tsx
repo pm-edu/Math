@@ -13,7 +13,7 @@
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { bandDescription, bandToCefr } from "@/lib/toefl/scoring";
+import { bandDescription, bandToCefr, type CefrLookupRow } from "@/lib/toefl/scoring";
 import { SECTION_LABEL_KEY, SECTION_ORDER } from "@/lib/toefl/section-order";
 import ToeflHeader from "@/components/toefl/ToeflHeader";
 import BandGauge from "@/components/toefl/BandGauge";
@@ -54,6 +54,9 @@ export default function ToeflReportPage({ params }: { params: Promise<{ attemptI
   const [totalScaled, setTotalScaled] = useState<number | null>(null);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [pendingManualCount, setPendingManualCount] = useState(0);
+  // 밴드→CEFR 매핑은 하드코딩이 아니라 toefl_scale_conversion.cefr에서 조회한다(2026-08-27
+  // 교차검증 B1 — scale.ts가 더 이상 이 매핑을 코드에 갖고 있지 않다).
+  const [cefrRows, setCefrRows] = useState<CefrLookupRow[]>([]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -66,7 +69,7 @@ export default function ToeflReportPage({ params }: { params: Promise<{ attemptI
       }
       const { data: attempt } = await supabase
         .from("toefl_attempt")
-        .select("id, mode, overall_band, total_scaled")
+        .select("id, form_id, mode, overall_band, total_scaled")
         .eq("id", attemptId)
         .maybeSingle();
       if (!attempt) {
@@ -77,6 +80,23 @@ export default function ToeflReportPage({ params }: { params: Promise<{ attemptI
       setMode(attempt.mode);
       setOverallBand(attempt.overall_band);
       setTotalScaled(attempt.total_scaled);
+
+      const { data: form } = await supabase
+        .from("toefl_form")
+        .select("blueprint_version")
+        .eq("id", attempt.form_id)
+        .maybeSingle();
+      if (form?.blueprint_version) {
+        // 이 폼의 버전 안에서는 영역·경로 무관하게 밴드→CEFR 대응이 전부 같은 곡선이라
+        // (시드가 6개 section/route 조합에 동일한 표를 반복해서 넣는다), 하나만 조회해서
+        // band 기준으로 중복 제거하면 충분하다 — section/route를 임의로 하나 고정하지 않는다.
+        const { data: cefr } = await supabase
+          .from("toefl_scale_conversion")
+          .select("band, cefr")
+          .eq("version", form.blueprint_version);
+        const byBand = new Map((cefr ?? []).map((r) => [r.band, r.cefr as string]));
+        setCefrRows(Array.from(byBand, ([band, cefrValue]) => ({ band, cefr: cefrValue })));
+      }
 
       const { data: rows } = await supabase
         .from("toefl_section_attempt")
@@ -144,7 +164,7 @@ export default function ToeflReportPage({ params }: { params: Promise<{ attemptI
 
   const finishedSections = sections.filter((s) => s.finished_at);
   const allDone = finishedSections.length === sections.length && sections.length > 0;
-  const cefr = overallBand ? bandToCefr(overallBand) : null;
+  const cefr = overallBand && cefrRows.length > 0 ? bandToCefr(overallBand, cefrRows) : null;
   const insightBySection = new Map(insights.map((i) => [i.section, i]));
   const routedInsights = insights.filter((i) => i.routed_to === "easy" || i.routed_to === "hard");
 
@@ -215,7 +235,7 @@ export default function ToeflReportPage({ params }: { params: Promise<{ attemptI
                 ≈ CEFR {cefr}
               </span>
               <p className="mx-auto mt-3 max-w-sm text-xs leading-relaxed text-[var(--secondary)]">
-                {bandDescription(overallBand, lang)}
+                {bandDescription(overallBand, cefrRows, lang)}
               </p>
             </>
           )}

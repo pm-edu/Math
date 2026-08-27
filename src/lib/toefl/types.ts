@@ -234,7 +234,15 @@ export type ToeflAnswerKey =
   | ListenAndRepeatAnswerKey
   | BuildASentenceAnswerKey;
 
-export type ToeflAnswer = CompleteTheWordsAnswerKey | ReadingMcqAnswer | BuildASentenceAnswer | Record<string, unknown>;
+// write_an_email/academic_discussion(ai_rubric, 자동채점 대상 아님)이 저장하는 자유서술 답안.
+export type EssayAnswer = { text: string };
+
+// 여기 없는 유형(listen_and_repeat/take_an_interview)은 텍스트 답이 아니라 오디오만 제출하므로
+// answer가 항상 null이다 — ScoreableResponse.answer는 이 유니온이 아니라 `| null`로 그 경우를 표현한다.
+// 예전엔 여기에 `Record<string, unknown>` 탈출구가 있었는데, scoring/score-item.ts가 그걸 믿고
+// as로 캐스팅만 하고 실제로 형태를 검증하지 않았다(2026-08-27 교차검증 B2 지적) — 탈출구를 없애고
+// score-item.ts에 타입가드를 추가해 대신하게 했다.
+export type ToeflAnswer = CompleteTheWordsAnswerKey | ReadingMcqAnswer | BuildASentenceAnswer | EssayAnswer;
 
 // ── AI 루브릭 채점 응답 (spec §12, Writing) ──
 export type WritingRubricScore = {

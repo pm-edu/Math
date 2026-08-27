@@ -32,6 +32,7 @@ const GROUPS: Group[] = [
       { label: "학생 관리", icon: "👥", href: "/admin/toefl/students" },
       { label: "오디오(TTS) 관리", icon: "🎧", href: "/admin/toefl/audio" },
       { label: "응시 관리", icon: "🧪", href: "/admin/toefl/attempts" },
+      { label: "AI 채점 대기", icon: "🩹", href: "/admin/toefl/grading-queue" },
     ],
   },
   { title: "리포트", items: [{ label: "반별 리포트", icon: "🏫" }, { label: "성적 추이", icon: "📈" }] },

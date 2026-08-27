@@ -6,11 +6,26 @@ export type ScaleConversionRow = { raw_min: number; raw_max: number; scaled: num
 
 // raw는 "만점 대비 백분율(0~100)" 기준이다(마이그레이션 202608151202 주석과 동일 전제).
 // 버킷은 raw_min 기준 계단함수로 판정한다(예: [0,8),[8,17),...) — 경계값 raw_min은 다음 구간 소속.
+//
+// raw_max는 이전엔 조회에 전혀 안 쓰이고 버려졌다(2026-08-27 교차검증 지적) — 구간이 비거나
+// 겹쳐도 조용히 넘어가는 문제가 있었다. 이제 정렬 후 앞 구간의 raw_max가 다음 구간의 raw_min과
+// 정확히 이어지는지 검증하고, 안 맞으면 "변환표 데이터 자체가 잘못됐다"는 뜻이므로 바로 던진다
+// (잘못된 시드로 조용히 틀린 점수를 내는 것보다, 여기서 시끄럽게 실패하는 게 낫다).
 export function rawToScaled(rawPercent: number, rows: ScaleConversionRow[]): number {
   if (rows.length === 0) throw new Error("변환표(toefl_scale_conversion) 데이터가 없습니다.");
-  const clamped = Math.min(100, Math.max(0, rawPercent));
   const sorted = [...rows].sort((a, b) => a.raw_min - b.raw_min);
 
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i - 1].raw_max !== sorted[i].raw_min) {
+      throw new Error(
+        `변환표(toefl_scale_conversion) 구간이 이어지지 않습니다: ` +
+          `${sorted[i - 1].raw_min}-${sorted[i - 1].raw_max} 다음 구간이 ${sorted[i].raw_min}에서 ` +
+          `시작합니다(${sorted[i - 1].raw_max}에서 이어져야 합니다). 공백 또는 중첩된 시드 데이터를 확인하세요.`
+      );
+    }
+  }
+
+  const clamped = Math.min(100, Math.max(0, rawPercent));
   let matched = sorted[0];
   for (const row of sorted) {
     if (clamped >= row.raw_min) matched = row;
@@ -19,28 +34,20 @@ export function rawToScaled(rawPercent: number, rows: ScaleConversionRow[]): num
   return matched.scaled;
 }
 
-// 영역점수(0-30) → 밴드(1.0-6.0) 고정 대응표.
-// spec §7의 표(migration 202608151202 시드값과 동일한 11단계)를 그대로 코드에 옮긴 것 —
-// ETS 공식 대응표가 확정되면 이 표만 교체하면 된다(다른 함수는 안 바뀜).
-const SCALED_TO_BAND: { minScaled: number; band: number }[] = [
-  { minScaled: 0, band: 1.0 },
-  { minScaled: 3, band: 1.5 },
-  { minScaled: 6, band: 2.0 },
-  { minScaled: 9, band: 2.5 },
-  { minScaled: 12, band: 3.0 },
-  { minScaled: 14, band: 3.5 },
-  { minScaled: 17, band: 4.0 },
-  { minScaled: 20, band: 4.5 },
-  { minScaled: 23, band: 5.0 },
-  { minScaled: 26, band: 5.5 },
-  { minScaled: 29, band: 6.0 },
-];
+// 영역점수(0-30) → 밴드(1.0-6.0). 예전엔 spec §7 표를 코드에 SCALED_TO_BAND로 따로 하드코딩해
+// 뒀는데, toefl_scale_conversion 테이블(주석 그대로 "점수 변환표 — 하드코딩 금지")이 이미 같은
+// (scaled, band) 쌍을 갖고 있어서 결국 같은 데이터가 두 곳에 있었다 — 시드를 고치면 코드는 안
+// 고쳐지는 식으로 어긋날 수 있다(실제로 scaled 최댓값이 시드는 29인데 표는 30이어야 하는 불일치가
+// 있었음, 2026-08-27 교차검증). 이제 rawToScaled와 같은 방식으로 호출자가 조회한 행을 받는다.
+export type BandLookupRow = { scaled: number; band: number };
 
-export function scaledToBand(scaled: number): number {
+export function scaledToBand(scaled: number, rows: BandLookupRow[]): number {
+  if (rows.length === 0) throw new Error("변환표(toefl_scale_conversion) 데이터가 없습니다.");
+  const sorted = [...rows].sort((a, b) => a.scaled - b.scaled);
   const clamped = Math.min(30, Math.max(0, scaled));
-  let matched = SCALED_TO_BAND[0].band;
-  for (const row of SCALED_TO_BAND) {
-    if (clamped >= row.minScaled) matched = row.band;
+  let matched = sorted[0].band;
+  for (const row of sorted) {
+    if (clamped >= row.scaled) matched = row.band;
     else break;
   }
   return matched;
@@ -52,20 +59,17 @@ export function applyRouteCap(band: number, route: "base" | "easy" | "hard"): nu
 }
 
 // 밴드(1.0-6.0) → CEFR 등급. spec §7 표 그대로("총점: ... 밴드 병기, 리포트에는 셋 다 표시").
-const BAND_TO_CEFR: { minBand: number; cefr: string }[] = [
-  { minBand: 1.0, cefr: "A1" },
-  { minBand: 2.0, cefr: "A2" },
-  { minBand: 3.0, cefr: "B1" },
-  { minBand: 4.0, cefr: "B2" },
-  { minBand: 5.0, cefr: "C1" },
-  { minBand: 6.0, cefr: "C2" },
-];
+// scaledToBand와 같은 이유로 하드코딩을 걷어내고 toefl_scale_conversion.cefr 컬럼(마이그레이션
+// 202608271200)에서 조회한 행을 받는다.
+export type CefrLookupRow = { band: number; cefr: string };
 
-export function bandToCefr(band: number): string {
+export function bandToCefr(band: number, rows: CefrLookupRow[]): string {
+  if (rows.length === 0) throw new Error("변환표(toefl_scale_conversion) 데이터가 없습니다.");
+  const sorted = [...rows].sort((a, b) => a.band - b.band);
   const clamped = Math.min(6.0, Math.max(1.0, band));
-  let matched = BAND_TO_CEFR[0].cefr;
-  for (const row of BAND_TO_CEFR) {
-    if (clamped >= row.minBand) matched = row.cefr;
+  let matched = sorted[0].cefr;
+  for (const row of sorted) {
+    if (clamped >= row.band) matched = row.cefr;
     else break;
   }
   return matched;
@@ -93,7 +97,7 @@ const CEFR_DESCRIPTION_KO: Record<string, string> = {
   C2: "읽거나 듣는 거의 모든 내용을 어려움 없이 이해할 수 있습니다.",
 };
 
-export function bandDescription(band: number, lang: "en" | "ko" = "en"): string {
-  const cefr = bandToCefr(band);
+export function bandDescription(band: number, rows: CefrLookupRow[], lang: "en" | "ko" = "en"): string {
+  const cefr = bandToCefr(band, rows);
   return (lang === "ko" ? CEFR_DESCRIPTION_KO : CEFR_DESCRIPTION_EN)[cefr];
 }

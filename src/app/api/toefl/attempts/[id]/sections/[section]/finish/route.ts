@@ -3,16 +3,9 @@ import { jsonError, requireToeflUser } from "@/lib/toefl/server/auth";
 import { createToeflServiceClient } from "@/lib/toefl/server/service-client";
 import { fetchBlueprint, resolveCurrentModule, resolveModuleItemIds } from "@/lib/toefl/server/modules";
 import { ADAPTIVE_SECTIONS } from "@/lib/toefl/section-order";
-import { gradeWritingResponse } from "@/lib/toefl/server/ai-grading";
-import { gradeInterviewAudio, scoreListenAndRepeatFromTranscript, transcribeAudio } from "@/lib/toefl/server/audio-grading";
-import { aggregateRaw, aiRubricToPoints, applyRouteCap, rawToScaled, routeStage2, scaledToBand } from "@/lib/toefl/scoring";
-import type {
-  AcademicDiscussionPayload,
-  ListenAndRepeatPayload,
-  TakeAnInterviewPayload,
-  ToeflSection,
-  WriteAnEmailPayload,
-} from "@/lib/toefl/types";
+import { gradeSingleResponse } from "@/lib/toefl/server/grade-response";
+import { aggregateRaw, applyRouteCap, rawToScaled, routeStage2, scaledToBand } from "@/lib/toefl/scoring";
+import type { ToeflSection } from "@/lib/toefl/types";
 
 // writing/speaking 종료 시 ai_rubric·auto_transcript 문항을 순차로 Gemini 채점(각각 최대 2회
 // 파싱 재시도 × callGemini 내부 3회 네트워크 재시도)하면 기본 서버리스 함수 실행시간 제한을
@@ -151,7 +144,7 @@ export async function POST(
 
   const { data: conversionRows } = await client
     .from("toefl_scale_conversion")
-    .select("raw_min, raw_max, scaled")
+    .select("raw_min, raw_max, scaled, band")
     .eq("version", form.blueprint_version)
     .eq("section", section)
     .eq("route", routedTo);
@@ -160,7 +153,7 @@ export async function POST(
   }
 
   const scaled = rawToScaled(rawPercent, conversionRows);
-  const band = applyRouteCap(scaledToBand(scaled), routedTo);
+  const band = applyRouteCap(scaledToBand(scaled, conversionRows), routedTo);
 
   const { error: finishErr } = await client
     .from("toefl_section_attempt")
@@ -216,85 +209,13 @@ async function finishNonAdaptiveSection(params: {
     const response = responseByItem.get(item.id);
     if (!response) continue; // 미응답 — 0점 그대로 둔다
 
-    if (item.task_type === "write_an_email" || item.task_type === "academic_discussion") {
-      const already = await hasAiScore(service, response.id);
-      if (already) continue;
-
-      const answerText = ((response.answer as { text?: string } | null)?.text ?? "").trim();
-      if (!answerText) continue;
-
-      const result = await gradeWritingResponse({
-        taskType: item.task_type,
-        prompt: item.prompt,
-        payload: item.payload as WriteAnEmailPayload | AcademicDiscussionPayload,
-        responseText: answerText,
-      });
-
-      if (!result.ok) {
-        warnings.push(`${item.task_type} 채점 실패: ${result.message}`);
-        continue;
-      }
-
-      const points = aiRubricToPoints(result.rubric.overall_band, Number(item.points));
-      await saveAiScore(service, response.id, result.rubric, result.rubric.overall_band, result.rubric.feedback_ko);
-      await service.from("toefl_response").update({ points_earned: points }).eq("id", response.id);
-      continue;
-    }
-
-    if (item.task_type === "take_an_interview") {
-      const already = await hasAiScore(service, response.id);
-      if (already || !response.audio_path) continue;
-
-      const audioBase64 = await downloadAudioBase64(service, response.audio_path);
-      if (!audioBase64) {
-        warnings.push("take_an_interview 채점 실패: 녹음 파일을 읽지 못했습니다.");
-        continue;
-      }
-
-      const payload = item.payload as TakeAnInterviewPayload;
-      const result = await gradeInterviewAudio({
-        audioBase64,
-        mimeType: guessAudioMimeType(response.audio_path),
-        question: item.prompt,
-        turnType: payload.turn_type,
-      });
-      if (!result.ok) {
-        warnings.push(`take_an_interview 채점 실패: ${result.message}`);
-        continue;
-      }
-
-      const points = aiRubricToPoints(result.rubric.overall_band, Number(item.points));
-      await saveAiScore(service, response.id, result.rubric, result.rubric.overall_band, result.rubric.feedback_ko);
-      await service.from("toefl_response").update({ points_earned: points }).eq("id", response.id);
-      continue;
-    }
-
-    if (item.task_type === "listen_and_repeat") {
-      if (response.transcript || !response.audio_path) continue; // 이미 STT 완료(idempotent)
-
-      const audioBase64 = await downloadAudioBase64(service, response.audio_path);
-      if (!audioBase64) {
-        warnings.push("listen_and_repeat 채점 실패: 녹음 파일을 읽지 못했습니다.");
-        continue;
-      }
-
-      const sttResult = await transcribeAudio(audioBase64, guessAudioMimeType(response.audio_path));
-      if (!sttResult.ok) {
-        warnings.push(`listen_and_repeat 채점 실패: ${sttResult.message}`);
-        continue;
-      }
-
-      const payload = item.payload as ListenAndRepeatPayload;
-      const { isCorrect, pointsEarned } = scoreListenAndRepeatFromTranscript(
-        payload.target_sentence,
-        Number(item.points),
-        sttResult.transcript
-      );
-      await service
-        .from("toefl_response")
-        .update({ transcript: sttResult.transcript, is_correct: isCorrect, points_earned: pointsEarned })
-        .eq("id", response.id);
-    }
+    const result = await gradeSingleResponse(service, item, {
+      id: response.id,
+      answer: response.answer,
+      audio_path: response.audio_path,
+      transcript: response.transcript,
+    });
+    if (result.warning) warnings.push(result.warning);
   }
 
   const { data: finalResponses } = itemIds.length
@@ -307,7 +228,7 @@ async function finishNonAdaptiveSection(params: {
 
   const { data: conversionRows } = await client
     .from("toefl_scale_conversion")
-    .select("raw_min, raw_max, scaled")
+    .select("raw_min, raw_max, scaled, band")
     .eq("version", blueprintVersion)
     .eq("section", section)
     .eq("route", "base");
@@ -316,7 +237,7 @@ async function finishNonAdaptiveSection(params: {
   }
 
   const scaled = rawToScaled(rawPercent, conversionRows);
-  const band = scaledToBand(scaled);
+  const band = scaledToBand(scaled, conversionRows);
 
   const { error: finishErr } = await client
     .from("toefl_section_attempt")
@@ -327,39 +248,3 @@ async function finishNonAdaptiveSection(params: {
   return Response.json({ ok: true, done: true, raw_score: totalRaw, scaled_score: scaled, band, warnings });
 }
 
-async function hasAiScore(service: SupabaseClient, responseId: string): Promise<boolean> {
-  const { data } = await service.from("toefl_ai_score").select("id").eq("response_id", responseId).maybeSingle();
-  return !!data;
-}
-
-async function saveAiScore(
-  service: SupabaseClient,
-  responseId: string,
-  rubric: Record<string, unknown>,
-  overall: number,
-  feedbackKo: string
-) {
-  await service.from("toefl_ai_score").insert({
-    response_id: responseId,
-    model: "gemini-flash-latest",
-    rubric,
-    overall,
-    feedback_ko: feedbackKo,
-    raw_output: rubric,
-  });
-}
-
-// 클라이언트는 실제 녹음 포맷(webm 또는 Safari mp4 폴백)을 파일 확장자로 남겨둔다
-// (RecorderPanel.tsx) — 여기서 하드코딩된 "audio/webm" 대신 그 확장자로 Gemini에 보낼
-// mimeType을 고른다. 안 맞으면 Gemini가 오디오를 못 읽어서 mp4 폴백이 조용히 깨진다.
-function guessAudioMimeType(path: string): string {
-  return path.toLowerCase().endsWith(".mp4") ? "audio/mp4" : "audio/webm";
-}
-
-// toefl-recordings는 비공개 버킷이라 service role로만 내려받을 수 있다(§5와 같은 원칙).
-async function downloadAudioBase64(service: SupabaseClient, path: string): Promise<string | null> {
-  const { data, error } = await service.storage.from("toefl-recordings").download(path);
-  if (error || !data) return null;
-  const buf = Buffer.from(await data.arrayBuffer());
-  return buf.toString("base64");
-}

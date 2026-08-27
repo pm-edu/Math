@@ -4,9 +4,21 @@
 // Gemini는 오디오를 inline_data로 직접 받을 수 있다(기존 generate-solution.ts가 이미지에 쓰는
 // 방식과 동일한 메커니즘).
 
+import { z } from "zod";
 import { callGemini } from "@/lib/gemini-server";
 import { scoreItem } from "../scoring";
 import type { InterviewRubricScore } from "../types";
+
+// ai-grading.ts와 같은 이유(2026-08-27 교차검증 A5·A4)로 zod 검증 + overall_band 하한 0.
+const interviewRubricSchema = z.object({
+  delivery: z.number().min(0).max(5),
+  language_use: z.number().min(0).max(5),
+  topic_development: z.number().min(0).max(5),
+  overall_band: z.number().min(0).max(6),
+  feedback_ko: z.string().min(1),
+  strengths: z.array(z.string()).default([]),
+  improvements: z.array(z.string()).default([]),
+});
 
 export type TranscribeResult = { ok: true; transcript: string } | { ok: false; message: string };
 
@@ -57,9 +69,9 @@ export async function gradeInterviewAudio(params: {
 
 이 음성을 듣고 3개 지표(각 0~5점)로 채점하세요:
 delivery(발음·억양·말하기 속도), language_use(문법·어휘 정확성), topic_development(내용 전개·논리성).
-overall_band는 1.0~6.0 사이 TOEFL 밴드 점수(0.5 단위)입니다.
+overall_band는 0~6 사이 TOEFL 밴드 점수(0.5 단위)입니다.
 feedback_ko는 한국어로 한두 문단, strengths/improvements는 한국어 짧은 문장 배열입니다.
-무음이거나 질문과 무관한 답변이면 모든 점수를 낮게 주세요.
+무음이거나 질문과 완전히 무관한 답변이면 모든 점수를 0으로 주세요.
 
 아래 JSON 형식으로만 응답하세요. 다른 텍스트는 절대 포함하지 마세요:
 {"delivery":0,"language_use":0,"topic_development":0,"overall_band":0,"feedback_ko":"","strengths":[],"improvements":[]}`;
@@ -83,24 +95,12 @@ feedback_ko는 한국어로 한두 문단, strengths/improvements는 한국어 �
 }
 
 function parseInterviewRubric(text: string): InterviewRubricScore | null {
+  let raw: unknown;
   try {
-    const raw = JSON.parse(text) as Record<string, unknown>;
-    const num = (v: unknown, fallback = 0) => (typeof v === "number" && Number.isFinite(v) ? v : fallback);
-    const strArr = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x) => typeof x === "string") : []);
-    const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
-
-    if (typeof raw.feedback_ko !== "string" || !raw.feedback_ko.trim()) return null;
-
-    return {
-      delivery: clamp(num(raw.delivery), 0, 5),
-      language_use: clamp(num(raw.language_use), 0, 5),
-      topic_development: clamp(num(raw.topic_development), 0, 5),
-      overall_band: clamp(num(raw.overall_band), 1.0, 6.0),
-      feedback_ko: raw.feedback_ko,
-      strengths: strArr(raw.strengths),
-      improvements: strArr(raw.improvements),
-    };
+    raw = JSON.parse(text);
   } catch {
     return null;
   }
+  const parsed = interviewRubricSchema.safeParse(raw);
+  return parsed.success ? parsed.data : null;
 }
