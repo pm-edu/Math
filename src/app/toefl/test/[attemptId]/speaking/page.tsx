@@ -16,6 +16,7 @@ import TaskRenderer from "@/components/toefl/TaskRenderer";
 import SectionDoneActions from "@/components/toefl/SectionDoneActions";
 import ExitTestButton from "@/components/toefl/ExitTestButton";
 import { useHasPendingUploads, usePendingUploadTasks, recordingUploadQueue } from "@/lib/toefl/recording-upload-queue";
+import type { SpeakingStageStatus } from "@/components/toefl/RecorderPanel";
 import type { ToeflItemPublic, ToeflStimulusPublic } from "@/lib/toefl/types";
 
 type CurrentResponse = {
@@ -61,6 +62,11 @@ export default function ToeflSpeakingTestPage({ params }: { params: Promise<{ at
   const [mode, setMode] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [grading, setGrading] = useState(false);
+  // 3차 화면 검토(2026-08-27) [A]-2: "화면에 현재 단계를 항상 표시"하라는 지적이 세 번째라
+  // 이번엔 하위 컴포넌트(TakeAnInterview/ListenAndRepeat→RecorderPanel)가 상태를 올려보내게
+  // 만들고, 고정된 위치(상단바)에 그대로 보여준다 — 유형마다 카드 안에 다르게 적혀 있던 문구를
+  // 찾아 읽지 않아도 항상 같은 자리에서 보인다.
+  const [stageStatus, setStageStatus] = useState<SpeakingStageStatus | null>(null);
 
   const tokenRef = useRef<string | null>(null);
   const autoFinishedRef = useRef(false);
@@ -180,6 +186,7 @@ export default function ToeflSpeakingTestPage({ params }: { params: Promise<{ at
 
   function goTo(index: number) {
     setActiveIndex(index);
+    setStageStatus(null);
   }
 
   // AI 채점(STT+루브릭)이 녹음 다운로드까지 포함해 시간이 걸릴 수 있다 — 실패해도 반드시
@@ -305,6 +312,37 @@ export default function ToeflSpeakingTestPage({ params }: { params: Promise<{ at
         </p>
       </header>
 
+      {/* 고정 상태표시줄 — 어떤 문항 유형이든 항상 같은 자리, 같은 5단계 어휘로 보여준다. */}
+      <div
+        className={`mx-auto flex max-w-3xl items-center gap-2 px-6 py-2 text-sm font-medium ${
+          stageStatus?.phase === "failed" ? "bg-red-50 text-red-700" : "bg-[var(--pink-light)]/50 text-[var(--foreground)]"
+        }`}
+        aria-live="polite"
+      >
+        <span
+          className={`h-2 w-2 shrink-0 rounded-full ${
+            stageStatus?.phase === "recording"
+              ? "animate-pulse bg-red-500"
+              : stageStatus?.phase === "failed"
+              ? "bg-red-500"
+              : stageStatus?.phase === "done"
+              ? "bg-[var(--mint-dark)]"
+              : "bg-[var(--secondary)]"
+          }`}
+          aria-hidden="true"
+        />
+        <span>{describeStageStatus(stageStatus)}</span>
+        {stageStatus?.phase === "failed" && activeItem && (
+          <button
+            type="button"
+            onClick={() => recordingUploadQueue.retryNow(activeItem.id)}
+            className="ml-1 rounded-full border border-red-300 px-3 py-0.5 text-xs font-bold text-red-700"
+          >
+            Try again
+          </button>
+        )}
+      </div>
+
       <div className="mx-auto flex max-w-3xl items-center gap-2 overflow-x-auto px-6 py-3">
         {items.map((it, idx) => (
           <button
@@ -370,6 +408,7 @@ export default function ToeflSpeakingTestPage({ params }: { params: Promise<{ at
             onChange={(answer) => handleRecorded(activeItem.id, (answer as { audio_path: string }).audio_path)}
             turnIndex={interviewTurnIndex(items, activeItem.id)}
             turnTotal={items.filter((it) => it.task_type === "take_an_interview").length}
+            onStatusChange={setStageStatus}
           />
         )}
       </div>
@@ -401,6 +440,23 @@ export default function ToeflSpeakingTestPage({ params }: { params: Promise<{ at
       </footer>
     </main>
   );
+}
+
+// 5단계 상태표시줄 문구 — 어떤 문항 유형이든 이 함수 하나로 통일한다(2026-08-27 [A]-2).
+function describeStageStatus(status: SpeakingStageStatus | null): string {
+  if (!status) return "Preparing…";
+  switch (status.phase) {
+    case "prep":
+      return `Preparing… ${status.secondsLeft}s`;
+    case "recording":
+      return `Recording… ${status.secondsLeft}s left`;
+    case "uploading":
+      return "Uploading…";
+    case "done":
+      return "✓ Done";
+    case "failed":
+      return "⚠ Failed";
+  }
 }
 
 // take_an_interview 문항이 이 섹션에서 몇 번째 턴인지(0-based) — 같은 task_type 문항들만

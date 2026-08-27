@@ -14,11 +14,11 @@ import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { bandDescription, bandToCefr, type CefrLookupRow } from "@/lib/toefl/scoring";
-import { SECTION_LABEL_KEY, SECTION_ORDER } from "@/lib/toefl/section-order";
+import { SECTION_LABEL_KEY, SECTION_ORDER, TASK_TYPE_SECTION } from "@/lib/toefl/section-order";
 import ToeflHeader from "@/components/toefl/ToeflHeader";
 import BandGauge from "@/components/toefl/BandGauge";
 import { interpolate, useLang, type DictKey } from "@/lib/i18n";
-import type { ToeflRoute, ToeflSection } from "@/lib/toefl/types";
+import type { ToeflRoute, ToeflSection, ToeflTaskType } from "@/lib/toefl/types";
 import type { SkillTagStat } from "@/lib/toefl/scoring";
 
 type SectionRow = {
@@ -54,6 +54,9 @@ export default function ToeflReportPage({ params }: { params: Promise<{ attemptI
   const [totalScaled, setTotalScaled] = useState<number | null>(null);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [pendingManualCount, setPendingManualCount] = useState(0);
+  // 화면 검토(2026-08-27) [B/E]: pending_manual 문항이 속한 영역만 "잠정" 표시를 해야 한다 —
+  // 카운트만으론 어느 영역 점수가 아직 안 굳었는지 알 수 없어서 별도로 든다.
+  const [pendingManualSections, setPendingManualSections] = useState<Set<ToeflSection>>(new Set());
   // 밴드→CEFR 매핑은 하드코딩이 아니라 toefl_scale_conversion.cefr에서 조회한다(2026-08-27
   // 교차검증 B1 — scale.ts가 더 이상 이 매핑을 코드에 갖고 있지 않다).
   const [cefrRows, setCefrRows] = useState<CefrLookupRow[]>([]);
@@ -113,16 +116,23 @@ export default function ToeflReportPage({ params }: { params: Promise<{ attemptI
       const { data: responses } = await supabase.from("toefl_response").select("id, item_id").eq("attempt_id", attemptId);
       const itemIds = (responses ?? []).map((r) => r.item_id);
       if (itemIds.length) {
-        const { data: itemRows } = await supabase.from("toefl_item_public").select("id, scoring_mode").in("id", itemIds);
-        const aiRubricItemIds = new Set((itemRows ?? []).filter((i) => i.scoring_mode === "ai_rubric").map((i) => i.id));
-        const aiRubricResponseIds = (responses ?? []).filter((r) => aiRubricItemIds.has(r.item_id)).map((r) => r.id);
-        if (aiRubricResponseIds.length) {
+        const { data: itemRows } = await supabase.from("toefl_item_public").select("id, task_type, scoring_mode").in("id", itemIds);
+        const aiRubricItems = new Map(
+          (itemRows ?? []).filter((i) => i.scoring_mode === "ai_rubric").map((i) => [i.id, i.task_type as ToeflTaskType])
+        );
+        const aiRubricResponses = (responses ?? []).filter((r) => aiRubricItems.has(r.item_id));
+        if (aiRubricResponses.length) {
           const { data: scoreRows } = await supabase
             .from("toefl_ai_score")
             .select("response_id")
-            .in("response_id", aiRubricResponseIds);
+            .in(
+              "response_id",
+              aiRubricResponses.map((r) => r.id)
+            );
           const scored = new Set((scoreRows ?? []).map((s) => s.response_id));
-          setPendingManualCount(aiRubricResponseIds.filter((id) => !scored.has(id)).length);
+          const pending = aiRubricResponses.filter((r) => !scored.has(r.id));
+          setPendingManualCount(pending.length);
+          setPendingManualSections(new Set(pending.map((r) => TASK_TYPE_SECTION[aiRubricItems.get(r.item_id)!])));
         }
       }
 
@@ -207,22 +217,33 @@ export default function ToeflReportPage({ params }: { params: Promise<{ attemptI
               </tr>
             </thead>
             <tbody>
-              {sections.map((s) => (
-                <tr key={s.section} className="border-t border-[var(--border-c)]">
-                  <td className="px-4 py-2 text-[var(--foreground)]">{t(SECTION_LABEL_KEY[s.section])}</td>
-                  <td className="px-4 py-2 text-[var(--foreground)]">
-                    {s.finished_at ? (s.scaled_score ?? "—") : t("toefl_notTaken")}
-                  </td>
-                  <td className="px-4 py-2 text-[var(--foreground)]">{s.finished_at ? (s.band ?? "—") : "—"}</td>
-                </tr>
-              ))}
+              {sections.map((s) => {
+                const provisional = pendingManualSections.has(s.section);
+                return (
+                  <tr key={s.section} className="border-t border-[var(--border-c)]">
+                    <td className="px-4 py-2 text-[var(--foreground)]">{t(SECTION_LABEL_KEY[s.section])}</td>
+                    <td className="px-4 py-2 text-[var(--foreground)]">
+                      {s.finished_at ? (s.scaled_score ?? "—") : t("toefl_notTaken")}
+                      {provisional && (
+                        <span className="ml-1.5 text-[11px] font-semibold text-amber-700">({t("toefl_provisional")})</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2 text-[var(--foreground)]">{s.finished_at ? (s.band ?? "—") : "—"}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
 
         <div className="mt-6 rounded-2xl border border-[var(--mint-dark)]/30 bg-[var(--mint)]/30 px-6 py-6 text-center">
           <p className="text-sm text-[var(--secondary)]">{t("toefl_overallBand")}</p>
-          <p className="text-4xl font-bold text-[var(--mint-dark)]">{overallBand || "—"}</p>
+          <p className="text-4xl font-bold text-[var(--mint-dark)]">
+            {overallBand || "—"}
+            {pendingManualCount > 0 && (
+              <span className="ml-2 align-middle text-xs font-semibold text-amber-700">⏳ {t("toefl_pendingManualBadge")}</span>
+            )}
+          </p>
           <div className="mx-auto mt-4 max-w-xs">
             <BandGauge band={overallBand ?? 0} />
           </div>

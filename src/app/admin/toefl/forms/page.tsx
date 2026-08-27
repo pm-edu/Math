@@ -29,6 +29,8 @@ export default function ToeflFormsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   /** 모듈별 "오디오 없는 지문" 개수 — Listening/Speaking 게시 전 확인용 */
   const [pendingAudio, setPendingAudio] = useState<Record<string, number>>({});
+  /** 모듈별 검수 대기(verified=false) 문항 수 — "부족"과 "검수만 하면 되는 것"을 구분해 보여준다 */
+  const [pendingReview, setPendingReview] = useState<Record<string, number>>({});
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -39,15 +41,25 @@ export default function ToeflFormsPage() {
         supabase.from("toefl_form").select("id, code, title, blueprint_version, is_published").order("created_at"),
         supabase.from("toefl_form_blueprint").select("version, section, stage, route, item_count, task_mix").eq("is_active", true),
         supabase.from("toefl_module").select("id, form_id, section, stage, route"),
-        supabase.from("toefl_item").select("module_id, task_type").eq("is_active", true),
+        // 3차 화면 검토(2026-08-27) [A]-1: 이전엔 is_active만 걸러서 검수 대기(verified=false)
+        // 초안까지 "충족"으로 세고 있었다 — toefl_item_public(학생이 실제로 받는 뷰)은
+        // verified=true만 노출하므로, 여기서도 verified=true인 것만 "실제로 채워진 문항"으로
+        // 세야 게시 버튼 활성화 여부가 실제 학생 경험과 일치한다. 이게 3번째 지적의 근본 원인이었다.
+        supabase.from("toefl_item").select("module_id, task_type, verified").eq("is_active", true),
         supabase.from("toefl_stimulus").select("module_id, task_type, audio_path"),
       ]);
 
     const counts: ItemCounts = {};
+    const draftCounts: Record<string, number> = {}; // 검수 대기(verified=false) — 진단용
     for (const it of items ?? []) {
+      if (!it.verified) {
+        draftCounts[it.module_id] = (draftCounts[it.module_id] ?? 0) + 1;
+        continue;
+      }
       const m = (counts[it.module_id] ??= {});
       m[it.task_type] = (m[it.task_type] ?? 0) + 1;
     }
+    setPendingReview(draftCounts);
 
     // 오디오가 필요한 지문(듣기·말하기 유형)인데 audio_path가 비어 있는 것만 센다.
     const audioPending: Record<string, number> = {};
@@ -170,6 +182,7 @@ export default function ToeflFormsPage() {
                     {selected.slots.map((s, i) => {
                       const pct = s.required ? Math.min(100, (s.actual / s.required) * 100) : 0;
                       const audio = s.moduleId ? (pendingAudio[s.moduleId] ?? 0) : 0;
+                      const draft = s.moduleId ? (pendingReview[s.moduleId] ?? 0) : 0;
                       const ok = s.actual >= s.required && s.shortages.length === 0;
                       return (
                         <tr key={i} className="border-b border-[var(--en-line)] last:border-b-0 hover:bg-[#FAFBFE]">
@@ -208,16 +221,29 @@ export default function ToeflFormsPage() {
                                   ? s.shortages.map((x) => `${x.taskType} ${x.required - x.actual}문항`).join(" · ")
                                   : `${s.required - s.actual}문항`}{" "}
                                 부족
+                                {draft > 0 && (
+                                  <span className="ml-1.5 font-semibold text-[var(--en-ink-soft)]">
+                                    (초안 {draft}개 검수 대기 — 승인하면 채워질 수 있음)
+                                  </span>
+                                )}
                               </span>
                             )}
                           </td>
                           <td className="px-3.5 py-2.5 text-right">
-                            <Link
-                              href="/admin/toefl/items"
-                              className="inline-flex rounded-[9px] border border-[var(--en-line)] bg-white px-2.5 py-[5px] text-xs font-bold hover:border-[var(--en-ink)]"
-                            >
-                              문항 생성
-                            </Link>
+                            <div className="inline-flex gap-1.5">
+                              <Link
+                                href="/admin/toefl/items"
+                                className="inline-flex rounded-[9px] border border-[var(--en-line)] bg-white px-2.5 py-[5px] text-xs font-bold hover:border-[var(--en-ink)]"
+                              >
+                                문항 생성
+                              </Link>
+                              <Link
+                                href="/admin/toefl/review"
+                                className="inline-flex rounded-[9px] border border-[var(--en-line)] bg-white px-2.5 py-[5px] text-xs font-bold hover:border-[var(--en-ink)]"
+                              >
+                                검수
+                              </Link>
+                            </div>
                           </td>
                         </tr>
                       );

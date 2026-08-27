@@ -3,11 +3,13 @@
 // TOEFL 관리자 공통 셸 — 좌측 사이드바 + 본문. docs/toefl-admin.html 의 .app / aside 구조.
 //
 // 목업은 한 페이지에서 JS로 뷰를 갈아끼우지만, 여기서는 실제 라우트로 나눈다
-// (/admin/toefl, /forms, /students, /items, /audio). 그래야 새로고침·뒤로가기·링크 공유가
+// (/admin/toefl, /forms, /students, /items 등). 그래야 새로고침·뒤로가기·링크 공유가
 // 정상 동작하고, 각 화면이 자기 데이터만 불러온다.
 //
-// 아직 화면이 없는 메뉴(오디오 관리 일부·응시 관리·리포트·설정)는 href 없이 비활성으로 둔다 —
-// 목업에 있다고 빈 화면을 만들어두면 눌러보고 실망하는 쪽이 더 나쁘다.
+// 아직 화면이 없는 메뉴(리포트·설정)는 href 없이 비활성으로 둔다 — 목업에 있다고 빈 화면을
+// 만들어두면 눌러보고 실망하는 쪽이 더 나쁘다.
+// 오디오(TTS) 생성은 화면이 아니라 CLI로 옮겼다(2026-08-27, scripts/toefl-generate-demo-audio.ts
+// — npm run toefl:generate-audio) — 1회성 시드 도구를 상시 메뉴에 둘 이유가 없어서.
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -30,7 +32,6 @@ const GROUPS: Group[] = [
     title: "학습 운영",
     items: [
       { label: "학생 관리", icon: "👥", href: "/admin/toefl/students" },
-      { label: "오디오(TTS) 관리", icon: "🎧", href: "/admin/toefl/audio" },
       { label: "응시 관리", icon: "🧪", href: "/admin/toefl/attempts" },
       { label: "AI 채점 대기", icon: "🩹", href: "/admin/toefl/grading-queue" },
     ],

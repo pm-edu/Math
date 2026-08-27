@@ -6,6 +6,8 @@
 // 제출됨 · 채점됨 · 폐기됨), 특히 오래 멈춰있는 in_progress 건을 관리자가 찾아낼 수 있어야 한다.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import Topbar from "@/components/toefl/admin/Topbar";
 import { useAdminMe } from "@/lib/toefl/admin-me";
 import { createClient } from "@/lib/supabase/client";
@@ -13,6 +15,7 @@ import type { ToeflAttemptMode, ToeflAttemptStatus } from "@/lib/toefl/types";
 
 type AttemptRow = {
   id: string;
+  userId: string;
   studentName: string;
   studentEmail: string | null;
   formCode: string;
@@ -53,9 +56,15 @@ function formatDateTime(iso: string | null): string {
 
 export default function ToeflAttemptsPage() {
   const me = useAdminMe();
+  const searchParams = useSearchParams();
+  // /admin/toefl/students의 "응시 기록" 링크가 여기로 붙일 때 쓰는 필터(user_id) — 화면 검토
+  // (2026-08-27) [B]. 없으면 전체를 보여주는 기존 동작 그대로.
+  const studentFilter = searchParams.get("student");
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<AttemptRow[]>([]);
   const [statusFilter, setStatusFilter] = useState<ToeflAttemptStatus | "all">("all");
+  const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -84,6 +93,7 @@ export default function ToeflAttemptsPage() {
         const f = formById.get(a.form_id);
         return {
           id: a.id as string,
+          userId: a.user_id as string,
           studentName: (p?.name as string) || "이름 없음",
           studentEmail: (p?.email as string | null) ?? null,
           formCode: (f?.code as string) ?? "(삭제된 폼)",
@@ -109,10 +119,52 @@ export default function ToeflAttemptsPage() {
     return c;
   }, [rows]);
 
-  const visible = useMemo(
-    () => (statusFilter === "all" ? rows : rows.filter((r) => r.status === statusFilter)),
-    [rows, statusFilter]
-  );
+  const visible = useMemo(() => {
+    const byStudent = studentFilter ? rows.filter((r) => r.userId === studentFilter) : rows;
+    return statusFilter === "all" ? byStudent : byStudent.filter((r) => r.status === statusFilter);
+  }, [rows, statusFilter, studentFilter]);
+
+  async function authHeader() {
+    const supabase = createClient();
+    const { data: session } = await supabase.auth.getSession();
+    return { Authorization: `Bearer ${session.session?.access_token ?? ""}` };
+  }
+
+  // "이탈 의심" 건을 관리자가 직접 폐기 처리한다 — RLS의 with-check가 본인 행만 허용해서
+  // 클라이언트 직접 update는 안 되고 서버 라우트(service client)가 필요하다(위 route.ts 참고).
+  async function abandon(attemptId: string) {
+    // 3차 화면 검토(2026-08-27) [C]-3: 복구 가능 여부와 학생 영향을 각각 분리해 명시한다.
+    if (
+      !confirm(
+        "이 응시를 폐기 처리합니다.\n\n" +
+          "⚠ 복구 불가 — 폐기하면 이 응시 기록을 다시 진행 중 상태로 되돌릴 수 없습니다.\n" +
+          "학생 영향: 재응시 가능 — 폐기 후 학생은 이 폼에 새로 응시할 수 있습니다(1회 제한 대상에서 제외됨).\n\n" +
+          "계속할까요?"
+      )
+    )
+      return;
+    setError(null);
+    setBusyIds((prev) => new Set(prev).add(attemptId));
+    try {
+      const res = await fetch("/api/admin/toefl/attempts/abandon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(await authHeader()) },
+        body: JSON.stringify({ attemptId }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        setError(data?.message ?? `폐기 처리 실패 (HTTP ${res.status})`);
+        return;
+      }
+      await load();
+    } finally {
+      setBusyIds((prev) => {
+        const next = new Set(prev);
+        next.delete(attemptId);
+        return next;
+      });
+    }
+  }
 
   const chip = (on: boolean) =>
     `rounded-full border px-3.5 py-1.5 text-[12.5px] font-bold transition-colors ${
@@ -124,6 +176,17 @@ export default function ToeflAttemptsPage() {
   return (
     <>
       <Topbar title="응시 관리" crumb="최근 300건 · 시작 시각 최신순" role={me.role} name={me.name} />
+
+      {error && <p className="mb-3 text-sm text-red-600">⚠ {error}</p>}
+
+      {studentFilter && (
+        <p className="mb-3 text-xs text-[var(--en-ink-soft)]">
+          한 학생의 응시 기록만 보는 중입니다 —{" "}
+          <Link href="/admin/toefl/attempts" className="font-bold underline">
+            전체 보기
+          </Link>
+        </p>
+      )}
 
       <div className="mb-3.5 flex flex-wrap items-center gap-2">
         <button type="button" onClick={() => setStatusFilter("all")} className={chip(statusFilter === "all")}>
@@ -144,7 +207,7 @@ export default function ToeflAttemptsPage() {
             <table className="w-full border-collapse text-[13px]">
               <thead>
                 <tr>
-                  {["학생", "폼", "모드", "상태", "시작", "제출", "밴드"].map((h) => (
+                  {["학생", "폼", "모드", "상태", "시작", "제출", "밴드", "액션"].map((h) => (
                     <th
                       key={h}
                       className="whitespace-nowrap border-b border-[var(--en-line)] bg-[#FAFBFE] px-3.5 py-2.5 text-left text-[11.5px] font-extrabold uppercase tracking-[.04em] text-[var(--en-ink-soft)]"
@@ -157,7 +220,7 @@ export default function ToeflAttemptsPage() {
               <tbody>
                 {visible.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-3.5 py-10 text-center text-[var(--en-ink-soft)]">
+                    <td colSpan={8} className="px-3.5 py-10 text-center text-[var(--en-ink-soft)]">
                       해당하는 응시 기록이 없습니다.
                     </td>
                   </tr>
@@ -204,6 +267,31 @@ export default function ToeflAttemptsPage() {
                           ) : (
                             <span className="num text-sm font-bold">{r.overallBand.toFixed(1)}</span>
                           )}
+                        </td>
+                        <td className="whitespace-nowrap px-3.5 py-3 text-xs">
+                          <div className="flex items-center gap-2.5">
+                            {r.status === "scored" && (
+                              <a href={`/toefl/report/${r.id}`} target="_blank" rel="noreferrer" className="font-bold text-[var(--en-gold-deep)] hover:underline">
+                                리포트 보기
+                              </a>
+                            )}
+                            {stale && (
+                              <>
+                                <Link href={`/admin/students/${r.userId}`} className="font-bold text-[var(--en-ink)] hover:underline">
+                                  학생 상세
+                                </Link>
+                                <button
+                                  type="button"
+                                  onClick={() => abandon(r.id)}
+                                  disabled={busyIds.has(r.id)}
+                                  className="font-bold text-red-600 hover:underline disabled:opacity-50"
+                                >
+                                  {busyIds.has(r.id) ? "처리 중…" : "폐기 처리"}
+                                </button>
+                              </>
+                            )}
+                            {r.status !== "scored" && !stale && <span className="text-[var(--en-ink-soft)]">—</span>}
+                          </div>
                         </td>
                       </tr>
                     );

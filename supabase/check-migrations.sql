@@ -52,4 +52,6 @@ union all select '202608271200 밴드6.0 최상단 scaled=30 보정',
        not exists (select 1 from toefl_scale_conversion where scaled = 29)
 union all select '202608271300 AI채점 status 컬럼',
        exists (select 1 from information_schema.columns
-                where table_name = 'toefl_ai_score' and column_name = 'status');
+                where table_name = 'toefl_ai_score' and column_name = 'status')
+union all select '202608272000 문항 반려 사유 로그',
+       to_regclass('public.toefl_item_rejection') is not null;

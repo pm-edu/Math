@@ -14,7 +14,10 @@ async function loadReport(token: string) {
     .eq("token", token)
     .maybeSingle();
 
-  if (!tokenRow || new Date(tokenRow.expires_at) < new Date()) return null;
+  // 3차 화면 검토(2026-08-27) [C]-8: "만료"와 "애초에 존재하지 않는 토큰"을 구분해 알려준다 —
+  // 전엔 둘 다 null 하나로 뭉뚱그려서 "만료됐습니다" 문구를 못 붙였다.
+  if (!tokenRow) return { status: "not_found" as const };
+  if (new Date(tokenRow.expires_at) < new Date()) return { status: "expired" as const };
 
   const studentId = tokenRow.student_id;
 
@@ -41,6 +44,7 @@ async function loadReport(token: string) {
   ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
 
   return {
+    status: "ok" as const,
     studentName: profile?.name ?? "학생",
     attendanceRate: core?.attendance_rate ?? null,
     submissionRate: core?.submission_rate ?? null,
@@ -56,11 +60,20 @@ export default async function ParentReportPage({ params }: { params: Promise<{ t
   const { token } = await params;
   const report = await loadReport(token);
 
-  if (!report) {
+  if (report.status === "expired") {
     return (
       <main className="mx-auto max-w-md px-6 py-24 text-center">
-        <h1 className="text-2xl font-medium text-[var(--foreground)]">링크가 만료되었거나 유효하지 않습니다</h1>
-        <p className="mt-3 text-sm text-[var(--secondary)]">학원에 문의해 새 링크를 요청해주세요.</p>
+        <h1 className="text-2xl font-medium text-[var(--foreground)]">링크가 만료되었습니다</h1>
+        <p className="mt-3 text-sm text-[var(--secondary)]">담당 강사에게 새 링크를 요청하세요.</p>
+      </main>
+    );
+  }
+
+  if (report.status === "not_found") {
+    return (
+      <main className="mx-auto max-w-md px-6 py-24 text-center">
+        <h1 className="text-2xl font-medium text-[var(--foreground)]">링크가 유효하지 않습니다</h1>
+        <p className="mt-3 text-sm text-[var(--secondary)]">담당 강사에게 새 링크를 요청하세요.</p>
       </main>
     );
   }

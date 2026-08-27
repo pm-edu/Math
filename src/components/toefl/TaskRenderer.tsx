@@ -13,6 +13,7 @@ import WriteAnEmail from "./tasks/WriteAnEmail";
 import AcademicDiscussion from "./tasks/AcademicDiscussion";
 import ListenAndRepeat from "./tasks/ListenAndRepeat";
 import TakeAnInterview from "./tasks/TakeAnInterview";
+import type { SpeakingStageStatus } from "./RecorderPanel";
 
 // task_type별 문항 렌더러 디스패처. spec §10: "유형별 if문을 페이지에 흩뿌리지 않는다" —
 // 페이지는 이 컴포넌트 하나만 쓰고, 유형 추가는 여기 switch 한 곳만 늘리면 된다.
@@ -35,6 +36,7 @@ export default function TaskRenderer({
   onAudioEnded,
   turnIndex,
   turnTotal,
+  onStatusChange,
 }: {
   item: ToeflItemPublic;
   attemptId: string;
@@ -45,6 +47,8 @@ export default function TaskRenderer({
   // take_an_interview 전용: 같은 섹션의 이 유형 문항들 중 몇 번째인지(0-based)/총 몇 턴인지.
   turnIndex?: number;
   turnTotal?: number;
+  // Speaking 두 유형(listen_and_repeat/take_an_interview) 전용 — 다른 유형은 무시한다.
+  onStatusChange?: (status: SpeakingStageStatus) => void;
 }) {
   switch (item.task_type) {
     case "complete_the_words":
@@ -146,6 +150,7 @@ export default function TaskRenderer({
           attemptId={attemptId}
           value={value as { audio_path?: string } | undefined}
           onChange={onChange as (answer: { audio_path: string }) => void}
+          onStatusChange={onStatusChange}
         />
       );
     case "take_an_interview":
@@ -157,6 +162,7 @@ export default function TaskRenderer({
           onChange={onChange as (answer: { audio_path: string }) => void}
           turnIndex={turnIndex}
           turnTotal={turnTotal}
+          onStatusChange={onStatusChange}
         />
       );
     default:

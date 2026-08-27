@@ -110,6 +110,7 @@ export default function ToeflSubmittedPage({ params }: { params: Promise<{ attem
   }, [attemptId, router, pollCount]);
 
   const stillGrading = items.some((i) => i.status === "grading");
+  const needsManualReview = items.some((i) => i.status === "manual_review");
 
   useEffect(() => {
     if (!stillGrading || pollCount >= MAX_POLLS) return;
@@ -157,6 +158,12 @@ export default function ToeflSubmittedPage({ params }: { params: Promise<{ attem
       <main className="mx-auto max-w-2xl px-6 py-16">
         <h1 className="text-3xl font-medium text-[var(--foreground)]">{t("toefl_submittedTitle")}</h1>
         <p className="mt-2 text-sm text-[var(--secondary)]">{t("toefl_submittedDesc")}</p>
+
+        {needsManualReview && (
+          <p className="mt-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            🧑‍🏫 {t("toefl_someManualReview")}
+          </p>
+        )}
 
         {readingListening.length > 0 && (
           <div className="mt-8">
@@ -220,6 +227,9 @@ export default function ToeflSubmittedPage({ params }: { params: Promise<{ attem
           className="mt-8 w-full rounded-full bg-[var(--pink-dark)] px-8 py-3 text-sm font-medium text-white disabled:opacity-60"
         >
           {stillGrading ? t("toefl_gradingInProgress") : t("toefl_continueToReport")}
+        </button>
+        <button onClick={() => router.push("/toefl/mypage")} className="mt-3 w-full text-center text-sm text-[var(--secondary)] underline">
+          {t("toefl_viewLaterFromMyPage")}
         </button>
       </main>
     </div>

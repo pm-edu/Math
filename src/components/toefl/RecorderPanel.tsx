@@ -12,6 +12,18 @@ import { recordingUploadQueue, useUploadTask } from "@/lib/toefl/recording-uploa
 //
 // 녹음 종료 즉시 recordingUploadQueue에 올려 업로드를 시작한다(요청: "녹음 종료 즉시 업로드").
 // 업로드 실패는 큐가 백그라운드에서 최대 5회 지수백오프로 재시도하고, 문항을 넘어가도 계속된다.
+//
+// 3차 화면 검토(2026-08-27) [A]-2: "현재 단계를 항상 표시"하려면 페이지가 이 컴포넌트 내부의
+// 녹음/업로드 상태를 알아야 한다 — onStatusChange로 매 상태변화를 부모(궁극적으로
+// speaking/page.tsx)에 그대로 올려보낸다. 화면에 실제로 그리는 건 여전히 이 컴포넌트가 하고
+// (아래 JSX 그대로 유지), 부모는 같은 정보를 고정된 위치(상단바)에 한 번 더 보여줄 뿐이다.
+
+export type SpeakingStageStatus =
+  | { phase: "prep"; secondsLeft: number }
+  | { phase: "recording"; secondsLeft: number }
+  | { phase: "uploading" }
+  | { phase: "done" }
+  | { phase: "failed" };
 
 export default function RecorderPanel({
   itemId,
@@ -19,12 +31,14 @@ export default function RecorderPanel({
   durationSec,
   onUploaded,
   onPermissionLost,
+  onStatusChange,
 }: {
   itemId: string;
   attemptId: string;
   durationSec: number;
   onUploaded: (path: string) => void;
   onPermissionLost?: () => void;
+  onStatusChange?: (status: SpeakingStageStatus) => void;
 }) {
   const recorder = useRecorder();
   const [remaining, setRemaining] = useState(durationSec);
@@ -49,7 +63,10 @@ export default function RecorderPanel({
   // 불러 마이크 스트림을 놓아준다 — 안 그러면 마이크가 계속 켜진 채로 남는다. 이 중간 녹음은
   // 업로드하지 않고 버린다(재녹음 불가 원칙상 "다 채우지 못한 답"을 답으로 제출하는 게 더 이상함).
   useEffect(() => {
-    recorder.start();
+    // 사전 점검(/toefl/check)에서 여러 마이크 중 하나를 골랐다면(화면 검토 2026-08-27 [C])
+    // 그 장치로 녹음한다 — 없으면 기존처럼 기본 장치를 쓴다.
+    const preferredDeviceId = sessionStorage.getItem("toefl_mic_device_id") || undefined;
+    recorder.start(preferredDeviceId);
     return () => {
       stoppedRef.current = true;
       recorder.stop();
@@ -67,6 +84,33 @@ export default function RecorderPanel({
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recorder.state, remaining]);
+
+  // 녹음/업로드 상태를 그대로 부모에 올려보낸다(위 파일 상단 주석 참고) — 아래 JSX가 실제로
+  // 그리는 상태와 항상 같은 소스(recorder.state/remaining/uploadTask?.status)에서 나온다.
+  useEffect(() => {
+    if (recorder.state === "error") {
+      onStatusChange?.({ phase: "failed" });
+      return;
+    }
+    if (uploadTask?.status === "failed") {
+      onStatusChange?.({ phase: "failed" });
+      return;
+    }
+    if (uploadTask?.status === "done") {
+      onStatusChange?.({ phase: "done" });
+      return;
+    }
+    if (uploadTask?.status === "uploading" || uploadTask?.status === "pending_retry") {
+      onStatusChange?.({ phase: "uploading" });
+      return;
+    }
+    if (recorder.state === "recording") {
+      onStatusChange?.({ phase: "recording", secondsLeft: remaining });
+      return;
+    }
+    onStatusChange?.({ phase: "uploading" }); // "stopped"(정지→업로드 큐 등록 사이 찰나)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recorder.state, remaining, uploadTask?.status]);
 
   if (recorder.state === "error" && recorder.error) {
     return (

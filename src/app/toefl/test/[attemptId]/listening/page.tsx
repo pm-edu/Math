@@ -326,6 +326,12 @@ export default function ToeflListeningTestPage({ params }: { params: Promise<{ a
         </p>
       </header>
 
+      {/* 화면 검토(2026-08-27) [C]: 규칙 자체는 이미 기계적으로 강제되지만(재생버튼 1회,
+          Previous 없음), 학생에게 명시적으로 알려준 적은 없었다 — 문구로도 밝혀둔다. */}
+      <p className="mx-auto max-w-2xl px-6 pt-2 text-xs text-[var(--secondary)]">
+        ⓘ Each audio clip plays once. You can&apos;t go back to a previous question in this section.
+      </p>
+
       {/* 진행 표시 전용(클릭 불가) — Listening은 뒤로 가기가 없다 */}
       <div className="mx-auto flex max-w-2xl items-center gap-2 overflow-x-auto px-6 py-3">
         {items.map((it, idx) => (

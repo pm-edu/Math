@@ -129,7 +129,15 @@ export default function ToeflStartPage() {
       {phase === "loading" ? (
         <p className="mt-10 text-sm text-[var(--secondary)]">{t("loading")}</p>
       ) : forms.length === 0 ? (
-        <p className="mt-10 text-sm text-[var(--secondary)]">{t("toefl_noForms")}</p>
+        <div className="mt-10">
+          <p className="text-sm text-[var(--secondary)]">{t("toefl_noFormsSampleGuide")}</p>
+          <button
+            onClick={() => router.push("/toefl/sample")}
+            className="mt-4 rounded-full border border-[var(--pink)] px-5 py-2.5 text-sm font-medium text-[var(--pink-dark)]"
+          >
+            {t("toefl_seeSample")}
+          </button>
+        </div>
       ) : (
         <div className="mt-8 space-y-8">
           {forms.map((f) => {

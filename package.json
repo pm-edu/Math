@@ -11,6 +11,7 @@
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "toefl:generate": "npx tsx scripts/toefl-generate.ts",
+    "toefl:generate-audio": "npx tsx scripts/toefl-generate-demo-audio.ts",
     "db:generate-types": "npx supabase gen types typescript --project-id ddaibbppzuvflmuoyuvf --schema public > src/lib/database.types.ts"
   },
   "dependencies": {

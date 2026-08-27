@@ -68,8 +68,12 @@ async function callOllama(
     return { ok: false, status: res.status, message: (await res.text()).slice(0, 200) };
   }
 
-  const data = (await res.json()) as { response?: string; done_reason?: string };
-  const text = extractJsonText(String(data.response ?? ""));
+  const data = (await res.json()) as { response?: string; thinking?: string; done_reason?: string };
+  // qwen3-vl 같은 "thinking" 계열 모델은 Ollama가 답 전체를 response가 아니라 별도
+  // thinking 필드로 보낸다(직접 curl로 확인함, response=""·thinking에 JSON이 들어있었음).
+  // response가 비어있으면 thinking을 대신 쓴다.
+  const raw = data.response?.trim() ? data.response : (data.thinking ?? "");
+  const text = extractJsonText(raw);
   if (!text.trim()) {
     return { ok: false, status: 502, message: `로컬 모델이 빈 응답을 보냈습니다(${data.done_reason ?? "이유 없음"}).` };
   }

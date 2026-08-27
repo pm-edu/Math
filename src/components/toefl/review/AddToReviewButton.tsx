@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { interpolate, useLang } from "@/lib/i18n";
 
@@ -47,6 +48,15 @@ export default function AddToReviewButton({ vocabIds }: { vocabIds: string[] }) 
             : interpolate(t("toefl_addToReview"), { count: vocabIds.length })}
       </button>
       {state === "error" && <p className="mt-1 text-xs text-red-600">⚠ {t("toefl_addToReviewFailed")}</p>}
+      {/* 2차 화면 검토(2026-08-27): 처음엔 /english/review로 보냈으나, 그 화면이 수학 사이트
+          공용 Header를 쓰고 "영어 학습으로" 돌아가는 등 TOEFL 학생에게 뜬금없어 보인다는
+          지적이 맞아서 /toefl/review-queue(같은 엔진, TOEFL 헤더/뒤로가기만 다른 얇은 래퍼)로
+          바꿨다 — 스케줄링 로직 자체는 여전히 기존 것 그대로(spec §13). */}
+      {state === "done" && (
+        <Link href="/toefl/review-queue" className="ml-2 text-xs font-medium text-[var(--pink-dark)] underline">
+          {t("toefl_goToReviewQueue")}
+        </Link>
+      )}
     </div>
   );
 }

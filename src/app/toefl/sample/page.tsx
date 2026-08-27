@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import TaskRenderer from "@/components/toefl/TaskRenderer";
 import ToeflHeader from "@/components/toefl/ToeflHeader";
+import { createClient } from "@/lib/supabase/client";
 import { SECTION_DESCRIPTION } from "@/lib/toefl/section-order";
 import type { ToeflItemPublic } from "@/lib/toefl/types";
 
@@ -21,6 +22,15 @@ export default function ToeflSamplePage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
+  // 3차 화면 검토(2026-08-27) [C]-9: 하단 버튼이 로그인 여부에 따라 다른 곳으로 가야 해서만
+  // 로그인 상태를 확인한다 — 이 화면 자체는 여전히 인증 없이 전부 볼 수 있다(위 주석 그대로).
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  useEffect(() => {
+    createClient()
+      .auth.getUser()
+      .then(({ data }) => setLoggedIn(!!data.user));
+  }, []);
 
   // fetch 실패(네트워크 오류·5xx 등)를 안 잡으면 화면이 "Loading..."에서 영원히 멈춘다
   // (writing/speaking 응시화면에서 겪은 것과 같은 실수를 반복하지 않는다).
@@ -74,6 +84,20 @@ export default function ToeflSamplePage() {
                 <p className="mt-1 text-xs text-[var(--secondary)]">Sign up to unlock audio and recording questions.</p>
               </div>
             ))}
+
+            {/* 화면 검토(2026-08-27) [C]: 마지막(유일한 텍스트) 문항까지 답해봤으면 완료
+                요약을 보여준다 — 진짜 채점은 없으니(안내문 그대로) 결과 대신 "다음엔 뭘 하면
+                되는지"로 마무리한다. */}
+            {items.length > 0 && items.every((it) => it.id in answers) && (
+              <div className="rounded-2xl border border-[var(--mint-dark)]/30 bg-[var(--mint)]/20 p-5 text-center">
+                <p className="text-sm font-semibold text-[var(--foreground)]">
+                  Nice — you just tried {items.length} sample question{items.length > 1 ? "s" : ""}.
+                </p>
+                <p className="mt-1 text-xs text-[var(--secondary)]">
+                  The real test includes Reading, Listening, Speaking, and Writing — with real timing and scoring.
+                </p>
+              </div>
+            )}
           </div>
         )}
 
@@ -84,8 +108,11 @@ export default function ToeflSamplePage() {
           >
             Sign up to take the full test →
           </button>
-          <button onClick={() => router.push("/toefl")} className="text-sm text-[var(--secondary)] underline">
-            ← Back to TOEFL home
+          <button
+            onClick={() => router.push(loggedIn ? "/toefl/start" : "/signup?toefl=1")}
+            className="text-sm text-[var(--secondary)] underline"
+          >
+            Start TOEFL
           </button>
         </div>
       </main>

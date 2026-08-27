@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AudioPlayer from "../AudioPlayer";
-import RecorderPanel from "../RecorderPanel";
+import RecorderPanel, { type SpeakingStageStatus } from "../RecorderPanel";
 import type { ListenAndRepeatPayload, ToeflItemPublic } from "@/lib/toefl/types";
 
 // spec §6 listen_and_repeat: 문장을 듣고 그대로 따라 말한다. 요청(2026-08-18): 전 과정
@@ -20,17 +20,23 @@ export default function ListenAndRepeat({
   attemptId,
   value,
   onChange,
+  onStatusChange,
 }: {
   item: ToeflItemPublic;
   attemptId: string;
   value: { audio_path?: string } | undefined;
   onChange: (answer: { audio_path: string }) => void;
+  onStatusChange?: (status: SpeakingStageStatus) => void;
 }) {
   const payload = item.payload as ListenAndRepeatPayload;
   const alreadyRecorded = !!value?.audio_path;
   const [phase, setPhase] = useState<Phase>(payload.clip_path ? "playing_clip" : "counting_down");
   const [countdown, setCountdown] = useState(PREP_SEC);
-  const [invalidated, setInvalidated] = useState(false);
+  const [invalidated, setInvalidatedRaw] = useState(false);
+  function setInvalidated(v: boolean) {
+    setInvalidatedRaw(v);
+    if (v) onStatusChange?.({ phase: "failed" });
+  }
 
   useEffect(() => {
     if (phase !== "counting_down") return;
@@ -40,6 +46,15 @@ export default function ListenAndRepeat({
     }, 1000);
     return () => clearTimeout(t);
   }, [phase, countdown]);
+
+  // 화면 검토(2026-08-27) [A]-2: "playing_clip"(문장 재생 중)도 응답 준비 단계로 "prep"에 합친다.
+  useEffect(() => {
+    if (alreadyRecorded) onStatusChange?.({ phase: "done" });
+    else if (phase === "playing_clip") onStatusChange?.({ phase: "prep", secondsLeft: PREP_SEC });
+    else if (phase === "counting_down") onStatusChange?.({ phase: "prep", secondsLeft: countdown });
+    else if (phase === "done") onStatusChange?.({ phase: "done" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, countdown, alreadyRecorded]);
 
   if (alreadyRecorded) {
     return (
@@ -87,6 +102,7 @@ export default function ListenAndRepeat({
               onChange({ audio_path: path });
             }}
             onPermissionLost={() => setInvalidated(true)}
+            onStatusChange={onStatusChange}
           />
         </div>
       )}

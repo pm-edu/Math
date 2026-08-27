@@ -167,6 +167,7 @@ const DICT = {
   // 영어로 남는다. 아래는 진입/사전점검/마이페이지/제출후/리포트/리뷰 화면(전부 ToeflHeader가
   // 있는 "안내" 화면)에서만 쓴다.
   toefl_myPageSubtitle: { ko: "진행 중인 시험과 지난 응시 기록입니다.", en: "Your in-progress and past TOEFL attempts." },
+  toefl_openReviewQueue: { ko: "복습 큐 열기 →", en: "Open review queue →" },
   toefl_backHome: { ko: "← TOEFL 홈으로", en: "← Back to TOEFL home" },
   toefl_fullTest: { ko: "풀 모의고사", en: "Full test" },
   toefl_sectionPractice: { ko: "영역별 연습", en: "Section practice" },
@@ -204,7 +205,10 @@ const DICT = {
     ko: "계정 없이 볼 수 있습니다. 전체 채점 응시는 가입 후 가능합니다.",
     en: "No account needed. Sign up to take the full, scored test.",
   },
-  toefl_noForms: { ko: "아직 준비된 시험이 없습니다.", en: "No practice sets are available yet." },
+  toefl_noFormsSampleGuide: {
+    ko: "현재 응시 가능한 시험이 없어 샘플로 안내합니다.",
+    en: "There are no practice sets available to take right now — here's a sample instead.",
+  },
   toefl_recommended: { ko: "추천", en: "Recommended" },
   toefl_takenBefore: { ko: "이전에 {count}회 응시함", en: "Taken {count} time(s) before" },
   toefl_fullTestTitle: { ko: "풀 모의고사 응시하기", en: "Take the Full Practice Test" },
@@ -238,12 +242,21 @@ const DICT = {
     ko: "화면 너비가 {width}px보다 좁습니다. 풀 모의고사는 노트북·데스크톱 크기 화면이 필요합니다 — 다른 기기로 접속해주세요. (영역별 연습은 이 화면에서도 가능합니다.)",
     en: "Your screen is narrower than {width}px. The full test needs a laptop/desktop-sized screen — please switch devices to continue. (Section practice still works on this screen.)",
   },
+  toefl_screenTooNarrowFix: {
+    ko: "해결 방법: 브라우저 창을 최대화하거나, 태블릿의 화면 회전을 가로로 바꾸거나, 노트북/데스크톱으로 다시 접속해 주세요.",
+    en: "How to fix: maximize your browser window, rotate your tablet to landscape, or switch to a laptop/desktop.",
+  },
   toefl_audioCheckLabel: { ko: "오디오 확인", en: "Audio check" },
   toefl_audioCheckDesc: {
     ko: "테스트 소리를 재생해서 잘 들리는지 확인해주세요.",
     en: "Play the test sound and confirm you can hear it clearly.",
   },
   toefl_playTestSound: { ko: "▶ 테스트 소리 재생", en: "▶ Play test sound" },
+  toefl_replaySound: { ko: "다시 재생", en: "Replay" },
+  toefl_volumeOutputHint: {
+    ko: "소리가 안 들리면 기기 볼륨을 확인하고, 헤드폰/이어폰이 연결돼 있다면 출력 장치가 맞게 선택됐는지 확인하세요.",
+    en: "If you can't hear anything, check your device volume and make sure the right output (speakers/headphones) is selected.",
+  },
   toefl_heardClearly: { ko: "소리가 잘 들렸습니다", en: "I heard the sound clearly" },
   toefl_micCheckLabel: { ko: "마이크 확인", en: "Microphone check" },
   toefl_micCheckDesc: {
@@ -269,6 +282,8 @@ const DICT = {
     en: "(Firefox: click the 🔒 icon → Permissions → allow the mic, then reload.)",
   },
   toefl_tryAgain: { ko: "다시 시도", en: "Try again" },
+  toefl_micDeviceLabel: { ko: "마이크 선택", en: "Choose microphone" },
+  toefl_recheckWithDevice: { ko: "이 장치로 다시 점검", en: "Recheck with this device" },
   toefl_continueWithoutSpeaking: { ko: "Speaking 없이 계속하기 →", en: "Continue without Speaking →" },
   toefl_beforeYouBegin: { ko: "시작하기 전 유의사항", en: "Before you begin" },
   toefl_noticeAudioOnce: { ko: "오디오는 한 번만 재생됩니다.", en: "Each audio clip plays only once." },
@@ -320,6 +335,11 @@ const DICT = {
   toefl_statusPendingManual: { ko: "수동 검토 대기", en: "Pending manual review" },
   toefl_gradingInProgress: { ko: "채점 진행 중…", en: "Grading in progress…" },
   toefl_continueToReport: { ko: "리포트 보러 가기 →", en: "Continue to your report →" },
+  toefl_someManualReview: {
+    ko: "일부 문항은 선생님이 직접 채점 중입니다 — 준비되는 대로 리포트에 반영됩니다.",
+    en: "Some responses are being reviewed by a teacher — your report will update once that's done.",
+  },
+  toefl_viewLaterFromMyPage: { ko: "마이페이지에서 나중에 확인하기", en: "View later from My Page" },
   toefl_attemptNotFound: { ko: "응시 기록을 찾을 수 없습니다.", en: "Attempt not found." },
 
   // 종합 리포트
@@ -338,6 +358,8 @@ const DICT = {
   toefl_colScaled: { ko: "영역점수 (0–30)", en: "Scaled (0–30)" },
   toefl_colBand: { ko: "밴드", en: "Band" },
   toefl_notTaken: { ko: "응시 안 함", en: "not taken" },
+  toefl_provisional: { ko: "잠정", en: "provisional" },
+  toefl_pendingManualBadge: { ko: "일부 문항 채점 대기 중", en: "some responses still under review" },
   toefl_overallBand: { ko: "종합 밴드", en: "Overall band" },
   toefl_totalScaled: { ko: "총점: {total} / {max}", en: "Total scaled: {total} / {max}" },
   toefl_adaptiveRouting: { ko: "적응형 라우팅", en: "Adaptive routing" },
@@ -386,6 +408,7 @@ const DICT = {
   toefl_addingToReview: { ko: "추가하는 중…", en: "Adding…" },
   toefl_addedToReview: { ko: "✓ 단어 {count}개 복습에 추가함", en: "✓ Added {count} word(s) to review" },
   toefl_addToReviewFailed: { ko: "추가하지 못했습니다 — 다시 시도해주세요.", en: "Couldn't add to review — please try again." },
+  toefl_goToReviewQueue: { ko: "복습하러 가기 →", en: "Go to review queue →" },
   toefl_yourAnswerCorrect: { ko: "✓ 내 답 (정답)", en: "✓ Your answer (correct)" },
   toefl_correctAnswerMarker: { ko: "✓ 정답", en: "✓ Correct answer" },
   toefl_yourAnswerWrong: { ko: "✗ 내 답", en: "✗ Your answer" },

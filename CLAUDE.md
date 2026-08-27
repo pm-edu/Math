@@ -95,6 +95,12 @@ ElevenLabs 가정은 실제 프로젝트와 안 맞아 Gemini로 대체하기로
 (1) `/review-pack 기능명` 실행 → (2) `review/` 폴더에 생성된 파일을 외부 AI(ChatGPT 등)에 업로드
 → (3) `review/REVIEW_PROMPT.md` 내용을 함께 붙여넣기.
 
+### 화면 검증
+
+(1) `/screen-inventory` 실행 → (2) `review/screens_날짜.md`를 외부 AI에 업로드 +
+`SCREEN_REVIEW_PROMPT.md` 붙여넣기 → (3) `SCREENSHOT_GUIDE.md` 순서대로 스크린샷 찍어
+같은 프롬프트로 한 번 더 검증.
+
 ---
 
 ## 공통 작업 규칙

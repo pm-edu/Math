@@ -12,6 +12,7 @@
 // 여기는 관리자 전용 화면이라 payload를 그대로 보여줘도 안전하다(검수가 곧 "정답까지 확인"이다).
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import Topbar from "@/components/toefl/admin/Topbar";
 import { useAdminMe } from "@/lib/toefl/admin-me";
 import { createClient } from "@/lib/supabase/client";
@@ -38,6 +39,7 @@ const SOURCE_LABEL: Record<string, string> = { ai: "AI 생성", manual: "직접 
 
 export default function ToeflReviewPage() {
   const me = useAdminMe();
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<DraftItem[]>([]);
   const [modules, setModules] = useState<Map<string, ModuleInfo>>(new Map());
@@ -45,6 +47,13 @@ export default function ToeflReviewPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
+  // 화면 검토(2026-08-27) [B]: 반려 사유를 문항마다 따로 든다.
+  const [rejectReasons, setRejectReasons] = useState<Record<string, string>>({});
+  // 3차 화면 검토(2026-08-27) [C]-3: 문항은 삭제되지만 반려 사유는 toefl_item_rejection에
+  // 남긴다(마이그레이션 202608272000) — 여기서 최근 것부터 불러와 보여준다.
+  const [rejectionLog, setRejectionLog] = useState<
+    { moduleId: string; taskType: string; prompt: string; reason: string; createdAt: string }[]
+  >([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -96,6 +105,21 @@ export default function ToeflReviewPage() {
     setStimuli(new Map((stims ?? []).map((s) => [s.id, s as StimulusInfo])));
     setItems(rows);
     setSelectedId((prev) => (prev && rows.some((r) => r.id === prev) ? prev : (rows[0]?.id ?? null)));
+
+    const { data: rejections } = await supabase
+      .from("toefl_item_rejection")
+      .select("module_id, task_type, prompt_snapshot, reason, created_at")
+      .order("created_at", { ascending: false })
+      .limit(30);
+    setRejectionLog(
+      (rejections ?? []).map((r) => ({
+        moduleId: r.module_id as string,
+        taskType: r.task_type as string,
+        prompt: r.prompt_snapshot as string,
+        reason: r.reason as string,
+        createdAt: r.created_at as string,
+      }))
+    );
     setLoading(false);
   }, []);
 
@@ -143,18 +167,59 @@ export default function ToeflReviewPage() {
     setItems((prev) => prev.filter((it) => it.id !== id));
   }
 
-  async function reject(id: string) {
+  async function reject(item: DraftItem, redirectToRegenerate: boolean) {
     setError(null);
-    if (!confirm("이 문항을 반려(삭제)합니다. 되돌릴 수 없습니다. 계속할까요?")) return;
-    withBusy(id, true);
+    const reason = (rejectReasons[item.id] ?? "").trim();
+    if (!reason) {
+      setError("반려 사유를 입력해 주세요.");
+      return;
+    }
+    // 3차 화면 검토(2026-08-27) [C]-3: 삭제 전 영향범위를 명확히 알린다 — 이 문항은
+    // verified=false라 toefl_item_public에서 애초에 걸러지므로 학생에게 노출된 적이 없다
+    // (영향 없음). "되돌릴 수 없음"만 강조하면 되고, attempts 폐기처럼 "재응시 가능" 문구는
+    // 여기엔 안 맞아서 그대로 안 씀.
+    if (
+      !confirm(
+        `이 문항을 반려(삭제)합니다.\n사유: ${reason}\n\n` +
+          `⚠ 복구 불가 — 삭제 후 되돌릴 수 없습니다.\n` +
+          `학생 영향: 없음 (검수 전 초안이라 지금까지 어떤 학생에게도 노출된 적이 없습니다.)\n\n` +
+          `계속할까요?`
+      )
+    )
+      return;
+    withBusy(item.id, true);
     const supabase = createClient();
-    const { error: deleteErr } = await supabase.from("toefl_item").delete().eq("id", id);
-    withBusy(id, false);
+    // 반려 사유는 문항이 지워져도 남아야 하므로(요청) 삭제 전에 먼저 로그를 남긴다 —
+    // 로그 저장이 실패하면 사유를 잃을 수 있으니 그 경우 삭제 자체를 하지 않는다.
+    const { error: logErr } = await supabase.from("toefl_item_rejection").insert({
+      module_id: item.module_id,
+      task_type: item.task_type,
+      prompt_snapshot: item.prompt,
+      reason,
+      rejected_by: me.id,
+    });
+    if (logErr) {
+      withBusy(item.id, false);
+      setError(`반려 사유 저장 실패(삭제 취소됨): ${logErr.message}`);
+      return;
+    }
+    const { error: deleteErr } = await supabase.from("toefl_item").delete().eq("id", item.id);
+    withBusy(item.id, false);
     if (deleteErr) {
       setError(`반려 실패: ${deleteErr.message}`);
       return;
     }
-    setItems((prev) => prev.filter((it) => it.id !== id));
+    setItems((prev) => prev.filter((it) => it.id !== item.id));
+    setRejectionLog((prev) => [
+      { moduleId: item.module_id, taskType: item.task_type, prompt: item.prompt, reason, createdAt: new Date().toISOString() },
+      ...prev,
+    ]);
+    if (redirectToRegenerate) {
+      const mod = modules.get(item.module_id);
+      const params = new URLSearchParams({ taskType: item.task_type });
+      if (mod) params.set("moduleId", item.module_id);
+      router.push(`/admin/toefl/items?${params.toString()}`);
+    }
   }
 
   async function approveGroup(groupItems: DraftItem[]) {
@@ -286,17 +351,38 @@ export default function ToeflReviewPage() {
                 </>
               )}
 
-              <div className="flex items-center gap-2 border-t border-dashed border-[var(--en-line)] pt-4">
+              <div className="border-t border-dashed border-[var(--en-line)] pt-4">
+                <label className="block text-xs">
+                  <span className="mb-1 block font-semibold text-[var(--en-ink-soft)]">반려 사유(반려 시 필수)</span>
+                  <textarea
+                    rows={2}
+                    value={rejectReasons[selected.id] ?? ""}
+                    onChange={(e) => setRejectReasons((prev) => ({ ...prev, [selected.id]: e.target.value }))}
+                    placeholder="예: 정답이 지문 내용과 안 맞음 / 난이도가 목표보다 낮음"
+                    className="w-full rounded-lg border border-[var(--en-line)] px-3 py-2 text-sm"
+                  />
+                </label>
+              </div>
+
+              <div className="mt-3 flex items-center gap-2">
                 <span className="mr-auto text-[12px] text-[var(--en-ink-soft)]">
-                  ⚠ 승인해야만 학생에게 노출됩니다(문항 생성 화면에서 직접 수정하려면 반려 후 다시 등록하세요).
+                  ⚠ 승인해야만 학생에게 노출됩니다.
                 </span>
                 <button
                   type="button"
-                  onClick={() => reject(selected.id)}
+                  onClick={() => reject(selected, false)}
                   disabled={busyIds.has(selected.id)}
-                  className="rounded-full border border-[var(--en-line)] px-5 py-2 text-sm font-bold text-[var(--en-ink-soft)] hover:border-[var(--en-ink)] hover:text-[var(--en-ink)] disabled:opacity-50"
+                  className="rounded-full border border-[var(--en-line)] px-4 py-2 text-sm font-bold text-[var(--en-ink-soft)] hover:border-[var(--en-ink)] hover:text-[var(--en-ink)] disabled:opacity-50"
                 >
-                  반려(삭제)
+                  반려 · 삭제만
+                </button>
+                <button
+                  type="button"
+                  onClick={() => reject(selected, true)}
+                  disabled={busyIds.has(selected.id)}
+                  className="rounded-full border border-[var(--en-line)] px-4 py-2 text-sm font-bold text-[var(--en-ink-soft)] hover:border-[var(--en-ink)] hover:text-[var(--en-ink)] disabled:opacity-50"
+                >
+                  반려 · 재생성하러 가기
                 </button>
                 <button
                   type="button"
@@ -314,6 +400,26 @@ export default function ToeflReviewPage() {
             </div>
           )}
         </div>
+      )}
+
+      {rejectionLog.length > 0 && (
+        <details className="mt-6 rounded-xl border border-[var(--en-line)] bg-white">
+          <summary className="cursor-pointer px-4 py-3 text-sm font-bold text-[var(--en-ink-soft)]">
+            최근 반려 이력 ({rejectionLog.length}건)
+          </summary>
+          <ul className="divide-y divide-[var(--en-line)] border-t border-[var(--en-line)]">
+            {rejectionLog.map((r, i) => (
+              <li key={i} className="px-4 py-3 text-[12.5px]">
+                <div className="flex flex-wrap items-center gap-2">
+                  <b>{catalogEntry(r.taskType)?.label ?? r.taskType}</b>
+                  <span className="text-[var(--en-ink-soft)]">{new Date(r.createdAt).toLocaleString("ko-KR")}</span>
+                </div>
+                <p className="mt-0.5 truncate text-[var(--en-ink-soft)]">{r.prompt}</p>
+                <p className="mt-0.5 text-red-700">사유: {r.reason}</p>
+              </li>
+            ))}
+          </ul>
+        </details>
       )}
     </>
   );

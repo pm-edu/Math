@@ -45,12 +45,14 @@ export function useRecorder() {
 
   useEffect(() => cleanupAudioAnalysis, [cleanupAudioAnalysis]);
 
-  const start = useCallback(async () => {
+  const start = useCallback(async (deviceId?: string) => {
     setError(null);
     setIsSilent(false);
     silentSinceRef.current = null;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: deviceId ? { deviceId: { exact: deviceId } } : true,
+      });
       streamRef.current = stream;
 
       const picked = pickMimeType();

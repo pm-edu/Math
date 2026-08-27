@@ -57,6 +57,11 @@ export default function ToeflCheckPage() {
   const [micLevel, setMicLevel] = useState(0);
   const [micBlobUrl, setMicBlobUrl] = useState<string | null>(null);
   const [micConfirmed, setMicConfirmed] = useState(false);
+  // 화면 검토(2026-08-27) [C]: 장치 재선택 — 여러 마이크가 연결돼 있으면 고를 수 있게 한다.
+  // 라벨은 권한을 한 번 허용해야 채워지므로(브라우저 정책), 최소 한 번 마이크 테스트를 마친
+  // 뒤에야 목록이 의미 있게 보인다 — 그래서 review 단계에서만 노출한다.
+  const [micDevices, setMicDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedMicId, setSelectedMicId] = useState<string | null>(null);
   const [screenWidth, setScreenWidth] = useState<number | null>(null);
   const [noticesAcked, setNoticesAcked] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -104,12 +109,21 @@ export default function ToeflCheckPage() {
     };
   }
 
-  async function startMicTest() {
+  async function startMicTest(deviceId?: string) {
     setError(null);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: deviceId ? { deviceId: { exact: deviceId } } : true,
+      });
       streamRef.current = stream;
       setMicPhase("recording");
+
+      // 권한이 허용된 뒤에야 장치 라벨이 채워진다(브라우저 정책) — 그래서 재생목록은 여기,
+      // 첫 성공한 getUserMedia 이후에 채운다.
+      navigator.mediaDevices
+        .enumerateDevices()
+        .then((devices) => setMicDevices(devices.filter((d) => d.kind === "audioinput")))
+        .catch(() => {});
 
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       const audioCtx = new AudioCtx();
@@ -204,7 +218,8 @@ export default function ToeflCheckPage() {
 
         {mode === "full" && !screenOk && (
           <div className="mt-5 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-xs text-red-700">
-            {interpolate(t("toefl_screenTooNarrow"), { width: MIN_SCREEN_WIDTH })}
+            <p className="font-medium">{interpolate(t("toefl_screenTooNarrow"), { width: MIN_SCREEN_WIDTH })}</p>
+            <p className="mt-1">{t("toefl_screenTooNarrowFix")}</p>
           </div>
         )}
 
@@ -215,18 +230,32 @@ export default function ToeflCheckPage() {
               {audioStep}. {t("toefl_audioCheckLabel")}
             </p>
             <p className="mt-1 text-xs text-[var(--secondary)]">{t("toefl_audioCheckDesc")}</p>
-            <button
-              type="button"
-              onClick={playTestTone}
-              className="mt-3 rounded-full border border-[var(--pink)] px-4 py-1.5 text-xs font-medium text-[var(--pink-dark)]"
-            >
-              {t("toefl_playTestSound")}
-            </button>
+            <div className="mt-3 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={playTestTone}
+                className="rounded-full border border-[var(--pink)] px-4 py-1.5 text-xs font-medium text-[var(--pink-dark)]"
+              >
+                {t("toefl_playTestSound")}
+              </button>
+              {audioPlayed && (
+                <button
+                  type="button"
+                  onClick={playTestTone}
+                  className="rounded-full border border-[var(--border-c)] px-4 py-1.5 text-xs font-medium text-[var(--secondary)]"
+                >
+                  🔁 {t("toefl_replaySound")}
+                </button>
+              )}
+            </div>
             {audioPlayed && (
-              <label className="mt-3 flex items-center gap-2 text-xs text-[var(--foreground)]">
-                <input type="checkbox" checked={audioConfirmed} onChange={(e) => setAudioConfirmed(e.target.checked)} />
-                {t("toefl_heardClearly")}
-              </label>
+              <>
+                <p className="mt-2 text-[11px] text-[var(--secondary)]">{t("toefl_volumeOutputHint")}</p>
+                <label className="mt-2 flex items-center gap-2 text-xs text-[var(--foreground)]">
+                  <input type="checkbox" checked={audioConfirmed} onChange={(e) => setAudioConfirmed(e.target.checked)} />
+                  {t("toefl_heardClearly")}
+                </label>
+              </>
             )}
           </section>
         )}
@@ -242,7 +271,7 @@ export default function ToeflCheckPage() {
             {micPhase === "idle" && (
               <button
                 type="button"
-                onClick={startMicTest}
+                onClick={() => startMicTest()}
                 className="mt-3 rounded-full border border-[var(--pink)] px-4 py-1.5 text-xs font-medium text-[var(--pink-dark)]"
               >
                 {t("toefl_record3s")}
@@ -264,7 +293,11 @@ export default function ToeflCheckPage() {
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => setMicConfirmed(true)}
+                    onClick={() => {
+                      setMicConfirmed(true);
+                      const chosen = selectedMicId ?? micDevices[0]?.deviceId;
+                      if (chosen) sessionStorage.setItem("toefl_mic_device_id", chosen);
+                    }}
                     className="rounded-full border border-[var(--pink)] px-4 py-1.5 text-xs font-medium text-[var(--pink-dark)]"
                   >
                     {t("toefl_soundsGood")}
@@ -274,6 +307,35 @@ export default function ToeflCheckPage() {
                   </button>
                 </div>
                 {micConfirmed && <p className="text-xs text-[var(--mint-dark)]">{t("toefl_micConfirmed")}</p>}
+
+                {micDevices.length > 1 && (
+                  <div className="mt-2 border-t border-[var(--border-c)] pt-2">
+                    <label className="block text-[11px] text-[var(--secondary)]">
+                      {t("toefl_micDeviceLabel")}
+                      <select
+                        value={selectedMicId ?? micDevices[0]?.deviceId ?? ""}
+                        onChange={(e) => setSelectedMicId(e.target.value)}
+                        className="mt-1 w-full rounded-lg border border-[var(--border-c)] bg-white px-2.5 py-1.5 text-xs"
+                      >
+                        {micDevices.map((d, i) => (
+                          <option key={d.deviceId} value={d.deviceId}>
+                            {d.label || `Microphone ${i + 1}`}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMicConfirmed(false);
+                        startMicTest(selectedMicId ?? micDevices[0]?.deviceId);
+                      }}
+                      className="mt-2 text-[11px] font-medium text-[var(--pink-dark)] underline"
+                    >
+                      {t("toefl_recheckWithDevice")}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -284,7 +346,7 @@ export default function ToeflCheckPage() {
                   {isSafari ? t("toefl_micBlockedSafari") : t("toefl_micBlockedChrome")} {t("toefl_micBlockedFirefox")}
                 </p>
                 <div className="mt-2 flex items-center gap-3">
-                  <button type="button" onClick={startMicTest} className="font-medium underline">
+                  <button type="button" onClick={() => startMicTest()} className="font-medium underline">
                     {t("toefl_tryAgain")}
                   </button>
                   {mode === "full" && (

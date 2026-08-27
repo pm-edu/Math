@@ -4,7 +4,9 @@
 // AI(Gemini)로 초안을 생성 → 이 화면에서 검토·수정 → 저장. Speaking/Writing 5개 유형은 다음 단계.
 // docs/toefl-spec.md §6(데이터 계약)·§9(API)·§15(P6 DoD) 참고. [[toefl-ui-work-rules]] 8원칙 준수.
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import Topbar from "@/components/toefl/admin/Topbar";
 import Pipeline from "@/components/toefl/admin/Pipeline";
 import { useAdminMe } from "@/lib/toefl/admin-me";
@@ -54,8 +56,13 @@ type RegisteredItem = { id: string; task_type: string; prompt: string; is_active
 
 export default function AdminToeflItemsPage() {
   const me = useAdminMe();
+  const searchParams = useSearchParams();
+  // /admin/toefl/review의 "반려 · 재생성하러 가기"가 유형/모듈을 미리 채워서 넘어온다
+  // (화면 검토 2026-08-27 [B]) — 없으면 기존 기본값(academic_passage) 그대로.
+  const initialTaskType = (searchParams.get("taskType") as GenerableTaskType | null) ?? "academic_passage";
+  const initialModuleId = searchParams.get("moduleId") ?? "";
 
-  const [taskType, setTaskType] = useState<GenerableTaskType>("academic_passage");
+  const [taskType, setTaskType] = useState<GenerableTaskType>(initialTaskType);
   const [modules, setModules] = useState<ModuleOption[]>([]);
   const [moduleId, setModuleId] = useState<string>("");
   const [itemsPerUnit, setItemsPerUnit] = useState(3);
@@ -72,6 +79,8 @@ export default function AdminToeflItemsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  // 화면 검토(2026-08-27) [B]: 저장 직후 "검수하러 가기" 링크를 보여주기 위한 개수(null이면 안 보임).
+  const [savedCount, setSavedCount] = useState<number | null>(null);
   const [log, setLog] = useState<{ kind: string; status: string; message: string }[]>([]);
 
   const config = TASK_TYPES.find((t) => t.value === taskType)!;
@@ -103,11 +112,20 @@ export default function AdminToeflItemsPage() {
     init();
   }, []);
 
-  // 유형이 바뀌면 그 섹션의 모듈로 다시 고른다.
+  // 유형이 바뀌면 그 섹션의 모듈로 다시 고른다 — 단, 재생성 흐름으로 넘어온 첫 로드에서는
+  // 쿼리파라미터의 moduleId를 한 번만 그대로 쓴다(그 뒤로는 기존 동작과 동일).
+  const appliedInitialModule = useRef(false);
   useEffect(() => {
+    if (!appliedInitialModule.current && modules.length > 0) {
+      appliedInitialModule.current = true;
+      if (initialModuleId && modules.some((m) => m.id === initialModuleId)) {
+        setModuleId(initialModuleId);
+        return;
+      }
+    }
     const first = modules.find((m) => m.section === config.section);
     setModuleId(first?.id ?? "");
-  }, [taskType, modules, config.section]);
+  }, [taskType, modules, config.section, initialModuleId]);
 
   useEffect(() => {
     if (!moduleId) { setProgress(null); setRegisteredItems([]); return; }
@@ -170,7 +188,7 @@ export default function AdminToeflItemsPage() {
   }
 
   async function handleGenerate() {
-    setError(null); setMessage(null); setLog([]);
+    setError(null); setMessage(null); setLog([]); setSavedCount(null);
     setGenerating(true);
     try {
       const res = await fetch("/api/admin/toefl/items/generate", {
@@ -231,7 +249,7 @@ export default function AdminToeflItemsPage() {
   }
 
   async function handleSave() {
-    setError(null); setMessage(null);
+    setError(null); setMessage(null); setSavedCount(null);
     const chosen = items.filter((it) => it.include);
     if (chosen.length === 0) { setError("저장할 문항이 없습니다."); return; }
     if (config.needsStimulus && !stimulusText.trim()) { setError("지문/스크립트 내용이 비어 있습니다."); return; }
@@ -253,7 +271,7 @@ export default function AdminToeflItemsPage() {
       setSaving(false);
       if (!res.ok || !data.ok) { setError(data.message ?? "저장 실패"); return; }
       setLog(data.log ?? []);
-      setMessage(`${(data.itemIds ?? []).length}문항을 저장했습니다.`);
+      setSavedCount((data.itemIds ?? []).length);
       setItems([]); setStimulusTitle(""); setStimulusText("");
       loadProgress(moduleId);
       loadRegisteredItems(moduleId);
@@ -345,6 +363,14 @@ export default function AdminToeflItemsPage() {
 
           {error && <p className="text-sm text-red-600">{error}</p>}
           {message && <p className="text-sm text-[var(--mint-dark)]">{message}</p>}
+          {savedCount !== null && savedCount > 0 && (
+            <p className="text-sm text-[var(--mint-dark)]">
+              {savedCount}개 문항 검수 대기 중 →{" "}
+              <Link href="/admin/toefl/review" className="font-medium underline">
+                검수하러 가기
+              </Link>
+            </p>
+          )}
 
           <button
             onClick={handleGenerate}

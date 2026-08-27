@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/client";
@@ -13,6 +13,10 @@ type Target = "all" | "course" | "selected";
 
 export default function AdminMailPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // /admin/toefl/students의 "메일 발송" 링크가 학생 하나를 미리 선택한 상태로 넘어온다
+  // (화면 검토 2026-08-27 [B]) — 없으면 기존처럼 "전체"가 기본값이다.
+  const preselectStudent = searchParams.get("student");
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [courses, setCourses] = useState<CourseOption[]>([]);
   const [students, setStudents] = useState<Profile[]>([]);
@@ -57,9 +61,13 @@ export default function AdminMailPage() {
       setCourses((courseRes.data ?? []) as CourseOption[]);
       setStudents((studentRes.data ?? []) as Profile[]);
       if (courseRes.data?.[0]) setCourseId(courseRes.data[0].id);
+      if (preselectStudent) {
+        setTarget("selected");
+        setSelectedIds([preselectStudent]);
+      }
     }
     init();
-  }, [router]);
+  }, [router, preselectStudent]);
 
   function toggleStudent(id: string) {
     setSelectedIds((prev) =>

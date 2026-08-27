@@ -9,7 +9,6 @@
 
 import { parsePcmSampleRate, pcmDurationSec, pcmToWav } from "./wav";
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? "";
 const TTS_MODEL = "gemini-2.5-flash-preview-tts";
 const MAX_ATTEMPTS = 3;
 const DEFAULT_RETRY_DELAY_MS = 20000;
@@ -30,7 +29,11 @@ function parseRetryDelayMs(body: string): number {
 }
 
 // text: 실제로 소리내어 읽을 문장(자연스러운 낭독 톤을 원하면 앞에 스타일 지시를 붙여도 됨).
+// 호출 시점에 읽는다(모듈 로드 시점에 상수로 캡처하면 안 된다) — CLI 스크립트는
+// .env.local을 import보다 늦게 로드하는 구조라 상수로 캡처하면 항상 빈 값이 된다
+// (scripts/toefl-generate.ts 쪽 GEMINI_API_KEY에서 실제로 겪은 버그, gemini-server.ts와 동일 수정).
 export async function generateSpeechWav(text: string, voiceName = "Kore"): Promise<TtsResult> {
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? "";
   if (!GEMINI_API_KEY) return { ok: false, status: 500, message: "GEMINI_API_KEY가 설정되지 않았습니다." };
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {

@@ -126,6 +126,18 @@ export default function ToeflMyPage() {
         <h1 className="text-3xl font-medium text-[var(--foreground)]">{t("mypage")}</h1>
         <p className="mt-1 text-sm text-[var(--secondary)]">{t("toefl_myPageSubtitle")}</p>
 
+        {/* 3차 화면 검토(2026-08-27) [B]: /toefl/review-queue의 유일한 진입점이 리포트/리뷰
+            화면의 "복습 큐에 추가" 성공 시(vocab_ids 있을 때만)였는데, 지금 데모 데이터는
+            vocab_ids가 전부 비어 있어 그 조건이 한 번도 안 걸린다 — 즉 화면은 있는데 실제로는
+            아무도 못 들어가는 상태였다. 여기 상시 링크를 둬서 vocab_ids 유무와 무관하게
+            항상 열어볼 수 있게 한다. */}
+        <a
+          href="/toefl/review-queue"
+          className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-[var(--pink-dark)] underline"
+        >
+          {t("toefl_openReviewQueue")}
+        </a>
+
         {error && <p className="mt-4 text-sm text-red-600">⚠ {error}</p>}
 
         <section className="mt-8">

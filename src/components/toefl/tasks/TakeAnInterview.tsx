@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AudioPlayer from "../AudioPlayer";
-import RecorderPanel from "../RecorderPanel";
+import RecorderPanel, { type SpeakingStageStatus } from "../RecorderPanel";
 import type { TakeAnInterviewPayload, ToeflItemPublic } from "@/lib/toefl/types";
 
 // spec §6 take_an_interview: 질문은 텍스트로 보여주지 않는다(음성 only, 아바타 아이콘만).
@@ -21,6 +21,7 @@ export default function TakeAnInterview({
   onChange,
   turnIndex,
   turnTotal,
+  onStatusChange,
 }: {
   item: ToeflItemPublic;
   attemptId: string;
@@ -28,12 +29,17 @@ export default function TakeAnInterview({
   onChange: (answer: { audio_path: string }) => void;
   turnIndex?: number; // 0-based
   turnTotal?: number;
+  onStatusChange?: (status: SpeakingStageStatus) => void;
 }) {
   const payload = item.payload as TakeAnInterviewPayload;
   const alreadyRecorded = !!value?.audio_path;
   const [phase, setPhase] = useState<Phase>("question");
   const [countdown, setCountdown] = useState(payload.prep_sec);
-  const [invalidated, setInvalidated] = useState(false);
+  const [invalidated, setInvalidatedRaw] = useState(false);
+  function setInvalidated(v: boolean) {
+    setInvalidatedRaw(v);
+    if (v) onStatusChange?.({ phase: "failed" });
+  }
 
   // 질문 오디오 자산이 없는 데모 데이터 갭 대비 — 사용자 버튼 없이 자동으로 다음 단계로 넘어간다.
   useEffect(() => {
@@ -50,6 +56,16 @@ export default function TakeAnInterview({
     }, 1000);
     return () => clearTimeout(t);
   }, [phase, countdown]);
+
+  // 화면 검토(2026-08-27) [A]-2: "question"(질문 음성 듣는 중)도 응답을 준비하는 단계라 "prep"로
+  // 합쳐 보고한다 — 페이지 상단 상태표시는 5단계(준비/녹음/업로드/완료/실패)만 구분하면 된다.
+  useEffect(() => {
+    if (alreadyRecorded) onStatusChange?.({ phase: "done" });
+    else if (phase === "question") onStatusChange?.({ phase: "prep", secondsLeft: payload.prep_sec });
+    else if (phase === "prep") onStatusChange?.({ phase: "prep", secondsLeft: countdown });
+    else if (phase === "done") onStatusChange?.({ phase: "done" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, countdown, alreadyRecorded]);
 
   const turnLabel = turnTotal && turnTotal > 1 ? `Turn ${(turnIndex ?? 0) + 1} of ${turnTotal}` : null;
 
@@ -107,6 +123,7 @@ export default function TakeAnInterview({
               onChange({ audio_path: path });
             }}
             onPermissionLost={() => setInvalidated(true)}
+            onStatusChange={onStatusChange}
           />
         </div>
       )}

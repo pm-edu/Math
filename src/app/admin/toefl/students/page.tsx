@@ -10,6 +10,7 @@
 // 벌크 액션(세트 배포 · 메일 · 학부모 링크)도 배포 테이블이 생긴 뒤에 붙인다.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import Topbar from "@/components/toefl/admin/Topbar";
 import { useAdminMe } from "@/lib/toefl/admin-me";
 import { createClient } from "@/lib/supabase/client";
@@ -28,15 +29,29 @@ type Student = {
   band: number | null;
   delta: number | null;
   lastActivity: string | null; // ISO
+  latestAttemptId: string | null;
+  // 3차 화면 검토(2026-08-27) [C]-4: "리포트" 버튼이 항상 최신 것 하나만 가리켜서 지난 응시를
+  // 못 골랐다는 지적 — 응시 이력 전체(최신순)를 들고 있다가 2개 이상이면 드롭다운으로 고르게 한다.
+  attemptHistory: { id: string; submittedAt: string }[];
   sectionBands: Partial<Record<ToeflSection, number>>;
   routes: Partial<Record<ToeflSection, string>>;
 };
 
 type SortKey = "inactive" | "band" | "recent";
 
+// 화면 검토(2026-08-27) [B]: 7일 이상 활동이 없으면(또는 응시 자체가 없으면) "메일 발송"
+// 액션을 보여준다 — 정확한 리스크 점수 공식은 아직 안 정해졌지만(위 주석 참고), "너무 오래
+// 안 들어온 학생에게 먼저 연락한다"는 목적은 지금 데이터(마지막 활동일)만으로 충분하다.
+const INACTIVE_DAYS = 7;
+
+function daysAgo(iso: string | null): number | null {
+  if (!iso) return null;
+  return Math.floor((Date.now() - Date.parse(iso)) / 86_400_000);
+}
+
 function daysAgoLabel(iso: string | null): string {
-  if (!iso) return "응시 없음";
-  const days = Math.floor((Date.now() - Date.parse(iso)) / 86_400_000);
+  const days = daysAgo(iso);
+  if (days === null) return "응시 없음";
   if (days <= 0) return "오늘";
   if (days === 1) return "어제";
   return `${days}일 전`;
@@ -105,6 +120,8 @@ export default function ToeflStudentsPage() {
           band: latest?.overall_band ?? null,
           delta: latest?.overall_band != null && prev?.overall_band != null ? latest.overall_band - prev.overall_band : null,
           lastActivity: latest?.submitted_at ?? null,
+          latestAttemptId: latest?.id ?? null,
+          attemptHistory: history.map((h) => ({ id: h.id, submittedAt: h.submitted_at })),
           sectionBands,
           routes,
         };
@@ -177,7 +194,7 @@ export default function ToeflStudentsPage() {
             <table className="w-full border-collapse text-[13px]">
               <thead>
                 <tr>
-                  {["학생", "반", "최근 밴드", "영역별", "Stage 2 라우팅", "마지막 활동"].map((h) => (
+                  {["학생", "반", "최근 밴드", "영역별", "Stage 2 라우팅", "마지막 활동", "액션"].map((h) => (
                     <th
                       key={h}
                       className="whitespace-nowrap border-b border-[var(--en-line)] bg-[#FAFBFE] px-3.5 py-2.5 text-left text-[11.5px] font-extrabold uppercase tracking-[.04em] text-[var(--en-ink-soft)]"
@@ -190,7 +207,7 @@ export default function ToeflStudentsPage() {
               <tbody>
                 {visible.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-3.5 py-10 text-center text-[var(--en-ink-soft)]">
+                    <td colSpan={7} className="px-3.5 py-10 text-center text-[var(--en-ink-soft)]">
                       해당하는 학생이 없습니다.
                     </td>
                   </tr>
@@ -262,6 +279,54 @@ export default function ToeflStudentsPage() {
                       </td>
                       <td className="whitespace-nowrap px-3.5 py-3 text-xs text-[var(--en-ink-soft)]">
                         {daysAgoLabel(s.lastActivity)}
+                      </td>
+                      <td className="whitespace-nowrap px-3.5 py-3 text-xs">
+                        <div className="flex items-center gap-2.5">
+                          <Link href={`/admin/students/${s.id}`} className="font-bold text-[var(--en-ink)] hover:underline">
+                            상세
+                          </Link>
+                          <Link href={`/admin/toefl/attempts?student=${s.id}`} className="font-bold text-[var(--en-ink)] hover:underline">
+                            응시 기록
+                          </Link>
+                          {s.latestAttemptId && s.band != null && (
+                            <a
+                              href={`/toefl/report/${s.latestAttemptId}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="font-bold text-[var(--en-gold-deep)] hover:underline"
+                            >
+                              최신 리포트
+                            </a>
+                          )}
+                          {s.attemptHistory.length >= 2 && (
+                            <select
+                              defaultValue=""
+                              onChange={(e) => {
+                                if (e.target.value) window.open(`/toefl/report/${e.target.value}`, "_blank", "noreferrer");
+                                e.target.value = "";
+                              }}
+                              className="rounded-md border border-[var(--en-line)] bg-white px-1.5 py-0.5 text-[11px] font-bold text-[var(--en-ink-soft)]"
+                            >
+                              <option value="" disabled>
+                                지난 리포트 ({s.attemptHistory.length})
+                              </option>
+                              {s.attemptHistory.map((a, i) => (
+                                <option key={a.id} value={a.id}>
+                                  {i === 0 ? "최신 · " : ""}
+                                  {new Date(a.submittedAt).toLocaleDateString("ko-KR")}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                          {(daysAgo(s.lastActivity) === null || (daysAgo(s.lastActivity) ?? 0) >= INACTIVE_DAYS) && (
+                            <Link
+                              href={`/admin/mail?student=${s.id}`}
+                              className="font-bold text-[var(--risk-hi,#C1443D)] hover:underline"
+                            >
+                              메일 발송
+                            </Link>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))

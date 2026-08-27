@@ -1,17 +1,18 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { jsonError, requireToeflStaff } from "@/lib/toefl/server/auth";
-import { generateSpeechWav } from "@/lib/toefl/server/tts";
+import { generateSpeechWav } from "./tts";
 
-// TOEFL 데모 Listening/Speaking 콘텐츠(TOEFL_DEMO_001)에 실제 음성 파일을 채워 넣는 1회성 관리자 도구.
-// P0에서 심은 데모 데이터는 대본(transcript)만 있고 오디오가 없었다(P1은 Reading이라 필요 없었음).
+// TOEFL 데모 Listening/Speaking 콘텐츠(TOEFL_DEMO_001)에 실제 음성 파일을 채워 넣는 1회성 도구.
+// 화면 검토(2026-08-27) [D]: 원래 /admin/toefl/audio 관리자 화면+API 라우트였던 것을 CLI로
+// 옮겼다 — 문항 대량 생성(scripts/toefl-generate.ts)과 같은 이유: 1회성 시드 도구를 굳이
+// 관리자 메뉴에 상시 노출할 필요가 없고, 실행 결과(로그)는 터미널로 보는 게 더 간단하다.
+// 로직 자체는 그대로 옮겨온 것(동작 변화 없음) — service role 클라이언트를 넘겨 호출한다.
+//
 // - conversation/announcement/academic_talk: toefl_stimulus.transcript를 그대로 읽어서 저장.
 // - choose_a_response: payload에 "말하는 문장" 필드가 원래 없어서(spec §6 계약에 없음), 정답이
 //   자연스럽게 이어지도록 이 파일에 직접 문장을 하나씩 지어 붙였다(DB에는 저장하지 않음 — payload는
 //   toefl_item_public을 통해 학생에게 그대로 노출되므로, 대사를 payload에 넣으면 "듣기 전에 대본을
 //   글로 읽는" 셈이 되어 §5 보안 요구사항을 깬다. 그래서 clip_path만 채우고 대사 텍스트는 여기 상수로만 존재).
-// 여러 번 실행해도 안전(이미 audio_path/clip_path가 있으면 건너뜀, ?force=1이면 다시 생성).
-// staff-authenticated 클라이언트로 충분하다 — RLS가 toefl_module/toefl_item/toefl_stimulus와
-// toefl-audio 버킷 둘 다 is_staff()에게 전체 권한을 이미 허용한다(service role 불필요).
+// 여러 번 실행해도 안전(이미 audio_path/clip_path가 있으면 건너뜀, force:true면 다시 생성).
 
 const CHOOSE_A_RESPONSE_UTTERANCES: { matchExplanation: string; utterance: string }[] = [
   { matchExplanation: "셔틀 운행 여부", utterance: "Does the shuttle run in the evening?" },
@@ -19,30 +20,24 @@ const CHOOSE_A_RESPONSE_UTTERANCES: { matchExplanation: string; utterance: strin
   { matchExplanation: "우선순위", utterance: "Which part of the report should we revise first?" },
 ];
 
-type LogEntry = { kind: "stimulus" | "item"; id: string; status: "generated" | "skipped" | "error"; message: string };
+export type DemoAudioLogEntry = { kind: "stimulus" | "item"; id: string; status: "generated" | "skipped" | "error"; message: string };
 
-export async function POST(req: Request) {
-  const auth = await requireToeflStaff(req);
-  if (!auth.ok) return jsonError(auth.status, auth.message);
-  const { client } = auth;
+export async function generateDemoAudio(client: SupabaseClient, options: { force?: boolean } = {}): Promise<DemoAudioLogEntry[]> {
+  const force = options.force ?? false;
+  const log: DemoAudioLogEntry[] = [];
 
-  const force = new URL(req.url).searchParams.get("force") === "1";
-  const log: LogEntry[] = [];
+  const { data: form } = await client.from("toefl_form").select("id").eq("code", "TOEFL_DEMO_001").maybeSingle();
+  if (!form) {
+    log.push({ kind: "stimulus", id: "-", status: "error", message: "TOEFL_DEMO_001 폼을 찾을 수 없습니다." });
+    return log;
+  }
 
-  const { data: form } = await client
-    .from("toefl_form")
-    .select("id")
-    .eq("code", "TOEFL_DEMO_001")
-    .maybeSingle();
-  if (!form) return jsonError(404, "TOEFL_DEMO_001 폼을 찾을 수 없습니다.");
-
-  const { data: modules } = await client
-    .from("toefl_module")
-    .select("id")
-    .eq("form_id", form.id)
-    .eq("section", "listening");
+  const { data: modules } = await client.from("toefl_module").select("id").eq("form_id", form.id).eq("section", "listening");
   const moduleIds = (modules ?? []).map((m) => m.id);
-  if (moduleIds.length === 0) return jsonError(404, "Listening 모듈을 찾을 수 없습니다.");
+  if (moduleIds.length === 0) {
+    log.push({ kind: "stimulus", id: "-", status: "error", message: "Listening 모듈을 찾을 수 없습니다." });
+    return log;
+  }
 
   const { data: stimuli } = await client
     .from("toefl_stimulus")
@@ -95,10 +90,7 @@ export async function POST(req: Request) {
       log.push({ kind: "item", id: item.id, status: "error", message: result.message });
       continue;
     }
-    const { error: updateErr } = await client
-      .from("toefl_item")
-      .update({ payload: { ...payload, clip_path: path } })
-      .eq("id", item.id);
+    const { error: updateErr } = await client.from("toefl_item").update({ payload: { ...payload, clip_path: path } }).eq("id", item.id);
     log.push(
       updateErr
         ? { kind: "item", id: item.id, status: "error", message: `DB 저장 실패: ${updateErr.message}` }
@@ -107,14 +99,7 @@ export async function POST(req: Request) {
   }
 
   // ── Speaking: listen_and_repeat(target_sentence) + take_an_interview(질문) ──
-  // take_an_interview는 질문을 화면에 텍스트로 안 보여주는 게 spec §10 규칙이라, item.prompt(질문
-  // 문장)를 음성으로 만들어 payload.question_audio_path에 채운다 — 이게 학생이 질문을 알 수 있는
-  // 유일한 경로다(글로도 안 보여줌).
-  const { data: speakingModules } = await client
-    .from("toefl_module")
-    .select("id")
-    .eq("form_id", form.id)
-    .eq("section", "speaking");
+  const { data: speakingModules } = await client.from("toefl_module").select("id").eq("form_id", form.id).eq("section", "speaking");
   const speakingModuleIds = (speakingModules ?? []).map((m) => m.id);
 
   if (speakingModuleIds.length > 0) {
@@ -141,10 +126,7 @@ export async function POST(req: Request) {
           log.push({ kind: "item", id: item.id, status: "error", message: result.message });
           continue;
         }
-        const { error: updateErr } = await client
-          .from("toefl_item")
-          .update({ payload: { ...payload, clip_path: path } })
-          .eq("id", item.id);
+        const { error: updateErr } = await client.from("toefl_item").update({ payload: { ...payload, clip_path: path } }).eq("id", item.id);
         log.push(
           updateErr
             ? { kind: "item", id: item.id, status: "error", message: `DB 저장 실패: ${updateErr.message}` }
@@ -175,7 +157,7 @@ export async function POST(req: Request) {
     }
   }
 
-  return Response.json({ ok: true, log });
+  return log;
 }
 
 async function generateAndUpload(
@@ -186,9 +168,7 @@ async function generateAndUpload(
   const tts = await generateSpeechWav(text);
   if (!tts.ok) return { ok: false, message: tts.message };
 
-  const { error } = await client.storage
-    .from("toefl-audio")
-    .upload(path, tts.wav, { contentType: "audio/wav", upsert: true });
+  const { error } = await client.storage.from("toefl-audio").upload(path, tts.wav, { contentType: "audio/wav", upsert: true });
   if (error) return { ok: false, message: `업로드 실패: ${error.message}` };
 
   return { ok: true, durationSec: tts.durationSec };

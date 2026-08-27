@@ -16,6 +16,7 @@ import { catalogEntry } from "@/lib/toefl/task-catalog";
 type QueueRow = {
   scoreId: string;
   responseId: string;
+  attemptId: string;
   reason: string;
   createdAt: string;
   taskType: string;
@@ -27,12 +28,47 @@ type QueueRow = {
   formCode: string;
 };
 
+const ESSAY_TYPES = new Set(["write_an_email", "academic_discussion"]);
+
+const ESSAY_DIMENSIONS: { key: string; label: string }[] = [
+  { key: "task_achievement", label: "과제 달성" },
+  { key: "coherence", label: "구성·응집성" },
+  { key: "lexical_resource", label: "어휘" },
+  { key: "grammar", label: "문법" },
+];
+
+const INTERVIEW_DIMENSIONS: { key: string; label: string }[] = [
+  { key: "delivery", label: "전달력" },
+  { key: "language_use", label: "언어 사용" },
+  { key: "topic_development", label: "내용 전개" },
+];
+
+function rubricDimensions(taskType: string) {
+  return ESSAY_TYPES.has(taskType) ? ESSAY_DIMENSIONS : INTERVIEW_DIMENSIONS;
+}
+
 export default function ToeflGradingQueuePage() {
   const me = useAdminMe();
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<QueueRow[]>([]);
   const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
+  // 화면 검토(2026-08-27) [B]: "다시 시도"(AI 재시도)와 별개로, 관리자가 루브릭 항목별 점수를
+  // 직접 입력해 채점을 확정하는 수동 채점 폼 — scoreId별로 펼침/입력값/제출결과를 따로 든다.
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [rubricDrafts, setRubricDrafts] = useState<Record<string, Record<string, number>>>({});
+  const [feedbackDrafts, setFeedbackDrafts] = useState<Record<string, string>>({});
+  // 3차 화면 검토(2026-08-27) [C]-5: "확정 후" 배너에 재계산된 영역점수·밴드까지 보여준다.
+  const [graded, setGraded] = useState<
+    Record<
+      string,
+      {
+        attemptId: string;
+        section: { rawScore: number; scaledScore: number; band: number };
+        overall: { totalScaled: number; overallBand: number } | null;
+      }
+    >
+  >({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -103,6 +139,7 @@ export default function ToeflGradingQueuePage() {
           return {
             scoreId: s.id,
             responseId: s.response_id,
+            attemptId: response.attempt_id,
             reason: s.feedback_ko,
             createdAt: s.created_at,
             taskType: item?.task_type ?? "?",
@@ -156,11 +193,73 @@ export default function ToeflGradingQueuePage() {
     }
   }
 
+  function openManualGrade(row: QueueRow) {
+    setOpenId((prev) => (prev === row.scoreId ? null : row.scoreId));
+    if (!rubricDrafts[row.scoreId]) {
+      const dims = rubricDimensions(row.taskType);
+      setRubricDrafts((prev) => ({ ...prev, [row.scoreId]: Object.fromEntries(dims.map((d) => [d.key, 3])) }));
+    }
+  }
+
+  function setDimension(scoreId: string, key: string, value: number) {
+    setRubricDrafts((prev) => ({ ...prev, [scoreId]: { ...prev[scoreId], [key]: value } }));
+  }
+
+  async function submitManualGrade(row: QueueRow) {
+    setError(null);
+    const rubric = rubricDrafts[row.scoreId];
+    const feedback = (feedbackDrafts[row.scoreId] ?? "").trim();
+    if (!feedback) {
+      setError("피드백을 입력해 주세요.");
+      return;
+    }
+    setBusyIds((prev) => new Set(prev).add(row.responseId));
+    try {
+      const res = await fetch("/api/admin/toefl/grade-manual", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(await authHeader()) },
+        body: JSON.stringify({ scoreId: row.scoreId, rubric, feedback }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        setError(data?.message ?? `채점 저장 실패 (HTTP ${res.status})`);
+        return;
+      }
+      setGraded((prev) => ({
+        ...prev,
+        [row.scoreId]: { attemptId: data.attemptId, section: data.section, overall: data.overall },
+      }));
+      setRows((prev) => prev.filter((r) => r.scoreId !== row.scoreId));
+      setOpenId(null);
+    } finally {
+      setBusyIds((prev) => {
+        const next = new Set(prev);
+        next.delete(row.responseId);
+        return next;
+      });
+    }
+  }
+
   return (
     <>
       <Topbar title="AI 채점 대기" crumb="자동 채점이 실패해 관리자 확인이 필요한 응답" role={me.role} name={me.name} />
 
       {error && <p className="mb-3 text-sm text-red-600">⚠ {error}</p>}
+
+      {Object.entries(graded).length > 0 && (
+        <ul className="mb-4 space-y-1.5">
+          {Object.entries(graded).map(([scoreId, g]) => (
+            <li key={scoreId} className="rounded-lg bg-[#E7F6EE] px-4 py-2.5 text-sm text-[#1C7A4B]">
+              ✓ 채점 확정 — 영역 밴드 {g.section.band.toFixed(1)}(스케일 {g.section.scaledScore}/30)
+              {g.overall && <> · 종합 밴드 {g.overall.overallBand.toFixed(1)}</>}
+              {" — "}
+              <a href={`/toefl/report/${g.attemptId}`} target="_blank" rel="noreferrer" className="font-bold underline">
+                리포트 보기
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
 
       {loading ? (
         <p className="text-sm text-[var(--en-ink-soft)]">불러오는 중…</p>
@@ -191,14 +290,68 @@ export default function ToeflGradingQueuePage() {
                   <p className="mb-2 text-sm text-[var(--en-ink-soft)]">🎙 녹음 응답 (재생은 아직 이 화면에서 지원하지 않습니다)</p>
                 )}
                 <p className="mb-3 text-[12px] text-red-600">실패 사유: {r.reason}</p>
-                <button
-                  type="button"
-                  onClick={() => retry(r.responseId)}
-                  disabled={busy}
-                  className="rounded-full bg-[var(--en-gold)] px-5 py-2 text-sm font-bold text-[var(--en-on-gold)] disabled:opacity-50"
-                >
-                  {busy ? "재시도 중…" : "다시 시도"}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => retry(r.responseId)}
+                    disabled={busy}
+                    className="rounded-full bg-[var(--en-gold)] px-5 py-2 text-sm font-bold text-[var(--en-on-gold)] disabled:opacity-50"
+                  >
+                    {busy ? "재시도 중…" : "AI 다시 시도"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openManualGrade(r)}
+                    disabled={busy}
+                    className="rounded-full border border-[var(--en-line)] px-5 py-2 text-sm font-bold text-[var(--en-ink)] hover:border-[var(--en-ink)] disabled:opacity-50"
+                  >
+                    수동 채점
+                  </button>
+                </div>
+
+                {openId === r.scoreId && (
+                  <div className="mt-4 rounded-lg border border-dashed border-[var(--en-line)] bg-[#FAFBFE] p-4">
+                    <p className="mb-3 text-[11px] font-extrabold uppercase tracking-[.04em] text-[var(--en-ink-soft)]">
+                      루브릭 항목별 점수(0~6)
+                    </p>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {rubricDimensions(r.taskType).map((dim) => (
+                        <label key={dim.key} className="text-xs">
+                          <span className="mb-1 block font-semibold text-[var(--en-ink)]">{dim.label}</span>
+                          <input
+                            type="number"
+                            min={0}
+                            max={6}
+                            step={0.5}
+                            value={rubricDrafts[r.scoreId]?.[dim.key] ?? 3}
+                            onChange={(e) => setDimension(r.scoreId, dim.key, Number(e.target.value))}
+                            className="w-full rounded-lg border border-[var(--en-line)] px-3 py-1.5 text-sm"
+                          />
+                        </label>
+                      ))}
+                    </div>
+                    <label className="mt-3 block text-xs">
+                      <span className="mb-1 block font-semibold text-[var(--en-ink)]">피드백(학생에게 그대로 노출됩니다)</span>
+                      <textarea
+                        rows={3}
+                        value={feedbackDrafts[r.scoreId] ?? ""}
+                        onChange={(e) => setFeedbackDrafts((prev) => ({ ...prev, [r.scoreId]: e.target.value }))}
+                        className="w-full rounded-lg border border-[var(--en-line)] px-3 py-2 text-sm"
+                      />
+                    </label>
+                    <p className="mt-2 text-[11px] text-[var(--en-ink-soft)]">
+                      종합 밴드는 위 항목 점수의 평균을 0.5 단위로 반올림해 자동 계산됩니다.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => submitManualGrade(r)}
+                      disabled={busy}
+                      className="mt-3 rounded-full bg-[var(--en-ink)] px-5 py-2 text-sm font-bold text-white disabled:opacity-50"
+                    >
+                      {busy ? "저장 중…" : "채점 확정"}
+                    </button>
+                  </div>
+                )}
               </li>
             );
           })}
