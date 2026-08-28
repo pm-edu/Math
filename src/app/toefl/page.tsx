@@ -10,6 +10,7 @@
 // 시험 응시 화면(test/[attemptId]/...)과 /toefl/sample 은 이 작업 범위 밖이며 영어 고정이다.
 
 import Link from "next/link";
+import "./globals.css";
 import LandingHeader from "@/components/toefl/landing/LandingHeader";
 import RoutingRail from "@/components/toefl/landing/RoutingRail";
 import { LandingViewerProvider, useLandingViewer } from "@/lib/toefl/landing-viewer";

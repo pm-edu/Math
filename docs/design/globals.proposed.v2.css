@@ -1,0 +1,141 @@
+/* ============================================================
+   PM EDU 전역 디자인 토큰 제안 (v2 — 2026-08-28)
+   v1과 목표는 같다: TOEFL 전용이던 --en-* 골드 팔레트를 사이트 기본값으로 승격.
+   기존 컴포넌트는 --pink, --background 등 "의미 토큰" 이름을 그대로 쓰므로,
+   컴포넌트 코드는 손대지 않고 이 파일의 값 매핑만 바꾸면 전체 톤이 바뀐다.
+
+   v1 → v2에서 바뀐 것: v1은 원시값 이름을 --en-* → --color-*로 개명했는데, 실제
+   코드베이스를 감사해보니 --en-*/--risk-*를 직접 참조하는 파일이 18개 있어서
+   (TOEFL 관리자·랜딩 화면들 — 예: var(--en-gold), var(--en-on-gold), var(--risk-hi))
+   그대로 개명하면 그 화면들 색이 전부 빠진다(2026-08-28 사용자 확인, 원시값 이름은
+   그대로 유지하기로 결정). **그래서 v2는 --en-*/--risk-* 이름을 전부 그대로 보존한다.**
+   시맨틱 레이어(--background/--pink 등)의 기본값만 그 이름을 가리키도록 바꿔서,
+   결과(사이트 전체가 골드/네이비 톤이 되는 것)는 v1과 동일하고 깨지는 파일은 0개다.
+
+   적용 범위(2026-08-28 결정, v1과 다른 점): 사이트 전체 globals.css를 통째로 바꾸는
+   대신, TOEFL 서브트리 전용 파일(src/app/toefl/globals.css)로 먼저 반영한다 — "SAT도
+   나중에 TOEFL처럼 완전 분리될 수 있다"는 방향과 맞춰, TOEFL 쪽 디자인 토큰을 처음부터
+   독립된 파일로 관리해두려는 것. 루트 src/app/globals.css는 이번엔 건드리지 않는다
+   (기존 크림/핑크 :root 값 그대로, 수학 사이트는 영향 없음).
+
+   적용 전 확인 필요:
+   - [x] h1~h3 제목 폰트: 세리프(응시 화면 스타일) vs 산세리프 볼드(랜딩 스타일) —
+         기존 그대로 유지(세리프는 [data-theme="en"] 안에서만, 랜딩(.toefl-landing)은
+         산세리프로 되돌리는 기존 규칙 그대로 승계).
+   - [x] --font-en / --font-en-num 정의 위치 확인 — src/app/layout.tsx의 next/font
+         설정(전역)이라 이 파일에서 새로 정의할 필요 없음.
+   - [ ] .site-landing / [data-density="admin"]은 이번엔 어느 페이지에도 적용하지
+         않는다(2026-08-28 사용자 지시) — 아래 정의는 준비만 해둔 것, 다음에 실제로
+         쓸 페이지가 정해지면 그때 className/属性을 붙인다.
+   ============================================================ */
+
+/* ===== [data-theme="en"] 시맨틱 오버라이드 — src/app/globals.css의 :root에 이미
+   정의된 --en-*(원시값) 이름을 그대로 참조한다. 이 파일은 그 정의를 다시 안 만들고
+   그대로 재사용만 한다(원시값의 단일 진실 원본은 계속 루트 globals.css). ===== */
+[data-theme="en"] {
+  --background: var(--en-paper);
+  --foreground: var(--en-ink);
+  --secondary: var(--en-ink-soft);
+  --card: var(--en-card);
+  --pink: var(--en-gold);
+  --pink-dark: var(--en-ink);
+  --pink-light: var(--en-gold-soft);
+  --mint: var(--en-success-soft);
+  --mint-dark: var(--en-success-ink);
+  --border-c: var(--en-line);
+}
+[data-theme="en"] h1,
+[data-theme="en"] h2,
+[data-theme="en"] h3 {
+  font-family: var(--en-font-display);
+  font-weight: 400;
+}
+
+/* ───────── TOEFL 랜딩(docs/toefl-main.html) 전용 ───────── */
+.toefl-landing h1,
+.toefl-landing h2,
+.toefl-landing h3 {
+  font-family: inherit;
+}
+.toefl-landing .en-num {
+  font-family: var(--font-en-num), "Pretendard Variable", Pretendard, sans-serif;
+}
+.toefl-landing .u {
+  box-shadow: inset 0 -0.42em 0 var(--en-gold-soft);
+}
+.toefl-landing :focus-visible {
+  outline: 3px solid var(--en-gold);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ───────── TOEFL 관리자(docs/toefl-admin.html) 전용 ───────── */
+.toefl-admin h1,
+.toefl-admin h2,
+.toefl-admin h3 {
+  font-family: inherit;
+}
+.toefl-admin .num {
+  font-family: var(--font-en-num), "Pretendard Variable", Pretendard, sans-serif;
+}
+.toefl-admin :focus-visible {
+  outline: 3px solid var(--en-gold);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ===== 레이아웃 스케일 — 기존엔 없던 것, 신규 도입. 아직 어디서도 참조 안 함
+   (준비만 해둠). ===== */
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
+
+  --shadow-card: 0 1px 2px rgba(24, 42, 78, 0.06), 0 4px 12px rgba(24, 42, 78, 0.06);
+}
+
+/* ───────── 어드민 밀도 스코프 — 아직 어느 페이지에도 안 걸려있다(2026-08-28) ─────────
+   "같은 토큰, 다른 밀도": 시맨틱 토큰 이름은 그대로 두고 값만 저채도·고밀도용으로
+   교체한다. data-density="admin" 속성을 실제로 걸 위치(예: admin/toefl 전용 레이아웃)는
+   다음에 결정. */
+[data-density="admin"] {
+  --background: #FAFAF9;
+  --foreground: var(--en-ink);
+  --secondary: #6B7280;
+  --card: #FFFFFF;
+  --border-c: #E5E7EB;
+  --pink: var(--en-gold);
+  --pink-dark: var(--en-ink);
+
+  --space-4: 12px;
+  --space-6: 16px;
+  --space-8: 20px;
+
+  font-size: 0.9rem;
+}
+
+/* ───────── 랜딩(마케팅) 페이지 전용 유틸 — 아직 어느 페이지에도 안 걸려있다(2026-08-28) ─────────
+   .toefl-landing과 같은 원칙이지만 대상은 메인 사이트 홈/courses/reviews/contact/sample
+   등이 될 예정 — 실제 적용 페이지가 정해지면 그때 className을 붙인다. */
+.site-landing .num {
+  font-family: var(--font-en-num), "Pretendard Variable", Pretendard, sans-serif;
+}
+.site-landing .u {
+  box-shadow: inset 0 -0.42em 0 var(--en-gold-soft);
+}
+.site-landing :focus-visible,
+[data-density="admin"] :focus-visible {
+  outline: 3px solid var(--en-gold);
+  outline-offset: 2px;
+  border-radius: 4px;
+}

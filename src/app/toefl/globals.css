@@ -1,0 +1,112 @@
+/* TOEFL 서브트리 전용 디자인 토큰. 배경/근거는 docs/design/globals.proposed.v2.css 참고.
+   src/app/toefl/page.tsx(TOEFL 랜딩 진입점)에서만 import한다 — admin/toefl/* 화면은
+   이 파일과 무관하게 루트 src/app/globals.css를 그대로 쓴다(안 건드림, 기존과 동일).
+
+   여기서 쓰는 --en-*(원시값) 이름의 실제 정의는 계속 루트 globals.css의 :root에 있다
+   (전역 CSS라 이 파일에서도 그대로 참조 가능) — 이 파일은 그 값을 다시 정의하지 않고
+   [data-theme="en"]/.toefl-landing/.toefl-admin 스코프 규칙만 담아, "SAT도 나중에
+   TOEFL처럼 완전 분리될 수 있다"는 방향에 맞춰 TOEFL 쪽 토큰을 독립 파일로 관리하기
+   시작한다. 지금은 루트 파일의 같은 내용과 100% 동일한 값이라 시각적으로 아무것도
+   바뀌지 않는다(의도적 중복 — 완전 분리 전까지는 두 파일 모두 유지). */
+
+[data-theme="en"] {
+  --background: var(--en-paper);
+  --foreground: var(--en-ink);
+  --secondary: var(--en-ink-soft);
+  --card: var(--en-card);
+  --pink: var(--en-gold);
+  --pink-dark: var(--en-ink);
+  --pink-light: var(--en-gold-soft);
+  --mint: var(--en-success-soft);
+  --mint-dark: var(--en-success-ink);
+  --border-c: var(--en-line);
+}
+[data-theme="en"] h1,
+[data-theme="en"] h2,
+[data-theme="en"] h3 {
+  font-family: var(--en-font-display);
+  font-weight: 400;
+}
+
+.toefl-landing h1,
+.toefl-landing h2,
+.toefl-landing h3 {
+  font-family: inherit;
+}
+.toefl-landing .en-num {
+  font-family: var(--font-en-num), "Pretendard Variable", Pretendard, sans-serif;
+}
+.toefl-landing .u {
+  box-shadow: inset 0 -0.42em 0 var(--en-gold-soft);
+}
+.toefl-landing :focus-visible {
+  outline: 3px solid var(--en-gold);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.toefl-admin h1,
+.toefl-admin h2,
+.toefl-admin h3 {
+  font-family: inherit;
+}
+.toefl-admin .num {
+  font-family: var(--font-en-num), "Pretendard Variable", Pretendard, sans-serif;
+}
+.toefl-admin :focus-visible {
+  outline: 3px solid var(--en-gold);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* 레이아웃 스케일 — 신규 도입, 아직 어디서도 참조 안 함(준비만 해둠). */
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
+
+  --shadow-card: 0 1px 2px rgba(24, 42, 78, 0.06), 0 4px 12px rgba(24, 42, 78, 0.06);
+}
+
+/* 어드민 밀도 스코프 — 아직 어느 페이지에도 data-density="admin"을 안 걸었다(2026-08-28
+   사용자 지시, 나중에 결정). CSS만 준비. */
+[data-density="admin"] {
+  --background: #FAFAF9;
+  --foreground: var(--en-ink);
+  --secondary: #6B7280;
+  --card: #FFFFFF;
+  --border-c: #E5E7EB;
+  --pink: var(--en-gold);
+  --pink-dark: var(--en-ink);
+
+  --space-4: 12px;
+  --space-6: 16px;
+  --space-8: 20px;
+
+  font-size: 0.9rem;
+}
+
+/* 랜딩(마케팅) 전용 유틸 — 아직 어느 페이지에도 .site-landing을 안 걸었다(2026-08-28
+   사용자 지시, 나중에 결정). CSS만 준비. */
+.site-landing .num {
+  font-family: var(--font-en-num), "Pretendard Variable", Pretendard, sans-serif;
+}
+.site-landing .u {
+  box-shadow: inset 0 -0.42em 0 var(--en-gold-soft);
+}
+.site-landing :focus-visible,
+[data-density="admin"] :focus-visible {
+  outline: 3px solid var(--en-gold);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
