@@ -370,8 +370,11 @@ export default function ToeflCheckPage() {
             {noticesStep}. {t("toefl_beforeYouBegin")}
           </p>
           <ul className="mt-2 list-inside list-disc space-y-1 text-xs text-[var(--secondary)]">
-            <li>{t("toefl_noticeAudioOnce")}</li>
-            <li>{t("toefl_noticeNoReRecord")}</li>
+            {/* 오디오·마이크체크와 같은 기준(needsAudio/needsSpeaking)으로 거른다 — Reading/Writing
+                단독 연습에는 오디오도 말하기도 없는데 이 문구가 전부 그대로 뜨던 문제(실사용 지적,
+                2026-08-27). 타이머는 모든 섹션에 공통이라 항상 보여준다. */}
+            {needsAudio && <li>{t("toefl_noticeAudioOnce")}</li>}
+            {needsSpeaking && <li>{t("toefl_noticeNoReRecord")}</li>}
             <li>{t("toefl_noticeTimerRuns")}</li>
           </ul>
           <label className="mt-3 flex items-center gap-2 text-xs text-[var(--foreground)]">
