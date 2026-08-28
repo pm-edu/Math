@@ -1,6 +1,7 @@
 import { jsonError, requireToeflUser } from "@/lib/toefl/server/auth";
 import { createToeflServiceClient } from "@/lib/toefl/server/service-client";
 import { resolveCurrentModule, resolveModuleItemIds } from "@/lib/toefl/server/modules";
+import { signItemPayloadAudio, signStimulusAudio } from "@/lib/toefl/server/sign-audio";
 
 // 현재 모듈 문항 + 잔여시간 + 기존 답안. docs/toefl-spec.md §9, §11.
 // 새로고침 복구는 전적으로 이 엔드포인트에 의존한다(로컬스토리지에 의존하지 않음, §11 3번 규칙) —
@@ -94,59 +95,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   // toefl-audio 버킷은 비공개(signed URL 전용, spec §5)라 학생 세션으로는 직접 못 읽는다.
   // audio_path/payload.clip_path에 담긴 "Storage key"를 여기서 잠깐 유효한 signed URL로
-  // 바꿔치기해서 내려준다 — 원본 경로 문자열 자체는 응답에 남기지 않는다.
-  const AUDIO_URL_TTL_SEC = 3600;
-  const stimuliSigned = await Promise.all(
-    (stimuli ?? []).map(async (s) => {
-      if (!s.audio_path) return s;
-      const { data: signed } = await service.storage
-        .from("toefl-audio")
-        .createSignedUrl(s.audio_path, AUDIO_URL_TTL_SEC);
-      return signed?.signedUrl ? { ...s, audio_path: signed.signedUrl } : s;
-    })
-  );
-  const itemsSigned = await Promise.all(
-    (items ?? []).map(async (it) => {
-      const payload = it.payload as {
-        clip_path?: string | null;
-        question_audio_path?: string | null;
-        target_sentence?: string;
-        question_text?: string;
-      } | null;
-      let nextPayload = payload;
-      // "들어야 알 수 있는 것"을 글자로 내려보내면 시험이 성립하지 않는다(§5·§10).
-      // toefl_item_public 뷰는 answer_key/explanation만 걸러내고 payload 내부까지는 못 걸러내므로
-      // 여기서 직접 제거한다. finish 채점과 TTS는 service role로 원본 payload를 다시 읽으므로 영향 없다.
-      //   listen_and_repeat.target_sentence  따라 말할 문장 = 정답 그 자체
-      //   take_an_interview.question_text    질문은 음성으로만 전달한다(텍스트 표시 금지)
-      // payload에 새 필드를 넣을 때 이 목록도 함께 갱신할 것.
-      const SECRET_PAYLOAD_FIELDS: Record<string, string[]> = {
-        listen_and_repeat: ["target_sentence"],
-        take_an_interview: ["question_text"],
-      };
-      for (const field of SECRET_PAYLOAD_FIELDS[it.task_type] ?? []) {
-        if (nextPayload && field in nextPayload) {
-          const rest = { ...nextPayload } as Record<string, unknown>;
-          delete rest[field];
-          nextPayload = rest as typeof nextPayload;
-        }
-      }
-      if (payload?.clip_path) {
-        const { data: signed } = await service.storage
-          .from("toefl-audio")
-          .createSignedUrl(payload.clip_path, AUDIO_URL_TTL_SEC);
-        if (signed?.signedUrl) nextPayload = { ...nextPayload, clip_path: signed.signedUrl };
-      }
-      // take_an_interview 질문 음성(§10: 질문을 텍스트로 보여주지 않으므로 이 오디오가 유일한 전달 수단)
-      if (payload?.question_audio_path) {
-        const { data: signed } = await service.storage
-          .from("toefl-audio")
-          .createSignedUrl(payload.question_audio_path, AUDIO_URL_TTL_SEC);
-        if (signed?.signedUrl) nextPayload = { ...nextPayload, question_audio_path: signed.signedUrl };
-      }
-      return nextPayload === payload ? it : { ...it, payload: nextPayload };
-    })
-  );
+  // 바꿔치기해서 내려준다(sign-audio.ts, 2026-08-28 /api/toefl/practice와 공유하도록 추출) —
+  // 원본 경로 문자열 자체는 응답에 남기지 않는다.
+  const stimuliSigned = await Promise.all((stimuli ?? []).map((s) => signStimulusAudio(service, s)));
+  const itemsSigned = await Promise.all((items ?? []).map((it) => signItemPayloadAudio(service, it)));
 
   return Response.json({
     ok: true,

@@ -13,10 +13,10 @@ import Link from "next/link";
 import LandingHeader from "@/components/toefl/landing/LandingHeader";
 import RoutingRail from "@/components/toefl/landing/RoutingRail";
 import { LandingViewerProvider, useLandingViewer } from "@/lib/toefl/landing-viewer";
+import type { ToeflTaskType } from "@/lib/toefl/types";
 
-// TODO: 유형별 연습 전용 라우트가 생기면 TYPE_HREF 를 유형별 경로로 교체한다.
-// 지금은 12개 유형 링크가 전부 폼 선택 화면으로 간다.
-const TYPE_HREF = "/toefl/start";
+// 2026-08-28: 유형별 연습 라우트(/toefl/practice/[type]) 신설로 각 유형 링크가 실제로 그
+// 유형만 골라 연습하는 화면으로 간다(예전엔 전부 /toefl/start로만 갔음).
 
 // 시간은 하드코딩하지 않는다 — toefl_form_blueprint에서 조회한 totalMinutes로 채운다
 // (landing-viewer.tsx, [[toefl-ui-work-rules]] 2번). 조회 전에는 "–"로 표시.
@@ -62,16 +62,16 @@ function buildSteps(
   ];
 }
 
-const TYPE_GROUPS: { key: string; name: string; count: string; color: string; items: { ko: string; en: string }[] }[] = [
+const TYPE_GROUPS: { key: string; name: string; count: string; color: string; items: { type: ToeflTaskType; ko: string; en: string }[] }[] = [
   {
     key: "read",
     name: "Reading",
     count: "3 유형 · 적응형",
     color: "var(--en-read)",
     items: [
-      { ko: "단어 완성하기", en: "Complete the Words" },
-      { ko: "실생활 지문 읽기", en: "Read in Daily Life" },
-      { ko: "학술 지문 읽기", en: "Read an Academic Passage" },
+      { type: "complete_the_words", ko: "단어 완성하기", en: "Complete the Words" },
+      { type: "daily_life", ko: "실생활 지문 읽기", en: "Read in Daily Life" },
+      { type: "academic_passage", ko: "학술 지문 읽기", en: "Read an Academic Passage" },
     ],
   },
   {
@@ -80,10 +80,10 @@ const TYPE_GROUPS: { key: string; name: string; count: string; color: string; it
     count: "4 유형 · 적응형",
     color: "var(--en-listen)",
     items: [
-      { ko: "응답 고르기", en: "Listen & Choose a Response" },
-      { ko: "일상 대화 듣기", en: "Daily-life Conversation" },
-      { ko: "공지 듣기", en: "Announcement" },
-      { ko: "학술 강의 듣기", en: "Academic Talk" },
+      { type: "choose_a_response", ko: "응답 고르기", en: "Listen & Choose a Response" },
+      { type: "conversation", ko: "일상 대화 듣기", en: "Daily-life Conversation" },
+      { type: "announcement", ko: "공지 듣기", en: "Announcement" },
+      { type: "academic_talk", ko: "학술 강의 듣기", en: "Academic Talk" },
     ],
   },
   {
@@ -92,8 +92,8 @@ const TYPE_GROUPS: { key: string; name: string; count: string; color: string; it
     count: "2 유형 · 8분",
     color: "var(--en-speak)",
     items: [
-      { ko: "듣고 따라 말하기", en: "Listen & Repeat" },
-      { ko: "인터뷰 응답", en: "Take an Interview" },
+      { type: "listen_and_repeat", ko: "듣고 따라 말하기", en: "Listen & Repeat" },
+      { type: "take_an_interview", ko: "인터뷰 응답", en: "Take an Interview" },
     ],
   },
   {
@@ -102,9 +102,9 @@ const TYPE_GROUPS: { key: string; name: string; count: string; color: string; it
     count: "3 유형",
     color: "var(--en-write)",
     items: [
-      { ko: "문장 완성하기", en: "Build a Sentence" },
-      { ko: "이메일 작성", en: "Write an E-mail" },
-      { ko: "토론 글쓰기", en: "Academic Discussion" },
+      { type: "build_a_sentence", ko: "문장 완성하기", en: "Build a Sentence" },
+      { type: "write_an_email", ko: "이메일 작성", en: "Write an E-mail" },
+      { type: "academic_discussion", ko: "토론 글쓰기", en: "Academic Discussion" },
     ],
   },
 ];
@@ -269,7 +269,7 @@ function LandingContent() {
             2026 개정 문항 유형, 전부 연습할 수 있습니다
           </h2>
           <p className="mt-2.5 max-w-[44em] text-[15.5px] text-[var(--en-ink-soft)]">
-            유형 이름을 누르면 해당 유형만 골라 연습합니다. 각 유형의 첫 문항은 로그인 없이 체험할 수 있습니다.
+            유형 이름을 누르면 해당 유형만 골라 연습합니다. 가입 없이도 바로 풀어보고 채점 결과를 확인할 수 있습니다.
           </p>
 
           <div className="mt-9 grid gap-4 min-[601px]:grid-cols-2 min-[961px]:grid-cols-4">
@@ -283,7 +283,7 @@ function LandingContent() {
                   {g.items.map((it) => (
                     <li key={it.en}>
                       <Link
-                        href={TYPE_HREF}
+                        href={`/toefl/practice/${it.type}`}
                         className="group flex items-center justify-between rounded-lg px-2.5 py-[9px] text-[13.5px] font-semibold text-[var(--en-ink)] transition-shadow hover:bg-white hover:shadow-[0_1px_4px_rgba(24,42,78,.08)]"
                       >
                         <span>

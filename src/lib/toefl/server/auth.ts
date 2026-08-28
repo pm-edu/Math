@@ -25,6 +25,19 @@ export async function requireToeflUser(req: Request): Promise<ToeflAuthResult> {
   return { ok: true, userId: data.user.id, isAnonymous: !!data.user.is_anonymous, client };
 }
 
+// 유형별 연습(practice)처럼 "로그인하면 내 기록으로, 아니면 게스트로" 둘 다 허용하는 라우트용 —
+// 로그인 안 했다고 401을 주지 않고 그냥 null을 돌려준다(호출부가 guest_id로 대신 처리).
+export async function getOptionalToeflUserId(req: Request): Promise<string | null> {
+  const token = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
+  if (!token) return null;
+  const client = createClient(SUPABASE_URL, ANON_KEY, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+    auth: { persistSession: false },
+  });
+  const { data } = await client.auth.getUser();
+  return data.user?.id ?? null;
+}
+
 export function jsonError(status: number, message: string) {
   return Response.json({ ok: false, message }, { status });
 }

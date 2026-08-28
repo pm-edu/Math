@@ -37,7 +37,7 @@ export async function resolveCurrentModule(
 // 한 번 뽑은 결과를 toefl_attempt_item_selection에 저장해두고 이후엔 그대로 재사용한다
 // ("저장하고 불러쓰는" 요구사항 — 매번 다시 뽑지 않음, 문항이 아무리 많아져도 이 조회는
 // module_id+task_type로 좁혀진 id 목록만 가져오므로 가볍다).
-function shuffle<T>(arr: T[]): T[] {
+export function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
