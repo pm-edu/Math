@@ -21,14 +21,18 @@ import {
   addStudentNote,
   loadParentReportTokens,
   createParentReportToken,
+  loadStudentPrograms,
+  setStudentProgram,
   type Guardian,
   type GuardianRelation,
   type StudentGoal,
   type Consultation,
   type ConsultationKind,
   type StudentNote,
+  type StudentProgramRow,
   type ParentReportToken,
 } from "@/lib/students";
+import { PROGRAM_LABELS, type StudentProgram } from "@/lib/programs";
 import {
   loadStudentCore,
   loadStudentUnits,
@@ -101,23 +105,26 @@ export default function StudentDetailPage() {
 
   const [myId, setMyId] = useState<string | null>(null);
   const [reportTokens, setReportTokens] = useState<ParentReportToken[]>([]);
+  const [programs, setPrograms] = useState<StudentProgramRow[]>([]);
 
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   const loadAll = useCallback(async () => {
-    const [g, goalList, c, n, tokens] = await Promise.all([
+    const [g, goalList, c, n, tokens, programList] = await Promise.all([
       loadGuardians(studentId),
       loadStudentGoals(studentId),
       loadConsultations(studentId),
       loadStudentNotes(studentId),
       loadParentReportTokens(studentId),
+      loadStudentPrograms(studentId),
     ]);
     setGuardians(g);
     setGoals(goalList);
     setConsultations(c);
     setNotes(n);
     setReportTokens(tokens);
+    setPrograms(programList);
   }, [studentId]);
 
   const loadStats = useCallback(async () => {
@@ -259,6 +266,19 @@ export default function StudentDetailPage() {
         {message && <p className="mt-4 text-sm text-[var(--mint-dark)]">{message}</p>}
 
         <div className="mt-8 space-y-8">
+          <ProgramsSection
+            studentId={studentId}
+            programs={programs}
+            onAdded={(msg) => {
+              setMessage(msg);
+              setError(null);
+              loadAll();
+            }}
+            onError={(msg) => {
+              setError(msg);
+              setMessage(null);
+            }}
+          />
           <OverviewSection core={core} units={units} errorStats={errorStats} trend={trend} loaded={statsLoaded} />
           {myId && (
             <ParentReportSection
@@ -340,6 +360,54 @@ type SectionProps<T> = {
   onAdded: (message: string) => void;
   onError: (message: string) => void;
 };
+
+// "등록 과목 기준" 네비게이션 분리(2026-08-28, [[toefl-subsystem-plan]] [A]) — 여기서 켠
+// 과목만 이 학생의 헤더 메뉴에 나타난다(Header.tsx가 student_programs를 읽어 링크를 붙임).
+// SAT는 아직 학생용 화면 자체가 없어 토글은 있지만 눌러도 갈 곳이 없다 — 나중에 TOEFL처럼
+// 독립된 서브시스템이 생기면 그때 헤더 쪽에 링크를 추가하면 된다(데이터 모델은 이미 준비됨).
+function ProgramsSection({ studentId, programs, onAdded, onError }: SectionProps<StudentProgramRow> & { programs: StudentProgramRow[] }) {
+  const [busy, setBusy] = useState<StudentProgram | null>(null);
+  const activeSet = new Set(programs.filter((p) => p.status === "active").map((p) => p.program));
+
+  async function toggle(program: StudentProgram) {
+    const nextEnabled = !activeSet.has(program);
+    setBusy(program);
+    const { error } = await setStudentProgram(studentId, program, nextEnabled);
+    setBusy(null);
+    if (error) return onError(error);
+    onAdded(nextEnabled ? `${PROGRAM_LABELS[program]}에 등록했습니다.` : `${PROGRAM_LABELS[program]} 등록을 해지했습니다.`);
+  }
+
+  return (
+    <section className={cardClass}>
+      <h2 className="text-lg font-medium text-[var(--foreground)]">등록 과목</h2>
+      <p className="mt-1 text-sm text-[var(--secondary)]">
+        여기서 켠 과목만 이 학생의 메뉴에 나타납니다. SAT는 학생용 화면이 아직 없어 준비 중입니다.
+      </p>
+      <div className="mt-4 flex flex-wrap gap-2">
+        {(Object.keys(PROGRAM_LABELS) as StudentProgram[]).map((program) => {
+          const active = activeSet.has(program);
+          return (
+            <button
+              key={program}
+              type="button"
+              onClick={() => toggle(program)}
+              disabled={busy === program}
+              className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors disabled:opacity-60 ${
+                active
+                  ? "border-[var(--pink)] bg-[var(--pink)] text-[var(--pink-dark)]"
+                  : "border-[var(--border-c)] text-[var(--secondary)] hover:text-[var(--foreground)]"
+              }`}
+            >
+              {active ? "✓ " : ""}
+              {PROGRAM_LABELS[program]}
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
 
 function GuardiansSection({
   studentId,

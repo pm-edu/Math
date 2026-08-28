@@ -8,6 +8,7 @@ import { site } from "@/lib/site";
 import { useLang } from "@/lib/i18n";
 import { isStaff } from "@/lib/roles";
 import { useSubject, subjectLabel, SUBJECTS, SITE_URL } from "@/lib/subject";
+import { fetchMyPrograms, type StudentProgram } from "@/lib/programs";
 
 export default function Header() {
   const { lang, setLang, t } = useLang();
@@ -18,6 +19,9 @@ export default function Header() {
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  // "등록 과목 기준" 네비게이션 분리(2026-08-28) — 학생이 실제로 등록된 과목에만 그 메뉴를
+  // 보여준다. 지금은 TOEFL만 해당(SAT는 아직 학생용 화면 자체가 없음, [[toefl-subsystem-plan]] [A]).
+  const [programs, setPrograms] = useState<StudentProgram[]>([]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -27,6 +31,7 @@ export default function Header() {
     async function checkRole(userId: string | undefined) {
       if (!userId) {
         setIsAdmin(false);
+        setPrograms([]);
         return;
       }
       const { data } = await supabase
@@ -35,6 +40,7 @@ export default function Header() {
         .eq("id", userId)
         .maybeSingle();
       setIsAdmin(isStaff(data?.role));
+      fetchMyPrograms(userId).then(setPrograms);
     }
 
     supabase.auth.getUser().then(({ data }) => {
@@ -103,6 +109,14 @@ export default function Header() {
           >
             {lang === "ko" ? "EN" : "한국어"}
           </button>
+          {programs.includes("toefl") && (
+            <Link
+              href="/toefl"
+              className="hidden text-sm text-[var(--secondary)] transition-colors hover:text-[var(--foreground)] md:inline"
+            >
+              TOEFL
+            </Link>
+          )}
           {isAdmin && (
             <Link
               href="/admin"
@@ -161,6 +175,15 @@ export default function Header() {
                 {t(item.key)}
               </Link>
             ))}
+            {programs.includes("toefl") && (
+              <Link
+                href="/toefl"
+                onClick={() => setMobileOpen(false)}
+                className="text-sm text-[var(--secondary)] hover:text-[var(--foreground)]"
+              >
+                TOEFL
+              </Link>
+            )}
             {loggedIn !== null && (
               <Link
                 href={loggedIn ? "/mypage" : "/login"}

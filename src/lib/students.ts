@@ -1,7 +1,8 @@
-// 학생관리(보호자·목표·상담·관찰노트) 데이터 접근 함수.
+// 학생관리(보호자·목표·상담·관찰노트·등록과목) 데이터 접근 함수.
 // src/lib/classes.ts 와 같은 패턴: 얇은 supabase 래퍼 함수만 둔다.
 
 import { createClient } from "@/lib/supabase/client";
+import type { StudentProgram } from "@/lib/programs";
 
 export type GuardianRelation = "father" | "mother" | "grandparent" | "sibling" | "other";
 export type ConsultationKind = "intake" | "regular" | "issue" | "parent_request" | "exit";
@@ -265,5 +266,42 @@ export async function addStudentNote(
       next_plan: note.next_plan || null,
       share_with_parent: note.share_with_parent,
     });
+  return { error: error?.message ?? null };
+}
+
+export type StudentProgramRow = {
+  program: StudentProgram;
+  status: "active" | "paused" | "ended";
+  enrolled_at: string;
+};
+
+export async function loadStudentPrograms(studentId: string): Promise<StudentProgramRow[]> {
+  const { data } = await createClient()
+    .from("student_programs")
+    .select("program, status, enrolled_at")
+    .eq("student_id", studentId)
+    .order("enrolled_at");
+  return (data as StudentProgramRow[]) ?? [];
+}
+
+// 껐다 켜는 토글 하나로 관리한다 — 켜면 upsert(다시 켠 경우 ended_at을 지워 active로 되돌림),
+// 끄면 행을 지우지 않고 status='ended'로만 남긴다(언제 등록/해지했는지 이력이 남는 편이 낫다).
+export async function setStudentProgram(
+  studentId: string,
+  program: StudentProgram,
+  enabled: boolean
+): Promise<{ error: string | null }> {
+  const supabase = createClient();
+  if (enabled) {
+    const { error } = await supabase
+      .from("student_programs")
+      .upsert({ student_id: studentId, program, status: "active", ended_at: null }, { onConflict: "student_id,program" });
+    return { error: error?.message ?? null };
+  }
+  const { error } = await supabase
+    .from("student_programs")
+    .update({ status: "ended", ended_at: new Date().toISOString() })
+    .eq("student_id", studentId)
+    .eq("program", program);
   return { error: error?.message ?? null };
 }
