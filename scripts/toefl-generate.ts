@@ -27,7 +27,7 @@ import { readFileSync } from "node:fs";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { getGenerator } from "@/lib/toefl/server/generators/registry";
 import { callLlm, describeProvider, type LlmProvider } from "@/lib/llm-server";
-import type { ItemDraft } from "@/lib/toefl/server/generators/types";
+import { findShortfalls, saveShortfallBatch, type Shortfall } from "@/lib/toefl/server/generation-shortfall";
 
 // .env.local 을 직접 읽는다 — dotenv 를 새로 깔지 않으려고. 형식이 단순해서(KEY=VALUE)
 // 이 정도면 충분하고, 의존성이 하나 없는 편이 낫다.
@@ -101,125 +101,6 @@ function serviceClient(): SupabaseClient {
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
-type Shortfall = {
-  moduleId: string;
-  section: string;
-  stage: string;
-  route: string;
-  taskType: string;
-  need: number;
-};
-
-/** 블루프린트가 요구하는 수와 실제 등록된 수를 맞대어 "무엇을 몇 개 더 만들지" 목록을 낸다. */
-async function findShortfalls(db: SupabaseClient, args: Args): Promise<Shortfall[]> {
-  const { data: form } = await db
-    .from("toefl_form")
-    .select("id, code, blueprint_version")
-    .eq("code", args.form)
-    .maybeSingle();
-  if (!form) {
-    console.error(`폼을 찾지 못했습니다: ${args.form}`);
-    process.exit(1);
-  }
-
-  const [{ data: blueprint }, { data: modules }] = await Promise.all([
-    db.from("toefl_form_blueprint").select("section, stage, route, task_mix").eq("version", form.blueprint_version).eq("is_active", true),
-    db.from("toefl_module").select("id, section, stage, route").eq("form_id", form.id),
-  ]);
-
-  const out: Shortfall[] = [];
-  for (const m of modules ?? []) {
-    if (args.section && m.section !== args.section) continue;
-    const bp = (blueprint ?? []).find((b) => b.section === m.section && b.stage === m.stage && b.route === m.route);
-    if (!bp) continue;
-
-    const { data: existing } = await db
-      .from("toefl_item")
-      .select("task_type")
-      .eq("module_id", m.id)
-      .eq("is_active", true);
-    const counts: Record<string, number> = {};
-    for (const it of existing ?? []) counts[it.task_type] = (counts[it.task_type] ?? 0) + 1;
-
-    for (const [taskType, required] of Object.entries(bp.task_mix as Record<string, number>)) {
-      // task_mix 에는 routing_threshold 같은 설정값도 섞여 있다 — 생성기가 있는 유형만 만든다.
-      if (!getGenerator(taskType)) continue;
-      if (args.taskType && taskType !== args.taskType) continue;
-      const need = Number(required) - (counts[taskType] ?? 0);
-      if (need > 0) out.push({ moduleId: m.id, section: m.section, stage: m.stage, route: m.route, taskType, need });
-    }
-  }
-  return out;
-}
-
-/** 지문이 필요한 유형은 지문 1개 + 문항 N개를 함께 저장한다. */
-async function saveBatch(
-  db: SupabaseClient,
-  shortfall: Shortfall,
-  stimulus: { title: string; text: string } | null,
-  drafts: ItemDraft[],
-  difficulty: number
-): Promise<{ saved: number; skipped: string[] }> {
-  const generator = getGenerator(shortfall.taskType)!;
-  const skipped: string[] = [];
-
-  let stimulusId: string | null = null;
-  if (generator.needsStimulus && stimulus?.text) {
-    const { data: stimRow, error } = await db
-      .from("toefl_stimulus")
-      .insert({
-        module_id: shortfall.moduleId,
-        task_type: shortfall.taskType,
-        title: stimulus.title || null,
-        // 듣기 스크립트는 transcript 로도 남긴다 — 오디오를 나중에 만들 때 원문이 필요하다.
-        body: generator.stimulusAudio ? null : stimulus.text,
-        transcript: generator.stimulusAudio ? stimulus.text : null,
-        position: 1,
-      })
-      .select("id")
-      .single();
-    if (error || !stimRow) return { saved: 0, skipped: [`지문 저장 실패: ${error?.message}`] };
-    stimulusId = stimRow.id as string;
-  }
-
-  const { data: maxItem } = await db
-    .from("toefl_item")
-    .select("position")
-    .eq("module_id", shortfall.moduleId)
-    .order("position", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  let position = (maxItem?.position ?? 0) + 1;
-
-  let saved = 0;
-  for (const draft of drafts) {
-    const row = generator.toItemRow({ ...draft, skill_tags: draft.skill_tags ?? [] });
-    if (!row.ok) {
-      skipped.push(row.message);
-      continue;
-    }
-    const { error } = await db.from("toefl_item").insert({
-      module_id: shortfall.moduleId,
-      stimulus_id: stimulusId,
-      task_type: shortfall.taskType,
-      position: position++,
-      difficulty,
-      scoring_mode: generator.scoringMode,
-      prompt: row.prompt,
-      payload: row.payload,
-      answer_key: row.answerKey,
-      explanation_ko: draft.explanation_ko,
-      skill_tags: draft.skill_tags ?? [],
-      // 검수 전이라 학생에게 안 보인다. 관리 화면에서 승인해야 노출된다.
-      verified: false,
-      source: "ai",
-    });
-    if (error) skipped.push(`저장 실패: ${error.message}`);
-    else saved += 1;
-  }
-  return { saved, skipped };
-}
-
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const db = serviceClient();
@@ -278,7 +159,7 @@ async function main() {
         break;
       }
 
-      const { saved, skipped } = await saveBatch(db, shortfall, parsed.stimulus, parsed.items, args.difficulty);
+      const { saved, skipped } = await saveShortfallBatch(db, shortfall, parsed.stimulus, parsed.items, args.difficulty);
       console.log(`저장 ${saved}${skipped.length ? ` (건너뜀 ${skipped.length})` : ""}`);
       for (const msg of skipped.slice(0, 3)) console.log(`      · ${msg}`);
 
