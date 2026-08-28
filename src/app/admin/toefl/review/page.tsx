@@ -30,6 +30,8 @@ type DraftItem = {
   explanation_ko: string | null;
   source: string;
   created_at: string;
+  ai_review_status: string | null;
+  ai_review_note: string | null;
 };
 
 type ModuleInfo = { id: string; section: string; stage: string; route: string; formCode: string; formTitle: string };
@@ -60,8 +62,13 @@ export default function ToeflReviewPage() {
     const supabase = createClient();
     const { data: draftItems, error: itemsErr } = await supabase
       .from("toefl_item")
-      .select("id, module_id, stimulus_id, task_type, prompt, payload, answer_key, explanation_ko, source, created_at")
+      .select("id, module_id, stimulus_id, task_type, prompt, payload, answer_key, explanation_ko, source, created_at, ai_review_status, ai_review_note")
       .eq("verified", false)
+      // AI 자동심사(2026-08-28, [[toefl-item-pipeline-project]] 부록 A-1)에서 fail 판정을
+      // 받은 문항은 기본 검수 큐에서 뺀다 — 손볼 곳이 명확해 사람이 여기서 볼 필요가 없다.
+      // NULL(아직 AI심사 안 됨)은 계속 보여야 하므로 neq 대신 or로 명시한다(neq는 NULL을
+      // 자동으로 걸러버려서 미심사 문항까지 같이 사라지는 실수를 피하기 위함).
+      .or("ai_review_status.is.null,ai_review_status.neq.fail")
       .order("created_at", { ascending: false })
       .limit(300);
     if (itemsErr) {
@@ -69,7 +76,12 @@ export default function ToeflReviewPage() {
       setLoading(false);
       return;
     }
-    const rows = (draftItems ?? []) as DraftItem[];
+    // flag(AI가 애매하다고 판단한 것)를 맨 위로 — 사람 검수 우선순위 상단(지시서 A-1 요구사항).
+    const rows = ((draftItems ?? []) as DraftItem[]).sort((a, b) => {
+      const aFlag = a.ai_review_status === "flag" ? 0 : 1;
+      const bFlag = b.ai_review_status === "flag" ? 0 : 1;
+      return aFlag - bFlag;
+    });
 
     const moduleIds = Array.from(new Set(rows.map((r) => r.module_id)));
     const stimulusIds = Array.from(new Set(rows.map((r) => r.stimulus_id).filter((x): x is string => !!x)));
@@ -287,7 +299,14 @@ export default function ToeflReviewPage() {
                               it.id === selectedId ? "bg-[var(--en-gold-soft)]" : "hover:bg-[#FAFBFE]"
                             }`}
                           >
-                            <span className="block truncate font-semibold">{label}</span>
+                            <span className="flex items-center gap-1.5 truncate font-semibold">
+                              {it.ai_review_status === "flag" && (
+                                <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
+                                  ⚠ AI 확인요청
+                                </span>
+                              )}
+                              {label}
+                            </span>
                             <span className="block truncate text-[11px] text-[var(--en-ink-soft)]">
                               {SOURCE_LABEL[it.source] ?? it.source} · {it.prompt.slice(0, 40)}
                             </span>
@@ -312,6 +331,13 @@ export default function ToeflReviewPage() {
                   {modules.get(selected.module_id)?.formCode} · {new Date(selected.created_at).toLocaleString("ko-KR")}
                 </span>
               </div>
+
+              {selected.ai_review_status === "flag" && (
+                <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+                  <b className="mr-1">⚠ AI 자동심사가 확인을 요청했습니다:</b>
+                  {selected.ai_review_note}
+                </div>
+              )}
 
               {selectedStimulus && (
                 <div className="mb-4 rounded-lg bg-[#FAFBFE] p-4">
