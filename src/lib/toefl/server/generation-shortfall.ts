@@ -130,6 +130,12 @@ export async function saveShortfallBatch(
       answer_key: row.answerKey,
       explanation_ko: draft.explanation_ko,
       skill_tags: draft.skill_tags ?? [],
+      // 오디오가 필요한 유형(choose_a_response)의 "실제로 들려줄 문장"을 여기서 보존한다 —
+      // 이 대량생성 경로는 저장 직후 TTS를 안 하고 오디오를 나중 단계로 미루는데, 예전엔
+      // 이 값을 아무 데도 안 남겨서 나중에 오디오를 영원히 못 만드는 문항이 쌓였다
+      // (2026-08-31 실측 69개, 그중 다수가 검수까지 통과해 오디오 없이 노출 중이었음).
+      // payload에는 못 넣는다(듣기 전에 대본을 읽어버리는 셈 — spec §5).
+      spoken_text_private: row.spokenText,
       // 검수 전이라 학생에게 안 보인다. 관리 화면에서 승인해야 노출된다.
       verified: false,
       source: "ai",

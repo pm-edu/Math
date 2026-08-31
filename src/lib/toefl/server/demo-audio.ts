@@ -69,7 +69,7 @@ export async function generateDemoAudio(client: SupabaseClient, options: { force
 
   const { data: items } = await client
     .from("toefl_item")
-    .select("id, payload, explanation_ko")
+    .select("id, payload, explanation_ko, spoken_text_private")
     .in("module_id", moduleIds)
     .eq("task_type", "choose_a_response");
 
@@ -79,18 +79,25 @@ export async function generateDemoAudio(client: SupabaseClient, options: { force
       log.push({ kind: "item", id: item.id, status: "skipped", message: "이미 오디오 있음" });
       continue;
     }
-    const entry = CHOOSE_A_RESPONSE_UTTERANCES.find((u) => (item.explanation_ko ?? "").includes(u.matchExplanation));
-    if (!entry) {
-      log.push({ kind: "item", id: item.id, status: "error", message: "이 문항에 맞는 대사를 찾지 못했습니다." });
+    // 2026-08-31부터 저장 시점에 spoken_text_private을 보존한다 — 그게 있으면 그걸 쓰고,
+    // 없는 옛 데모 3개짜리만 예전 방식(설명 텍스트 매칭)으로 대사를 찾는다.
+    const utterance = item.spoken_text_private ?? CHOOSE_A_RESPONSE_UTTERANCES.find((u) => (item.explanation_ko ?? "").includes(u.matchExplanation))?.utterance;
+    if (!utterance) {
+      log.push({ kind: "item", id: item.id, status: "error", message: "이 문항에 맞는 대사를 찾지 못했습니다(spoken_text_private 없음, 복구 스크립트 필요)." });
       continue;
     }
     const path = `demo/item-${item.id}.wav`;
-    const result = await generateAndUpload(client, entry.utterance, path);
+    const result = await generateAndUpload(client, utterance, path);
     if (!result.ok) {
       log.push({ kind: "item", id: item.id, status: "error", message: result.message });
       continue;
     }
-    const { error: updateErr } = await client.from("toefl_item").update({ payload: { ...payload, clip_path: path } }).eq("id", item.id);
+    // is_active: true — 오디오가 없어서 비활성화해둔 문항(2026-08-31)이 이제 오디오가
+    // 생겼으니 다시 켠다. 이 유형을 비활성화하는 다른 이유는 없어서 무조건 켜도 안전하다.
+    const { error: updateErr } = await client
+      .from("toefl_item")
+      .update({ payload: { ...payload, clip_path: path }, is_active: true })
+      .eq("id", item.id);
     log.push(
       updateErr
         ? { kind: "item", id: item.id, status: "error", message: `DB 저장 실패: ${updateErr.message}` }

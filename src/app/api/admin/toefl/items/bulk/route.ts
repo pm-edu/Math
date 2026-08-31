@@ -151,6 +151,10 @@ export async function POST(req: Request) {
         answer_key: answerKey,
         explanation_ko: explanation,
         skill_tags: (raw.skill_tags ?? []).filter(Boolean),
+        // TTS는 아래서 바로 호출하지만, 나중에 목소리를 바꾸거나 오디오를 다시 만들어야 할 때
+        // 원문을 다시 구할 수 있게 여기서도 보존해둔다(2026-08-31, 대량생성 경로에서 이 값을
+        // 아예 안 남겨서 오디오를 영원히 못 만드는 문항이 쌓였던 버그의 재발 방지).
+        spoken_text_private: spokenTextForAudio,
         // 이 라우트는 "관리자가 화면에서 검토를 마치고 저장" 하는 지점이라 검수 완료로 넣는다.
         // (마이그레이션 202608191600 로 toefl_item.verified 가 생겼고, 기본값은 false다 —
         //  여기서 true를 넣지 않으면 저장해도 학생에게 안 보인다.)
