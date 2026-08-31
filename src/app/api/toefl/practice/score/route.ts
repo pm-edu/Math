@@ -56,6 +56,7 @@ export async function POST(req: Request) {
     .select("id, task_type, scoring_mode, points, prompt, payload, answer_key, explanation_ko")
     .eq("id", idParsed.data)
     .eq("is_active", true)
+    .eq("verified", true)
     .maybeSingle();
   if (!item) return Response.json({ ok: false, message: "문항을 찾을 수 없습니다." }, { status: 404 });
 

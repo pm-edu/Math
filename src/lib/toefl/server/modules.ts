@@ -78,15 +78,23 @@ export async function resolveModuleItemIds(
         .select("id")
         .eq("module_id", moduleId)
         .eq("task_type", taskType)
-        .eq("is_active", true);
+        .eq("is_active", true)
+        .eq("verified", true);
       const ids = shuffle((pool ?? []).map((p) => p.id as string)).slice(0, count);
       selected.push(...ids);
     }
   }
   // 블루프린트에 이 모듈의 task_mix가 없거나(설정 누락) 문항이 하나도 안 걸렸으면, 예전처럼
-  // 모듈에 있는 활성 문항 전부를 쓴다(시험이 아예 비는 것보다 낫다).
+  // 모듈에 있는 활성 문항 전부를 쓴다(시험이 아예 비는 것보다 낫다). 단, 검수 게이트는
+  // 유지한다 — verified=false 문항이 걸리면 어차피 toefl_item_public에서 안 잡혀 그 슬롯이
+  // 비게 되므로(2026-08-31 발견), 여기서부터 걸러야 목표 문항 수와 실제 노출 수가 일치한다.
   if (selected.length === 0) {
-    const { data: fallback } = await service.from("toefl_item").select("id").eq("module_id", moduleId).eq("is_active", true);
+    const { data: fallback } = await service
+      .from("toefl_item")
+      .select("id")
+      .eq("module_id", moduleId)
+      .eq("is_active", true)
+      .eq("verified", true);
     selected = (fallback ?? []).map((f) => f.id as string);
   }
 

@@ -25,6 +25,8 @@ export async function GET() {
     .select("id, module_id, stimulus_id, task_type, position, difficulty, points, scoring_mode, prompt, payload, created_at")
     .in("module_id", moduleIds)
     .in("task_type", SAMPLE_TASK_TYPES)
+    .eq("is_active", true)
+    .eq("verified", true)
     .order("task_type");
 
   return Response.json({ ok: true, items: items ?? [] });

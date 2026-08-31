@@ -68,7 +68,8 @@ export async function pickPracticeItems(
     .select(ITEM_SELECT_COLUMNS)
     .in("module_id", moduleIds)
     .eq("task_type", taskType)
-    .eq("is_active", true);
+    .eq("is_active", true)
+    .eq("verified", true);
 
   const picked = shuffle((itemRows ?? []) as PracticeItemRow[]).slice(0, limit);
 
