@@ -25,6 +25,7 @@ const GROUPS: Group[] = [
     items: [
       { label: "문항 생성", icon: "✨", href: "/admin/toefl/items" },
       { label: "문항 검수", icon: "📝", href: "/admin/toefl/review" },
+      { label: "중복 검토", icon: "🔁", href: "/admin/toefl/dedup" },
       { label: "세트 · 배포", icon: "📦", href: "/admin/toefl/forms" },
     ],
   },
