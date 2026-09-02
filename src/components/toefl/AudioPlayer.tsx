@@ -9,6 +9,10 @@ import { useEffect, useRef, useState } from "react";
 // 순수 표시용 <div> 막대라서 시킹이 애초에 불가능하다(마우스 이벤트를 안 받음).
 
 const MAX_RETRIES = 3;
+// 재생 트리거(버튼 클릭 또는 자동재생 마운트) 후 실제 소리가 나기까지 두는 여유 —
+// 특히 자동재생 유형(listen_and_repeat/take_an_interview)은 화면이 뜨자마자 예고 없이
+// 소리가 시작돼서 준비할 틈이 전혀 없었다(2026-09-02 요청).
+const START_DELAY_MS = 1000;
 
 export type AudioPlayerState = "idle" | "playing" | "ended";
 
@@ -33,9 +37,10 @@ export default function AudioPlayer({
   autoPlay?: boolean;
 }) {
   const audioRef = useRef<HTMLAudioElement>(null);
-  const [state, setState] = useState<"idle" | "playing" | "done" | "error">(autoPlay ? "playing" : "idle");
+  const [state, setState] = useState<"idle" | "starting" | "playing" | "done" | "error">(autoPlay ? "starting" : "idle");
   const [progress, setProgress] = useState(0);
   const [retryCount, setRetryCount] = useState(0);
+  const startTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function report(next: AudioPlayerState) {
     onStateChange?.(next);
@@ -43,9 +48,15 @@ export default function AudioPlayer({
 
   useEffect(() => {
     if (autoPlay) {
-      report("playing");
-      audioRef.current?.play().catch(() => handleError());
+      startTimerRef.current = setTimeout(() => {
+        setState("playing");
+        report("playing");
+        audioRef.current?.play().catch(() => handleError());
+      }, START_DELAY_MS);
     }
+    return () => {
+      if (startTimerRef.current) clearTimeout(startTimerRef.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -54,9 +65,12 @@ export default function AudioPlayer({
   // 실패했을 때만 재시도를 허용하는 것이지, 끝까지 들은 뒤 되돌리기가 가능해지는 건 아니다.
   function play() {
     if (state !== "idle" && state !== "error") return;
-    setState("playing");
-    report("playing");
-    audioRef.current?.play().catch(() => handleError());
+    setState("starting");
+    startTimerRef.current = setTimeout(() => {
+      setState("playing");
+      report("playing");
+      audioRef.current?.play().catch(() => handleError());
+    }, START_DELAY_MS);
   }
 
   function handleEnded() {
@@ -111,6 +125,11 @@ export default function AudioPlayer({
           >
             ▶ {retryCount > 0 ? "Play test sound" : "Play audio"}
           </button>
+        )}
+        {state === "starting" && (
+          <p aria-live="polite" className="text-sm font-medium text-[var(--secondary)]">
+            Get ready…
+          </p>
         )}
         {state === "playing" && (
           <p aria-live="polite" className="text-sm font-medium text-[var(--foreground)]">
