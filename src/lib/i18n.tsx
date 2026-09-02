@@ -436,6 +436,144 @@ const DICT = {
   toefl_metric_delivery: { ko: "전달력", en: "delivery" },
   toefl_metric_language_use: { ko: "언어 사용", en: "language use" },
   toefl_metric_topic_development: { ko: "내용 전개", en: "topic development" },
+
+  // 헤더(ToeflHeader/LandingHeader 공용, 2026-09-02 인도 서비스 대비 학생용 화면 번역)
+  toefl_header_pmeduHome: { ko: "PM EDU 메인으로", en: "Go to PM EDU home" },
+  toefl_header_toeflHome: { ko: "TOEFL 메인으로", en: "Go to TOEFL home" },
+  toefl_header_mainNav: { ko: "주 메뉴", en: "Main menu" },
+  toefl_header_mobileNav: { ko: "모바일 메뉴", en: "Mobile menu" },
+  toefl_header_openMenu: { ko: "메뉴 열기", en: "Open menu" },
+  toefl_header_closeMenu: { ko: "메뉴 닫기", en: "Close menu" },
+  toefl_header_loggedInAs: { ko: "{name} 님으로 로그인", en: "Logged in as {name}" },
+  toefl_navExamInfo: { ko: "시험 안내", en: "About the exam" },
+  toefl_navByType: { ko: "유형별 연습", en: "Practice by type" },
+  toefl_navBySection: { ko: "영역 연습", en: "Section practice" },
+  toefl_navFullTest: { ko: "모의고사", en: "Full test" },
+  toefl_navMyStudy: { ko: "내 학습", en: "My study" },
+  toefl_startTest: { ko: "모의고사 시작", en: "Start full test" },
+  toefl_tryFreeSample: { ko: "무료 샘플 풀어보기", en: "Try a free sample" },
+
+  // 랜딩 페이지(2026-09-02)
+  toefl_landing_totalTestTime: { ko: "총 시험 시간", en: "Total test time" },
+  toefl_landing_minutesUnit: { ko: "{n}분", en: "{n} min" },
+  toefl_landing_fourSectionsTwelveTypes: { ko: "4영역 12유형", en: "4 sections · 12 types" },
+  toefl_landing_fullRevamp: { ko: "R · L · S · W 전면 개편", en: "R · L · S · W, fully revamped" },
+  toefl_landing_bandScoreRange: { ko: "1.0–6.0", en: "1.0–6.0" },
+  toefl_landing_bandCefr: { ko: "밴드 점수 · CEFR 연동", en: "Band score · linked to CEFR" },
+  toefl_landing_twoStageAdaptive: { ko: "2단계 적응형", en: "2-stage adaptive" },
+  toefl_landing_readingListeningRouting: { ko: "Reading · Listening 라우팅", en: "Reading · Listening routing" },
+
+  toefl_landing_step1Title: { ko: "유형별 연습", en: "Practice by type" },
+  toefl_landing_step1Body: {
+    ko: "Complete the Words, Listen & Repeat, Build a Sentence… 낯선 신유형을 유형 하나 단위로 반복 연습합니다.",
+    en: "Complete the Words, Listen & Repeat, Build a Sentence… drill each unfamiliar new task type on its own.",
+  },
+  toefl_landing_step1Go: { ko: "12개 유형 보기", en: "See all 12 types" },
+  toefl_landing_step2Title: { ko: "영역 연습", en: "Section practice" },
+  toefl_landing_step2Body: {
+    ko: "Reading · Listening · Speaking · Writing을 영역 단위로, 실제와 같은 서버 타이머와 자동저장 환경에서 연습합니다.",
+    en: "Practice Reading · Listening · Speaking · Writing by section, with the same server timer and autosave as the real test.",
+  },
+  toefl_landing_step2Go: { ko: "영역 선택하기", en: "Choose a section" },
+  toefl_landing_step3Body: {
+    ko: "4개 영역을 끊김 없이 {minutes}에 응시하고, 밴드 점수·라우팅 결과·문항별 리뷰까지 종합 리포트를 받습니다.",
+    en: "Take all 4 sections back-to-back in {minutes} and get a full report — band score, routing result, and item-by-item review.",
+  },
+  toefl_landing_freeSampleBadge: { ko: "무료 샘플", en: "Free sample" },
+
+  toefl_landing_readingCount: { ko: "3 유형 · 적응형", en: "3 types · Adaptive" },
+  toefl_landing_listeningCount: { ko: "4 유형 · 적응형", en: "4 types · Adaptive" },
+  toefl_landing_speakingCount: { ko: "2 유형 · 8분", en: "2 types · 8 min" },
+  toefl_landing_writingCount: { ko: "3 유형", en: "3 types" },
+
+  toefl_landing_diff1Title: { ko: "라우팅 결과 공개", en: "See your routing result" },
+  toefl_landing_diff1Body: {
+    ko: "Stage 2에서 상급·하급 어느 모듈로 갔는지 공개합니다. 점수 상한이 어디서 정해졌는지 알아야 다음 전략이 나옵니다.",
+    en: "We reveal whether Stage 2 routed you to the advanced or lower module — knowing where your score ceiling was set shapes your next strategy.",
+  },
+  toefl_landing_diff2Title: { ko: "문항별 리뷰", en: "Item-by-item review" },
+  toefl_landing_diff2Body: {
+    ko: "내 답과 정답·해설, 듣기 스크립트 다시 듣기, 말하기 녹음 재생까지 시험이 끝난 뒤 전부 열립니다.",
+    en: "Your answers, the correct answers with explanations, listening scripts, and your own speaking recordings all unlock after the test.",
+  },
+  toefl_landing_diff3Title: { ko: "오답 단어 → 자동 복습", en: "Missed words → auto review" },
+  toefl_landing_diff3Body: {
+    ko: "리뷰에서 몰랐던 단어를 한 번에 단어 복습(간격 반복)에 추가합니다. 모의고사가 단어장까지 이어집니다.",
+    en: "Add unfamiliar words from your review straight into spaced-repetition practice — the mock test feeds your vocabulary too.",
+  },
+
+  toefl_landing_heroEyebrow: {
+    ko: "2026년 1월 21일 개정 시행 · 최신 형식 반영",
+    en: "Reflects the January 21, 2026 TOEFL format update",
+  },
+  toefl_landing_heroSubtitle: {
+    ko: "2026 개정 TOEFL은 첫 모듈 성적이 다음 모듈의 난이도와 점수 상한을 결정합니다. PM EDU는 실제 시험과 같은 적응형 라우팅으로 연습하고, 어느 갈림길로 갔는지까지 리포트로 보여드립니다.",
+    en: "In the 2026 TOEFL, your score on the first module decides the difficulty and score ceiling of the next one. PM EDU lets you practice with the same adaptive routing as the real test — and shows you exactly which path you took.",
+  },
+  toefl_landing_viewMyStudy: { ko: "내 학습 보기", en: "View my study" },
+  toefl_landing_tryWithoutLogin: { ko: "로그인 없이 샘플 체험", en: "Try a sample without logging in" },
+  toefl_landing_pastAttemptsHint: {
+    ko: "지난 응시 기록과 밴드 추이는 내 학습에서 볼 수 있습니다.",
+    en: "See your past attempts and band trend under My Study.",
+  },
+  toefl_landing_sampleHint: {
+    ko: "샘플은 12개 문항 유형을 각 1문항씩, 가입 없이 바로 풀 수 있습니다.",
+    en: "The sample gives you one question from each of the 12 task types — no sign-up needed.",
+  },
+
+  toefl_landing_pathHeading: { ko: "유형에서 시작해 실전으로 끝냅니다", en: "Start with types, finish with the real thing" },
+  toefl_landing_pathSubtitle: {
+    ko: "막연히 문제만 푸는 대신, 개정 시험의 12개 유형을 하나씩 익히고 → 영역 단위로 감각을 붙이고 → 실제 시험과 같은 조건의 모의고사로 완성하는 3단계입니다.",
+    en: "Instead of just grinding random questions: learn the 12 new task types one at a time → build up section-level feel → finish with a full test under real conditions.",
+  },
+  toefl_landing_typesHeading: { ko: "2026 개정 문항 유형, 전부 연습할 수 있습니다", en: "Practice every 2026-format task type" },
+  toefl_landing_typesSubtitle: {
+    ko: "유형 이름을 누르면 해당 유형만 골라 연습합니다. 가입 없이도 바로 풀어보고 채점 결과를 확인할 수 있습니다.",
+    en: "Click a type name to practice just that one. Try it and see your results right away — no sign-up required.",
+  },
+
+  toefl_landing_reportHeading1: { ko: "점수만 주지 않습니다.", en: "We don't just give you a score." },
+  toefl_landing_reportHeading2: { ko: "왜 그 점수인지 보여줍니다", en: "We show you why you got it" },
+  toefl_landing_reportSampleAria: { ko: "종합 리포트 예시", en: "Sample overall report" },
+  toefl_landing_reportSampleLabel: { ko: "예시", en: "Sample" },
+  toefl_advancedModule: { ko: "상급 모듈", en: "Advanced module" },
+  toefl_lowerModule: { ko: "하급 모듈", en: "Lower module" },
+  toefl_landing_reportRoutedSentence: {
+    ko: "Reading은 상급 모듈, Listening은 상급 모듈로 라우팅되었습니다.",
+    en: "Reading and Listening were both routed to the Advanced module.",
+  },
+  toefl_landing_mockUnknownWords: { ko: "몰랐던 단어 7개", en: "7 unfamiliar words" },
+  toefl_landing_mockAddToReview: { ko: "복습에 추가", en: "Add to review" },
+
+  toefl_landing_finalCtaHeading: { ko: "오늘 실력이 어느 밴드인지부터 확인하세요", en: "Find out your band, starting today" },
+  toefl_landing_finalCtaSubLoggedIn: {
+    ko: "{minutes} 풀 모의고사로 현재 밴드와 라우팅 결과를 받아보세요.",
+    en: "Take the {minutes} full test to get your current band and routing result.",
+  },
+  toefl_landing_finalCtaSubGuest: {
+    ko: "가입 없이 12개 유형을 체험하거나, {minutes} 풀 모의고사로 현재 밴드와 라우팅 결과를 받아보세요.",
+    en: "Try all 12 types without signing up, or take the {minutes} full test to get your current band and routing result.",
+  },
+
+  toefl_landing_footerCopyright: {
+    ko: "© PM EDU · toefl.pmedu4u.com — TOEFL®는 ETS의 등록상표이며, 본 사이트의 문항은 자체 제작 콘텐츠입니다.",
+    en: "© PM EDU · toefl.pmedu4u.com — TOEFL® is a registered trademark of ETS. All questions on this site are original content.",
+  },
+  toefl_landing_terms: { ko: "이용약관", en: "Terms of service" },
+  toefl_landing_privacy: { ko: "개인정보처리방침", en: "Privacy policy" },
+
+  // 랜딩 히어로 라우팅 다이어그램(RoutingRail.tsx, 2026-09-02)
+  toefl_rail_appliesTo: { ko: "Reading · Listening 적용", en: "Applies to Reading · Listening" },
+  toefl_rail_ariaDesc: {
+    ko: "1단계 모듈 성적에 따라 상급 경로는 밴드 6.0까지, 하급 경로는 밴드 4.0까지로 갈라지는 구조",
+    en: "Diagram: based on Stage 1 performance, the advanced path caps at band 6.0 and the lower path caps at band 4.0",
+  },
+  toefl_rail_stage1Desc: { ko: "전원 동일 난이도", en: "Same difficulty" },
+  toefl_rail_noCeiling: { ko: "상한 없음", en: "No ceiling" },
+  toefl_rail_maxIsAlso4: { ko: "만점도 4.0", en: "Also maxes at 4.0" },
+  toefl_rail_firstModuleDetermines: { ko: "첫 모듈이 점수 상한을 결정합니다", en: "The first module sets your score ceiling" },
+  toefl_rail_tapTargetBand: { ko: "목표 밴드를 눌러보세요 ↓", en: "Tap your target band ↓" },
+  toefl_rail_targetBandSelection: { ko: "목표 밴드 선택", en: "Target band selection" },
 } as const;
 
 // 강좌 분류는 값이 4개로 정해져 있어서 화면에서 번역할 수 있다.

@@ -7,26 +7,26 @@
 // 언어 토글은 새로 만들지 않고 사이트 전역 메커니즘(src/lib/i18n.tsx의 useLang)을 그대로 쓴다.
 // 쿠키가 .pmedu4u.com 도메인이라 수학 사이트와 설정이 공유된다.
 // 햄버거는 재사용할 컴포넌트가 없어(수학 Header.tsx 안에 인라인으로만 존재) 같은 패턴으로 새로 둔다.
-// 메뉴 문구는 아직 한국어 하드코딩 — 번역 연결은 이후 단계에서 일괄 처리한다.
+// 메뉴 문구는 t()로 번역돼 있다(2026-09-02, 인도 서비스 대비 학생용 화면 일괄 번역).
 
 import { useState } from "react";
 import Link from "next/link";
-import { useLang } from "@/lib/i18n";
+import { interpolate, useLang, type DictKey } from "@/lib/i18n";
 import { toeflLogout, useLandingViewer } from "@/lib/toefl/landing-viewer";
 import { SITE_URL } from "@/lib/subject";
 
 // TODO: 유형별 연습 전용 라우트가 생기면 "#types" 앵커 대신 그 경로로 교체한다.
 // 영역 연습·모의고사는 아직 별도 라우트가 없어 둘 다 /toefl/start(폼 선택 화면)로 보낸다.
-const MENU: { label: string; href: string }[] = [
-  { label: "시험 안내", href: "#about" },
-  { label: "유형별 연습", href: "#types" },
-  { label: "영역 연습", href: "/toefl/start" },
-  { label: "모의고사", href: "/toefl/start" },
-  { label: "내 학습", href: "/toefl/mypage" },
+const MENU: { labelKey: DictKey; href: string }[] = [
+  { labelKey: "toefl_navExamInfo", href: "#about" },
+  { labelKey: "toefl_navByType", href: "#types" },
+  { labelKey: "toefl_navBySection", href: "/toefl/start" },
+  { labelKey: "toefl_navFullTest", href: "/toefl/start" },
+  { labelKey: "toefl_navMyStudy", href: "/toefl/mypage" },
 ];
 
 export default function LandingHeader() {
-  const { lang, setLang } = useLang();
+  const { lang, setLang, t } = useLang();
   // 관리 링크는 자료관리 권한이 있을 때만 보인다. /admin/toefl 레이아웃이 같은 기준으로
   // 다시 막으므로(그리고 진짜 방어선은 DB의 RLS), 여기서는 표시 여부만 정한다.
   const { loggedIn, canManage, label } = useLandingViewer();
@@ -41,27 +41,27 @@ export default function LandingHeader() {
           <a
             href={SITE_URL.math}
             className="rounded transition-colors hover:text-[var(--en-ink-soft)]"
-            title="PM EDU 메인으로"
+            title={t("toefl_header_pmeduHome")}
           >
             PM EDU
           </a>
           <Link
             href="/toefl"
-            title="TOEFL 메인으로"
+            title={t("toefl_header_toeflHome")}
             className="en-num rounded-md border-[1.5px] border-[var(--en-gold)] px-[7px] py-px text-[13px] font-bold uppercase tracking-[.12em] text-[var(--en-gold-deep)] transition-colors hover:bg-[var(--en-gold-soft)]"
           >
             TOEFL
           </Link>
         </span>
 
-        <nav className="ml-2 hidden gap-1 min-[961px]:flex" aria-label="주 메뉴">
+        <nav className="ml-2 hidden gap-1 min-[961px]:flex" aria-label={t("toefl_header_mainNav")}>
           {MENU.map((m) => (
             <Link
-              key={m.label}
+              key={m.labelKey}
               href={m.href}
               className="rounded-lg px-3 py-[7px] text-[14.5px] font-semibold text-[var(--en-ink-soft)] transition-colors hover:bg-[#EDF2FB] hover:text-[var(--en-ink)]"
             >
-              {m.label}
+              {t(m.labelKey)}
             </Link>
           ))}
         </nav>
@@ -91,7 +91,7 @@ export default function LandingHeader() {
               href="/admin/toefl"
               className="hidden rounded-lg border border-[var(--en-line)] bg-white px-3 py-1.5 text-[13px] font-bold text-[var(--en-ink)] transition-colors hover:border-[var(--en-ink)] min-[601px]:inline-flex"
             >
-              관리
+              {t("admin")}
             </Link>
           )}
 
@@ -100,7 +100,7 @@ export default function LandingHeader() {
               href={loggedIn ? "/toefl/mypage" : "/login?toefl=1"}
               className="hidden rounded-lg px-3.5 py-2 text-sm font-bold text-[var(--en-ink)] transition-colors hover:bg-[#EDF2FB] min-[601px]:inline-flex"
             >
-              {loggedIn ? "내 학습" : "로그인"}
+              {loggedIn ? t("toefl_navMyStudy") : t("login")}
             </Link>
           )}
 
@@ -110,7 +110,7 @@ export default function LandingHeader() {
               onClick={toeflLogout}
               className="hidden rounded-lg px-2.5 py-2 text-sm font-semibold text-[var(--en-ink-soft)] transition-colors hover:bg-[#EDF2FB] hover:text-[var(--en-ink)] min-[601px]:inline-flex"
             >
-              로그아웃
+              {t("logout")}
             </button>
           )}
 
@@ -121,14 +121,14 @@ export default function LandingHeader() {
               href={loggedIn ? "/toefl/start" : "/toefl/sample"}
               className="hidden items-center rounded-lg bg-[var(--en-gold)] px-[18px] py-[9px] text-sm font-bold text-[var(--en-on-gold)] shadow-[0_2px_8px_rgba(245,166,35,.35)] transition-transform hover:-translate-y-px min-[601px]:inline-flex"
             >
-              {loggedIn ? "모의고사 시작" : "무료 샘플 풀어보기"}
+              {loggedIn ? t("toefl_startTest") : t("toefl_tryFreeSample")}
             </Link>
           )}
 
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
-            aria-label={open ? "메뉴 닫기" : "메뉴 열기"}
+            aria-label={open ? t("toefl_header_closeMenu") : t("toefl_header_openMenu")}
             aria-expanded={open}
             className="text-[22px] leading-none text-[var(--en-ink)] min-[961px]:hidden"
           >
@@ -139,21 +139,21 @@ export default function LandingHeader() {
 
       {open && (
         <div className="border-t border-[var(--en-line)] bg-[var(--en-paper)] px-6 py-4 min-[961px]:hidden">
-          <nav className="flex flex-col gap-1" aria-label="모바일 메뉴">
+          <nav className="flex flex-col gap-1" aria-label={t("toefl_header_mobileNav")}>
             {MENU.map((m) => (
               <Link
-                key={m.label}
+                key={m.labelKey}
                 href={m.href}
                 onClick={() => setOpen(false)}
                 className="rounded-lg px-2 py-2.5 text-[15px] font-semibold text-[var(--en-ink-soft)] hover:bg-[#EDF2FB] hover:text-[var(--en-ink)]"
               >
-                {m.label}
+                {t(m.labelKey)}
               </Link>
             ))}
             <div className="mt-2 flex flex-col gap-2 border-t border-[var(--en-line)] pt-3">
               {loggedIn && label && (
                 <span className="truncate px-2 pb-1 text-xs font-semibold text-[var(--en-ink-soft)]">
-                  {label} 님으로 로그인
+                  {interpolate(t("toefl_header_loggedInAs"), { name: label })}
                 </span>
               )}
               {canManage && (
@@ -162,7 +162,7 @@ export default function LandingHeader() {
                   onClick={() => setOpen(false)}
                   className="rounded-lg px-2 py-2 text-[15px] font-bold text-[var(--en-ink)]"
                 >
-                  관리
+                  {t("admin")}
                 </Link>
               )}
               <Link
@@ -170,7 +170,7 @@ export default function LandingHeader() {
                 onClick={() => setOpen(false)}
                 className="rounded-lg px-2 py-2 text-[15px] font-bold text-[var(--en-ink)]"
               >
-                {loggedIn ? "내 학습" : "로그인"}
+                {loggedIn ? t("toefl_navMyStudy") : t("login")}
               </Link>
               {loggedIn && (
                 <button
@@ -178,7 +178,7 @@ export default function LandingHeader() {
                   onClick={() => { setOpen(false); toeflLogout(); }}
                   className="rounded-lg px-2 py-2 text-left text-[15px] font-semibold text-[var(--en-ink-soft)]"
                 >
-                  로그아웃
+                  {t("logout")}
                 </button>
               )}
               <Link
@@ -186,7 +186,7 @@ export default function LandingHeader() {
                 onClick={() => setOpen(false)}
                 className="rounded-lg bg-[var(--en-gold)] px-4 py-2.5 text-center text-sm font-bold text-[var(--en-on-gold)]"
               >
-                {loggedIn ? "모의고사 시작" : "무료 샘플 풀어보기"}
+                {loggedIn ? t("toefl_startTest") : t("toefl_tryFreeSample")}
               </Link>
             </div>
           </nav>

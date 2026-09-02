@@ -65,10 +65,10 @@ export default function ToeflHeader({ showLanguageToggle = true }: { showLanguag
       <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-3">
         {/* 로고 두 조각은 각각 다른 곳으로 간다 — 브랜드명은 회사 메인, TOEFL은 이 사이트 메인. */}
         <span className="flex items-baseline gap-1.5 text-sm font-semibold tracking-wide text-[var(--foreground)]">
-          <a href={SITE_URL.math} title="PM EDU 메인으로" className="hover:text-[var(--secondary)]">
+          <a href={SITE_URL.math} title={t("toefl_header_pmeduHome")} className="hover:text-[var(--secondary)]">
             {site.name}
           </a>
-          <Link href="/toefl" title="TOEFL 메인으로" className="text-[var(--pink-dark)] hover:underline">
+          <Link href="/toefl" title={t("toefl_header_toeflHome")} className="text-[var(--pink-dark)] hover:underline">
             TOEFL
           </Link>
         </span>

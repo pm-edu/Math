@@ -5,8 +5,7 @@
 // 2026-08-19: 원래 이 경로에 있던 "폼 선택 + 응시 시작" 화면은 /toefl/start 로 옮겼다.
 // 랜딩의 CTA(풀 모의고사·영역 연습·STEP 2·3·12유형)가 전부 그 경로로 들어간다.
 //
-// 문구는 아직 한국어 하드코딩이다. 사이트 전역 언어 토글(useLang)에 연결하는 사전 치환은
-// 다음 단계에서 일괄 처리한다 — 지금 헤더의 토글을 눌러도 이 페이지 문구는 안 바뀐다.
+// 문구는 t()로 번역돼 있다(2026-09-02, 인도 서비스 대비 학생용 화면 일괄 번역).
 // 시험 응시 화면(test/[attemptId]/...)과 /toefl/sample 은 이 작업 범위 밖이며 영어 고정이다.
 
 import Link from "next/link";
@@ -14,6 +13,7 @@ import "./globals.css";
 import LandingHeader from "@/components/toefl/landing/LandingHeader";
 import RoutingRail from "@/components/toefl/landing/RoutingRail";
 import { LandingViewerProvider, useLandingViewer } from "@/lib/toefl/landing-viewer";
+import { interpolate, useLang, type DictKey } from "@/lib/i18n";
 import type { ToeflTaskType } from "@/lib/toefl/types";
 
 // 2026-08-28: 유형별 연습 라우트(/toefl/practice/[type]) 신설로 각 유형 링크가 실제로 그
@@ -21,53 +21,54 @@ import type { ToeflTaskType } from "@/lib/toefl/types";
 
 // 시간은 하드코딩하지 않는다 — toefl_form_blueprint에서 조회한 totalMinutes로 채운다
 // (landing-viewer.tsx, [[toefl-ui-work-rules]] 2번). 조회 전에는 "–"로 표시.
-function minutesText(totalMinutes: number | null): string {
-  return totalMinutes == null ? "–" : `${totalMinutes}분`;
+function minutesText(totalMinutes: number | null, t: (key: DictKey) => string): string {
+  return totalMinutes == null ? "–" : interpolate(t("toefl_landing_minutesUnit"), { n: totalMinutes });
 }
 
-function buildFacts(totalMinutes: number | null): { value: string; label: string }[] {
+function buildFacts(totalMinutes: number | null, t: (key: DictKey) => string): { value: string; label: string }[] {
   return [
-    { value: minutesText(totalMinutes), label: "총 시험 시간" },
-    { value: "4영역 12유형", label: "R · L · S · W 전면 개편" },
-    { value: "1.0–6.0", label: "밴드 점수 · CEFR 연동" },
-    { value: "2단계 적응형", label: "Reading · Listening 라우팅" },
+    { value: minutesText(totalMinutes, t), label: t("toefl_landing_totalTestTime") },
+    { value: t("toefl_landing_fourSectionsTwelveTypes"), label: t("toefl_landing_fullRevamp") },
+    { value: t("toefl_landing_bandScoreRange"), label: t("toefl_landing_bandCefr") },
+    { value: t("toefl_landing_twoStageAdaptive"), label: t("toefl_landing_readingListeningRouting") },
   ];
 }
 
 function buildSteps(
-  totalMinutes: number | null
+  totalMinutes: number | null,
+  t: (key: DictKey) => string
 ): { no: string; title: string; body: string; go: string; href: string; free?: boolean }[] {
   return [
     {
       no: "STEP 1",
-      title: "유형별 연습",
-      body: "Complete the Words, Listen & Repeat, Build a Sentence… 낯선 신유형을 유형 하나 단위로 반복 연습합니다.",
-      go: "12개 유형 보기",
+      title: t("toefl_landing_step1Title"),
+      body: t("toefl_landing_step1Body"),
+      go: t("toefl_landing_step1Go"),
       href: "#types",
       free: true,
     },
     {
       no: "STEP 2",
-      title: "영역 연습",
-      body: "Reading · Listening · Speaking · Writing을 영역 단위로, 실제와 같은 서버 타이머와 자동저장 환경에서 연습합니다.",
-      go: "영역 선택하기",
+      title: t("toefl_landing_step2Title"),
+      body: t("toefl_landing_step2Body"),
+      go: t("toefl_landing_step2Go"),
       href: "/toefl/start",
     },
     {
       no: "STEP 3",
-      title: "풀 모의고사",
-      body: `4개 영역을 끊김 없이 ${minutesText(totalMinutes)}에 응시하고, 밴드 점수·라우팅 결과·문항별 리뷰까지 종합 리포트를 받습니다.`,
-      go: "모의고사 시작",
+      title: t("toefl_fullTest"),
+      body: interpolate(t("toefl_landing_step3Body"), { minutes: minutesText(totalMinutes, t) }),
+      go: t("toefl_startTest"),
       href: "/toefl/start",
     },
   ];
 }
 
-const TYPE_GROUPS: { key: string; name: string; count: string; color: string; items: { type: ToeflTaskType; ko: string; en: string }[] }[] = [
+const TYPE_GROUPS: { key: string; name: string; countKey: DictKey; color: string; items: { type: ToeflTaskType; ko: string; en: string }[] }[] = [
   {
     key: "read",
     name: "Reading",
-    count: "3 유형 · 적응형",
+    countKey: "toefl_landing_readingCount",
     color: "var(--en-read)",
     items: [
       { type: "complete_the_words", ko: "단어 완성하기", en: "Complete the Words" },
@@ -78,7 +79,7 @@ const TYPE_GROUPS: { key: string; name: string; count: string; color: string; it
   {
     key: "listen",
     name: "Listening",
-    count: "4 유형 · 적응형",
+    countKey: "toefl_landing_listeningCount",
     color: "var(--en-listen)",
     items: [
       { type: "choose_a_response", ko: "응답 고르기", en: "Listen & Choose a Response" },
@@ -90,7 +91,7 @@ const TYPE_GROUPS: { key: string; name: string; count: string; color: string; it
   {
     key: "speak",
     name: "Speaking",
-    count: "2 유형 · 8분",
+    countKey: "toefl_landing_speakingCount",
     color: "var(--en-speak)",
     items: [
       { type: "listen_and_repeat", ko: "듣고 따라 말하기", en: "Listen & Repeat" },
@@ -100,7 +101,7 @@ const TYPE_GROUPS: { key: string; name: string; count: string; color: string; it
   {
     key: "write",
     name: "Writing",
-    count: "3 유형",
+    countKey: "toefl_landing_writingCount",
     color: "var(--en-write)",
     items: [
       { type: "build_a_sentence", ko: "문장 완성하기", en: "Build a Sentence" },
@@ -110,23 +111,13 @@ const TYPE_GROUPS: { key: string; name: string; count: string; color: string; it
   },
 ];
 
-const DIFFS: { icon: string; title: string; body: string }[] = [
-  {
-    icon: "🔀",
-    title: "라우팅 결과 공개",
-    body: "Stage 2에서 상급·하급 어느 모듈로 갔는지 공개합니다. 점수 상한이 어디서 정해졌는지 알아야 다음 전략이 나옵니다.",
-  },
-  {
-    icon: "📝",
-    title: "문항별 리뷰",
-    body: "내 답과 정답·해설, 듣기 스크립트 다시 듣기, 말하기 녹음 재생까지 시험이 끝난 뒤 전부 열립니다.",
-  },
-  {
-    icon: "🔁",
-    title: "오답 단어 → 자동 복습",
-    body: "리뷰에서 몰랐던 단어를 한 번에 단어 복습(간격 반복)에 추가합니다. 모의고사가 단어장까지 이어집니다.",
-  },
-];
+function buildDiffs(t: (key: DictKey) => string): { icon: string; title: string; body: string }[] {
+  return [
+    { icon: "🔀", title: t("toefl_landing_diff1Title"), body: t("toefl_landing_diff1Body") },
+    { icon: "📝", title: t("toefl_landing_diff2Title"), body: t("toefl_landing_diff2Body") },
+    { icon: "🔁", title: t("toefl_landing_diff3Title"), body: t("toefl_landing_diff3Body") },
+  ];
+}
 
 // 리포트 카드는 정적 예시 목업이다 — 실제 응시 데이터와 연결하지 않는다.
 const REPORT_ROWS: { label: string; pct: number; score: string; color: string }[] = [
@@ -149,8 +140,10 @@ export default function ToeflLandingPage() {
 function LandingContent() {
   // 계정이 있는 사람에게는 샘플을 권하지 않는다 — 히어로·하단 CTA가 응시로 바뀐다.
   const { loggedIn, totalMinutes } = useLandingViewer();
-  const FACTS = buildFacts(totalMinutes);
-  const STEPS = buildSteps(totalMinutes);
+  const { t, lang } = useLang();
+  const FACTS = buildFacts(totalMinutes, t);
+  const STEPS = buildSteps(totalMinutes, t);
+  const DIFFS = buildDiffs(t);
 
   return (
     <div data-theme="en" className="toefl-landing min-h-screen bg-[var(--en-paper)] text-[var(--en-ink)]">
@@ -162,38 +155,43 @@ function LandingContent() {
           <div>
             <span className="inline-flex items-center gap-2 rounded-full bg-[var(--en-gold-soft)] px-3.5 py-1.5 text-[13px] font-extrabold tracking-[.02em] text-[var(--en-gold-deep)]">
               <span className="h-[7px] w-[7px] rounded-full bg-[var(--en-gold)]" />
-              2026년 1월 21일 개정 시행 · 최신 형식 반영
+              {t("toefl_landing_heroEyebrow")}
             </span>
             <h1 className="mb-4 mt-[18px] text-[clamp(30px,4.4vw,46px)] font-extrabold leading-[1.22] tracking-[-.035em]">
-              새로워진 TOEFL,
-              <br />
-              <span className="u">시험이 갈리는 지점</span>부터
-              <br />
-              연습하세요
+              {lang === "ko" ? (
+                <>
+                  새로워진 TOEFL,
+                  <br />
+                  <span className="u">시험이 갈리는 지점</span>부터
+                  <br />
+                  연습하세요
+                </>
+              ) : (
+                <>
+                  The New TOEFL.
+                  <br />
+                  Practice where <span className="u">it actually splits</span>.
+                </>
+              )}
             </h1>
-            <p className="mb-7 max-w-[34em] text-[16.5px] text-[var(--en-ink-soft)]">
-              2026 개정 TOEFL은 첫 모듈 성적이 다음 모듈의 난이도와 점수 상한을 결정합니다. PM EDU는 실제
-              시험과 같은 적응형 라우팅으로 연습하고, 어느 갈림길로 갔는지까지 리포트로 보여드립니다.
-            </p>
+            <p className="mb-7 max-w-[34em] text-[16.5px] text-[var(--en-ink-soft)]">{t("toefl_landing_heroSubtitle")}</p>
             <div className="flex flex-wrap items-center gap-3">
               <Link
                 href="/toefl/start"
                 className="rounded-[10px] bg-[var(--en-ink)] px-6 py-[13px] text-[15px] font-bold text-white transition-transform hover:-translate-y-px"
               >
-                풀 모의고사 시작 ({minutesText(totalMinutes)})
+                {t("toefl_startTest")} ({minutesText(totalMinutes, t)})
               </Link>
               {loggedIn !== null && (
                 <Link
                   href={loggedIn ? "/toefl/mypage" : "/toefl/sample"}
                   className="rounded-[10px] border-[1.5px] border-[var(--en-line)] bg-white px-[22px] py-3 text-[15px] font-bold text-[var(--en-ink)] transition-colors hover:border-[var(--en-ink)]"
                 >
-                  {loggedIn ? "내 학습 보기" : "로그인 없이 샘플 체험"}
+                  {loggedIn ? t("toefl_landing_viewMyStudy") : t("toefl_landing_tryWithoutLogin")}
                 </Link>
               )}
               <span className="mt-1 w-full text-[12.5px] text-[var(--en-ink-soft)]">
-                {loggedIn
-                  ? "지난 응시 기록과 밴드 추이는 내 학습에서 볼 수 있습니다."
-                  : "샘플은 12개 문항 유형을 각 1문항씩, 가입 없이 바로 풀 수 있습니다."}
+                {loggedIn ? t("toefl_landing_pastAttemptsHint") : t("toefl_landing_sampleHint")}
               </span>
             </div>
           </div>
@@ -228,12 +226,9 @@ function LandingContent() {
             Learning Path
           </p>
           <h2 className="text-[clamp(24px,3vw,32px)] font-extrabold leading-[1.3] tracking-[-.03em]">
-            유형에서 시작해 실전으로 끝냅니다
+            {t("toefl_landing_pathHeading")}
           </h2>
-          <p className="mt-2.5 max-w-[44em] text-[15.5px] text-[var(--en-ink-soft)]">
-            막연히 문제만 푸는 대신, 개정 시험의 12개 유형을 하나씩 익히고 → 영역 단위로 감각을 붙이고 →
-            실제 시험과 같은 조건의 모의고사로 완성하는 3단계입니다.
-          </p>
+          <p className="mt-2.5 max-w-[44em] text-[15.5px] text-[var(--en-ink-soft)]">{t("toefl_landing_pathSubtitle")}</p>
 
           <div className="mt-9 grid gap-[18px] min-[601px]:grid-cols-2 min-[961px]:grid-cols-3">
             {STEPS.map((s) => (
@@ -244,7 +239,7 @@ function LandingContent() {
               >
                 {s.free && (
                   <span className="absolute right-5 top-5 rounded-md bg-[var(--en-gold-soft)] px-2 py-[3px] text-[11px] font-extrabold text-[var(--en-gold-deep)]">
-                    무료 샘플
+                    {t("toefl_landing_freeSampleBadge")}
                   </span>
                 )}
                 <span className="en-num text-[13px] font-bold tracking-[.1em] text-[var(--en-gold-deep)]">{s.no}</span>
@@ -267,18 +262,16 @@ function LandingContent() {
             12 Task Types
           </p>
           <h2 className="text-[clamp(24px,3vw,32px)] font-extrabold leading-[1.3] tracking-[-.03em]">
-            2026 개정 문항 유형, 전부 연습할 수 있습니다
+            {t("toefl_landing_typesHeading")}
           </h2>
-          <p className="mt-2.5 max-w-[44em] text-[15.5px] text-[var(--en-ink-soft)]">
-            유형 이름을 누르면 해당 유형만 골라 연습합니다. 가입 없이도 바로 풀어보고 채점 결과를 확인할 수 있습니다.
-          </p>
+          <p className="mt-2.5 max-w-[44em] text-[15.5px] text-[var(--en-ink-soft)]">{t("toefl_landing_typesSubtitle")}</p>
 
           <div className="mt-9 grid gap-4 min-[601px]:grid-cols-2 min-[961px]:grid-cols-4">
             {TYPE_GROUPS.map((g) => (
               <div key={g.key} className="overflow-hidden rounded-[14px] border border-[var(--en-line)] bg-[var(--en-paper)]">
                 <div className="flex items-center justify-between px-4 py-3.5 text-white" style={{ background: g.color }}>
                   <span className="text-[15px] font-extrabold">{g.name}</span>
-                  <span className="en-num text-xs font-bold opacity-85">{g.count}</span>
+                  <span className="en-num text-xs font-bold opacity-85">{t(g.countKey)}</span>
                 </div>
                 <ul className="px-2 py-2.5">
                   {g.items.map((it) => (
@@ -288,8 +281,10 @@ function LandingContent() {
                         className="group flex items-center justify-between rounded-lg px-2.5 py-[9px] text-[13.5px] font-semibold text-[var(--en-ink)] transition-shadow hover:bg-white hover:shadow-[0_1px_4px_rgba(24,42,78,.08)]"
                       >
                         <span>
-                          {it.ko}
-                          <span className="block text-[11px] font-medium text-[var(--en-ink-soft)]">{it.en}</span>
+                          {lang === "ko" ? it.ko : it.en}
+                          {lang === "ko" && (
+                            <span className="block text-[11px] font-medium text-[var(--en-ink-soft)]">{it.en}</span>
+                          )}
                         </span>
                         <span className="text-[11px] text-[var(--en-ink-soft)] opacity-0 transition-opacity group-hover:opacity-100">
                           ↗
@@ -312,8 +307,9 @@ function LandingContent() {
               Report &amp; Review
             </p>
             <h2 className="text-[clamp(24px,3vw,32px)] font-extrabold leading-[1.3] tracking-[-.03em]">
-              점수만 주지 않습니다.
-              <br />왜 그 점수인지 보여줍니다
+              {t("toefl_landing_reportHeading1")}
+              <br />
+              {t("toefl_landing_reportHeading2")}
             </h2>
             <ul className="mt-6 flex flex-col gap-4">
               {DIFFS.map((d) => (
@@ -335,11 +331,11 @@ function LandingContent() {
 
           <div
             className={`rounded-[20px] border border-[var(--en-line)] bg-[var(--en-card)] p-[26px] ${CARD_SHADOW} min-[961px]:rotate-[.6deg]`}
-            aria-label="종합 리포트 예시"
+            aria-label={t("toefl_landing_reportSampleAria")}
           >
             <div className="mb-4 flex items-center justify-between border-b border-dashed border-[var(--en-line)] pb-3.5">
               <span className="en-num text-[13px] font-extrabold uppercase tracking-[.06em] text-[var(--en-ink-soft)]">
-                Score Report · 예시
+                Score Report · {t("toefl_landing_reportSampleLabel")}
               </span>
               <div className="flex items-baseline gap-2">
                 <span className="en-num text-[44px] font-bold tracking-[-.02em]">4.5</span>
@@ -361,16 +357,13 @@ function LandingContent() {
 
             <div className="mt-4 flex items-center gap-2 rounded-[10px] border border-[var(--en-line)] bg-[var(--en-paper)] px-3.5 py-2.5 text-[12.5px] text-[var(--en-ink-soft)]">
               <span aria-hidden="true">🔀</span>
-              <span>
-                Reading은 <b className="text-[var(--en-ink)]">상급 모듈</b>, Listening은{" "}
-                <b className="text-[var(--en-ink)]">상급 모듈</b>로 라우팅되었습니다.
-              </span>
+              <span>{t("toefl_landing_reportRoutedSentence")}</span>
             </div>
 
             <div className="mt-2.5 flex items-center justify-between rounded-[10px] bg-[var(--en-gold-soft)] px-3.5 py-2.5 text-[13px] font-bold">
-              <span>몰랐던 단어 7개</span>
+              <span>{t("toefl_landing_mockUnknownWords")}</span>
               <span className="rounded-[10px] bg-[var(--en-gold)] px-3 py-1.5 text-xs font-bold text-[var(--en-on-gold)]">
-                복습에 추가
+                {t("toefl_landing_mockAddToReview")}
               </span>
             </div>
           </div>
@@ -380,19 +373,19 @@ function LandingContent() {
       {/* ───────── 최종 CTA ───────── */}
       <div className="mx-6 rounded-3xl bg-[var(--en-ink)] px-6 py-16 text-center text-white">
         <h2 className="text-[clamp(24px,3vw,32px)] font-extrabold leading-[1.3] tracking-[-.03em] text-white">
-          오늘 실력이 어느 밴드인지부터 확인하세요
+          {t("toefl_landing_finalCtaHeading")}
         </h2>
         <p className="mx-auto mb-7 mt-3 max-w-[36em] text-[15.5px] text-[#B9C4DC]">
-          {loggedIn
-            ? `${minutesText(totalMinutes)} 풀 모의고사로 현재 밴드와 라우팅 결과를 받아보세요.`
-            : `가입 없이 12개 유형을 체험하거나, ${minutesText(totalMinutes)} 풀 모의고사로 현재 밴드와 라우팅 결과를 받아보세요.`}
+          {interpolate(loggedIn ? t("toefl_landing_finalCtaSubLoggedIn") : t("toefl_landing_finalCtaSubGuest"), {
+            minutes: minutesText(totalMinutes, t),
+          })}
         </p>
         {loggedIn !== null && (
           <Link
             href={loggedIn ? "/toefl/start" : "/toefl/sample"}
             className="inline-flex rounded-[10px] bg-[var(--en-gold)] px-7 py-3.5 text-[15.5px] font-bold text-[var(--en-on-gold)] shadow-[0_2px_8px_rgba(245,166,35,.35)] transition-transform hover:-translate-y-px"
           >
-            {loggedIn ? "모의고사 시작" : "무료 샘플 풀어보기"}
+            {loggedIn ? t("toefl_startTest") : t("toefl_tryFreeSample")}
           </Link>
         )}
       </div>
@@ -400,16 +393,13 @@ function LandingContent() {
       {/* ───────── 푸터 ───────── */}
       <footer className="px-6 pb-14 pt-11 text-[13px] text-[var(--en-ink-soft)]">
         <div className="mx-auto flex max-w-[1120px] flex-wrap justify-between gap-5">
-          <span>
-            © PM EDU · toefl.pmedu4u.com — TOEFL®는 ETS의 등록상표이며, 본 사이트의 문항은 자체 제작
-            콘텐츠입니다.
-          </span>
+          <span>{t("toefl_landing_footerCopyright")}</span>
           {/* TODO: 이용약관·개인정보처리방침 페이지가 생기면 실제 경로로 교체한다. */}
           <nav className="flex gap-4.5">
-            <span className="cursor-default">이용약관</span>
-            <span className="cursor-default">개인정보처리방침</span>
+            <span className="cursor-default">{t("toefl_landing_terms")}</span>
+            <span className="cursor-default">{t("toefl_landing_privacy")}</span>
             <Link href="/contact" className="hover:text-[var(--en-ink)]">
-              문의
+              {t("contact")}
             </Link>
           </nav>
         </div>
