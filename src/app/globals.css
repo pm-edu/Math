@@ -92,6 +92,16 @@
   border-radius: 4px;
 }
 
+/* ───────── 홈페이지(src/components/home/) 전용 ─────────
+   지시서 §5: 모든 인터랙티브 요소에 골드 포커스 링(rgba(245,166,35,.5) 상당) —
+   정확한 rgba 대신 .toefl-landing이 이미 쓰는 것과 똑같은 패턴(토큰 참조,
+   개별 요소에 클래스 안 붙이고 컨테이너 하나로 상속)을 그대로 재사용한다. */
+.home-v3 :focus-visible {
+  outline: 3px solid var(--en-gold);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 /* ───────── TOEFL 관리자(docs/toefl-admin.html) 전용 ─────────
    랜딩과 같은 이유로 제목 세리프를 되돌리고, 숫자 폰트를 쓴다. */
 .toefl-admin h1,
@@ -112,6 +122,27 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: "Pretendard", "Inter", -apple-system, sans-serif;
+
+  /* 홈페이지 리디자인(2026-09-02, src/components/home/) 전용 유틸리티 노출.
+     전부 위에 이미 있는 --en-* 값을 그대로 참조만 한다 — 새 primitive 없음,
+     이름 변경 없음, [data-theme="en"] 스코프(토플 페이지)는 안 건드림. */
+  --color-en-ink: var(--en-ink);
+  --color-en-ink-soft: var(--en-ink-soft);
+  --color-en-paper: var(--en-paper);
+  --color-en-card: var(--en-card);
+  --color-en-gold: var(--en-gold);
+  --color-en-gold-deep: var(--en-gold-deep);
+  --color-en-gold-soft: var(--en-gold-soft);
+  --color-en-on-gold: var(--en-on-gold);
+  --color-en-line: var(--en-line);
+  --color-en-success-ink: var(--en-success-ink);
+  --color-en-success-soft: var(--en-success-soft);
+}
+
+/* 홈 히어로 등장 애니메이션(motion-safe:에서만 재생 — src/components/home/Hero.tsx). */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
 }
 
 body {
