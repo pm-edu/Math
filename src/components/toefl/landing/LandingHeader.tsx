@@ -37,10 +37,10 @@ export default function LandingHeader() {
       <div className="mx-auto flex h-16 max-w-[1120px] items-center gap-7 px-6">
         {/* 로고는 두 개의 독립 링크다 — PM EDU는 회사 메인(수학 사이트), TOEFL은 이 사이트 메인.
             하나로 묶여 있으면 TOEFL 랜딩에서 로고를 눌러도 같은 페이지라 아무 일도 안 일어난다. */}
-        <span className="flex items-baseline gap-2 text-[17px] font-extrabold tracking-[-.02em]">
+        <span className="flex shrink-0 items-baseline gap-2 whitespace-nowrap text-[17px] font-extrabold tracking-[-.02em]">
           <a
             href={SITE_URL.math}
-            className="rounded transition-colors hover:text-[var(--en-ink-soft)]"
+            className="whitespace-nowrap rounded transition-colors hover:text-[var(--en-ink-soft)]"
             title={t("toefl_header_pmeduHome")}
           >
             PM EDU

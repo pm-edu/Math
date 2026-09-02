@@ -22,6 +22,14 @@ export default function Header() {
   // "등록 과목 기준" 네비게이션 분리(2026-08-28) — 학생이 실제로 등록된 과목에만 그 메뉴를
   // 보여준다. 지금은 TOEFL만 해당(SAT는 아직 학생용 화면 자체가 없음, [[toefl-subsystem-plan]] [A]).
   const [programs, setPrograms] = useState<StudentProgram[]>([]);
+  // TOEFL 랜딩의 "PM EDU" 로고를 누르면 여기(메인 사이트)로 오는데, 등록 과목 기준으로만
+  // TOEFL 링크를 보여주면 미등록 게스트는 돌아갈 방법이 없어진다(2026-09-02 실사용 중 발견).
+  // referrer로 방금 TOEFL에서 왔는지만 추가로 확인해서, 그 경우엔 등록 여부와 무관하게
+  // 링크를 보여준다.
+  const [cameFromToefl, setCameFromToefl] = useState(false);
+  useEffect(() => {
+    setCameFromToefl(document.referrer.includes("/toefl"));
+  }, []);
 
   useEffect(() => {
     const supabase = createClient();
@@ -109,7 +117,7 @@ export default function Header() {
           >
             {lang === "ko" ? "EN" : "한국어"}
           </button>
-          {programs.includes("toefl") && (
+          {(programs.includes("toefl") || cameFromToefl) && (
             <Link
               href="/toefl"
               className="hidden text-sm text-[var(--secondary)] transition-colors hover:text-[var(--foreground)] md:inline"
@@ -175,7 +183,7 @@ export default function Header() {
                 {t(item.key)}
               </Link>
             ))}
-            {programs.includes("toefl") && (
+            {(programs.includes("toefl") || cameFromToefl) && (
               <Link
                 href="/toefl"
                 onClick={() => setMobileOpen(false)}
