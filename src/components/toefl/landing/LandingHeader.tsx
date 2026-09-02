@@ -54,12 +54,12 @@ export default function LandingHeader() {
           </Link>
         </span>
 
-        <nav className="ml-2 hidden gap-1 min-[961px]:flex" aria-label={t("toefl_header_mainNav")}>
+        <nav className="ml-2 hidden shrink-0 gap-1 min-[1080px]:flex" aria-label={t("toefl_header_mainNav")}>
           {MENU.map((m) => (
             <Link
               key={m.labelKey}
               href={m.href}
-              className="rounded-lg px-3 py-[7px] text-[14.5px] font-semibold text-[var(--en-ink-soft)] transition-colors hover:bg-[#EDF2FB] hover:text-[var(--en-ink)]"
+              className="shrink-0 whitespace-nowrap rounded-lg px-3 py-[7px] text-[14.5px] font-semibold text-[var(--en-ink-soft)] transition-colors hover:bg-[#EDF2FB] hover:text-[var(--en-ink)]"
             >
               {t(m.labelKey)}
             </Link>
@@ -71,7 +71,7 @@ export default function LandingHeader() {
             type="button"
             onClick={() => setLang(lang === "ko" ? "en" : "ko")}
             aria-label={lang === "ko" ? "Switch to English" : "한국어로 전환"}
-            className="rounded-full border border-[var(--en-line)] bg-white px-3 py-[5px] text-[12.5px] font-bold text-[var(--en-ink-soft)]"
+            className="shrink-0 whitespace-nowrap rounded-full border border-[var(--en-line)] bg-white px-3 py-[5px] text-[12.5px] font-bold text-[var(--en-ink-soft)]"
           >
             한 / EN
           </button>
@@ -89,7 +89,7 @@ export default function LandingHeader() {
           {canManage && (
             <Link
               href="/admin/toefl"
-              className="hidden rounded-lg border border-[var(--en-line)] bg-white px-3 py-1.5 text-[13px] font-bold text-[var(--en-ink)] transition-colors hover:border-[var(--en-ink)] min-[601px]:inline-flex"
+              className="hidden shrink-0 whitespace-nowrap rounded-lg border border-[var(--en-line)] bg-white px-3 py-1.5 text-[13px] font-bold text-[var(--en-ink)] transition-colors hover:border-[var(--en-ink)] min-[601px]:inline-flex"
             >
               {t("admin")}
             </Link>
@@ -98,7 +98,7 @@ export default function LandingHeader() {
           {loggedIn !== null && (
             <Link
               href={loggedIn ? "/toefl/mypage" : "/login?toefl=1"}
-              className="hidden rounded-lg px-3.5 py-2 text-sm font-bold text-[var(--en-ink)] transition-colors hover:bg-[#EDF2FB] min-[601px]:inline-flex"
+              className="hidden shrink-0 whitespace-nowrap rounded-lg px-3.5 py-2 text-sm font-bold text-[var(--en-ink)] transition-colors hover:bg-[#EDF2FB] min-[601px]:inline-flex"
             >
               {loggedIn ? t("toefl_navMyStudy") : t("login")}
             </Link>
@@ -108,7 +108,7 @@ export default function LandingHeader() {
             <button
               type="button"
               onClick={toeflLogout}
-              className="hidden rounded-lg px-2.5 py-2 text-sm font-semibold text-[var(--en-ink-soft)] transition-colors hover:bg-[#EDF2FB] hover:text-[var(--en-ink)] min-[601px]:inline-flex"
+              className="hidden shrink-0 whitespace-nowrap rounded-lg px-2.5 py-2 text-sm font-semibold text-[var(--en-ink-soft)] transition-colors hover:bg-[#EDF2FB] hover:text-[var(--en-ink)] min-[601px]:inline-flex"
             >
               {t("logout")}
             </button>
@@ -119,7 +119,7 @@ export default function LandingHeader() {
           {loggedIn !== null && (
             <Link
               href={loggedIn ? "/toefl/start" : "/toefl/sample"}
-              className="hidden items-center rounded-lg bg-[var(--en-gold)] px-[18px] py-[9px] text-sm font-bold text-[var(--en-on-gold)] shadow-[0_2px_8px_rgba(245,166,35,.35)] transition-transform hover:-translate-y-px min-[601px]:inline-flex"
+              className="hidden shrink-0 items-center whitespace-nowrap rounded-lg bg-[var(--en-gold)] px-[18px] py-[9px] text-sm font-bold text-[var(--en-on-gold)] shadow-[0_2px_8px_rgba(245,166,35,.35)] transition-transform hover:-translate-y-px min-[601px]:inline-flex"
             >
               {loggedIn ? t("toefl_startTest") : t("toefl_tryFreeSample")}
             </Link>
@@ -130,7 +130,7 @@ export default function LandingHeader() {
             onClick={() => setOpen((v) => !v)}
             aria-label={open ? t("toefl_header_closeMenu") : t("toefl_header_openMenu")}
             aria-expanded={open}
-            className="text-[22px] leading-none text-[var(--en-ink)] min-[961px]:hidden"
+            className="text-[22px] leading-none text-[var(--en-ink)] min-[1080px]:hidden"
           >
             {open ? "✕" : "☰"}
           </button>
@@ -138,7 +138,7 @@ export default function LandingHeader() {
       </div>
 
       {open && (
-        <div className="border-t border-[var(--en-line)] bg-[var(--en-paper)] px-6 py-4 min-[961px]:hidden">
+        <div className="border-t border-[var(--en-line)] bg-[var(--en-paper)] px-6 py-4 min-[1080px]:hidden">
           <nav className="flex flex-col gap-1" aria-label={t("toefl_header_mobileNav")}>
             {MENU.map((m) => (
               <Link
