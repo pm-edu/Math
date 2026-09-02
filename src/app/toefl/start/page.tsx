@@ -45,20 +45,19 @@ export default function ToeflStartPage() {
 
   // 랜딩의 STEP2(영역 연습)/STEP3(풀 모의고사)가 둘 다 이 화면으로 오는데 화면이 하나라
   // 구분이 안 갔다(2026-09-02 실사용 피드백) — ?focus=full|section 쿼리로 어디서 왔는지
-  // 받아서 그 카드로 스크롤 + 잠깐 강조한다. 폼이 여러 개일 때를 대비해 첫 번째 폼에만
-  // 적용한다(지금은 폼이 하나뿐이라 실질적으로 항상 맞다).
+  // 받아서 그 카드로 스크롤 + 강조한다. 폼이 여러 개일 때를 대비해 첫 번째 폼에만 적용한다
+  // (지금은 폼이 하나뿐이라 실질적으로 항상 맞다).
+  // 1차 시도(2.5초 후 자동으로 사라지는 강조)는 페이지가 짧아 스크롤이 거의 안 일어나고
+  // 강조도 금방 사라져서 "그래도 똑같아 보인다"는 재피드백을 받음 — 시간이 지나도 안
+  // 없어지게(focus 쿼리가 유지되는 동안 계속) 바꾸고, 반대쪽 카드는 흐리게 만들어 대비를
+  // 확실히 준다.
   const focus = searchParams.get("focus");
   const fullCardRef = useRef<HTMLDivElement>(null);
   const sectionCardRef = useRef<HTMLDivElement>(null);
-  const [highlight, setHighlight] = useState<"full" | "section" | null>(null);
   useEffect(() => {
     if (phase !== "ready" || (focus !== "full" && focus !== "section")) return;
     const target = focus === "full" ? fullCardRef.current : sectionCardRef.current;
-    if (!target) return;
-    target.scrollIntoView({ behavior: "smooth", block: "center" });
-    setHighlight(focus);
-    const timer = setTimeout(() => setHighlight(null), 2500);
-    return () => clearTimeout(timer);
+    target?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [phase, focus]);
 
   const load = useCallback(async () => {
@@ -170,8 +169,12 @@ export default function ToeflStartPage() {
                 {/* 실전 모의고사 — 가장 크고 눈에 띄게. 색은 accent 하나, 버튼도 하나만. */}
                 <div
                   ref={formIndex === 0 ? fullCardRef : undefined}
-                  className={`rounded-2xl border bg-white px-7 py-7 transition-shadow ${
-                    highlight === "full" ? "border-[var(--pink-dark)] ring-4 ring-[var(--pink)]/40" : "border-[var(--border-c)]"
+                  className={`rounded-2xl border bg-white px-7 py-7 transition-all ${
+                    focus === "full"
+                      ? "border-[var(--pink-dark)] ring-4 ring-[var(--pink)]/40"
+                      : focus === "section"
+                        ? "border-[var(--border-c)] opacity-50"
+                        : "border-[var(--border-c)]"
                   }`}
                   style={{ borderTopWidth: 3, borderTopColor: "var(--pink)" }}
                 >
@@ -211,8 +214,12 @@ export default function ToeflStartPage() {
                 {/* 영역별 연습 — 테두리만 있는 조용한 카드로 낮은 존재감. */}
                 <div
                   ref={formIndex === 0 ? sectionCardRef : undefined}
-                  className={`mt-4 rounded-2xl border px-6 py-5 transition-shadow ${
-                    highlight === "section" ? "border-[var(--pink-dark)] ring-4 ring-[var(--pink)]/40" : "border-[var(--border-c)]"
+                  className={`mt-4 rounded-2xl border px-6 py-5 transition-all ${
+                    focus === "section"
+                      ? "border-[var(--pink-dark)] bg-white ring-4 ring-[var(--pink)]/40"
+                      : focus === "full"
+                        ? "border-[var(--border-c)] opacity-50"
+                        : "border-[var(--border-c)]"
                   }`}
                 >
                   <p className="text-sm font-semibold text-[var(--secondary)]">{t("toefl_practiceSectionTitle")}</p>
