@@ -21,9 +21,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { formatDuration, summarizeBySection, totalSummary, type BlueprintSummaryRow } from "@/lib/toefl/blueprint-summary";
 import { SECTION_DESCRIPTION_KEY, SECTION_LABEL_KEY, SECTION_ORDER } from "@/lib/toefl/section-order";
+import { TASK_TYPE_LABELS, TASK_TYPE_LIST } from "@/lib/toefl/task-types";
 import ToeflHeader from "@/components/toefl/ToeflHeader";
 import { interpolate, useLang } from "@/lib/i18n";
 import type { ToeflSection } from "@/lib/toefl/types";
@@ -35,7 +37,7 @@ type Phase = "loading" | "gate" | "ready";
 export default function ToeflStartPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [phase, setPhase] = useState<Phase>("loading");
   const [forms, setForms] = useState<FormWithBlueprint[]>([]);
   // 응시 이력 배지: 폼별로 과거에 제출까지 마친 attempt가 있으면 "Taken before"를 보여준다
@@ -237,6 +239,21 @@ export default function ToeflStartPage() {
                                 ? interpolate(t("toefl_sectionSummary"), { count: stat.itemCount, duration: formatDuration(stat.timeSec) })
                                 : t("toefl_notAvailable")}
                             </p>
+                            {/* 영역 안 세부유형 목록 — "영역 연습에는 유형별도 같이 보였으면
+                                좋겠다"는 요청(2026-09-02)으로 추가. 유형 하나만 골라 연습하고
+                                싶으면 여기서 바로 /toefl/practice/[type]로 간다(랜딩 STEP1과
+                                같은 경로 재사용, 새 화면 안 만듦). */}
+                            <div className="mt-1.5 flex flex-wrap gap-1.5">
+                              {TASK_TYPE_LIST.filter((tt) => TASK_TYPE_LABELS[tt].section === s).map((tt) => (
+                                <Link
+                                  key={tt}
+                                  href={`/toefl/practice/${tt}`}
+                                  className="rounded-full border border-[var(--border-c)] px-2 py-0.5 text-[11px] text-[var(--secondary)] transition-colors hover:border-[var(--pink)] hover:text-[var(--pink-dark)]"
+                                >
+                                  {lang === "ko" ? TASK_TYPE_LABELS[tt].ko : TASK_TYPE_LABELS[tt].en}
+                                </Link>
+                              ))}
+                            </div>
                           </div>
                           <button
                             onClick={() => goToCheck(f.id, "section_practice", s)}
