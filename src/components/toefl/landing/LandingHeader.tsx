@@ -20,8 +20,8 @@ import { SITE_URL } from "@/lib/subject";
 const MENU: { labelKey: DictKey; href: string }[] = [
   { labelKey: "toefl_navExamInfo", href: "#about" },
   { labelKey: "toefl_navByType", href: "#types" },
-  { labelKey: "toefl_navBySection", href: "/toefl/start" },
-  { labelKey: "toefl_navFullTest", href: "/toefl/start" },
+  { labelKey: "toefl_navBySection", href: "/toefl/start?focus=section" },
+  { labelKey: "toefl_navFullTest", href: "/toefl/start?focus=full" },
   { labelKey: "toefl_navMyStudy", href: "/toefl/mypage" },
 ];
 
@@ -118,7 +118,7 @@ export default function LandingHeader() {
               확인 중(null)일 때는 라벨이 뒤바뀌지 않도록 아직 그리지 않는다. */}
           {loggedIn !== null && (
             <Link
-              href={loggedIn ? "/toefl/start" : "/toefl/sample"}
+              href={loggedIn ? "/toefl/start?focus=full" : "/toefl/sample"}
               className="hidden shrink-0 items-center whitespace-nowrap rounded-lg bg-[var(--en-gold)] px-[18px] py-[9px] text-sm font-bold text-[var(--en-on-gold)] shadow-[0_2px_8px_rgba(245,166,35,.35)] transition-transform hover:-translate-y-px min-[601px]:inline-flex"
             >
               {loggedIn ? t("toefl_startTest") : t("toefl_tryFreeSample")}
@@ -182,7 +182,7 @@ export default function LandingHeader() {
                 </button>
               )}
               <Link
-                href={loggedIn ? "/toefl/start" : "/toefl/sample"}
+                href={loggedIn ? "/toefl/start?focus=full" : "/toefl/sample"}
                 onClick={() => setOpen(false)}
                 className="rounded-lg bg-[var(--en-gold)] px-4 py-2.5 text-center text-sm font-bold text-[var(--en-on-gold)]"
               >

@@ -52,14 +52,17 @@ function buildSteps(
       title: t("toefl_landing_step2Title"),
       body: t("toefl_landing_step2Body"),
       go: t("toefl_landing_step2Go"),
-      href: "/toefl/start",
+      // /toefl/start 한 화면에 풀 모의고사·영역별 연습이 같이 있어서, STEP2/STEP3가
+      // 완전히 같은 화면으로 보이는 문제(2026-09-02 실사용 피드백) — focus 파라미터로
+      // 어느 카드로 스크롤+강조할지 알려준다.
+      href: "/toefl/start?focus=section",
     },
     {
       no: "STEP 3",
       title: t("toefl_fullTest"),
       body: interpolate(t("toefl_landing_step3Body"), { minutes: minutesText(totalMinutes, t) }),
       go: t("toefl_startTest"),
-      href: "/toefl/start",
+      href: "/toefl/start?focus=full",
     },
   ];
 }
@@ -177,7 +180,7 @@ function LandingContent() {
             <p className="mb-7 max-w-[34em] text-[16.5px] text-[var(--en-ink-soft)]">{t("toefl_landing_heroSubtitle")}</p>
             <div className="flex flex-wrap items-center gap-3">
               <Link
-                href="/toefl/start"
+                href="/toefl/start?focus=full"
                 className="rounded-[10px] bg-[var(--en-ink)] px-6 py-[13px] text-[15px] font-bold text-white transition-transform hover:-translate-y-px"
               >
                 {t("toefl_startTest")} ({minutesText(totalMinutes, t)})
@@ -382,7 +385,7 @@ function LandingContent() {
         </p>
         {loggedIn !== null && (
           <Link
-            href={loggedIn ? "/toefl/start" : "/toefl/sample"}
+            href={loggedIn ? "/toefl/start?focus=full" : "/toefl/sample"}
             className="inline-flex rounded-[10px] bg-[var(--en-gold)] px-7 py-3.5 text-[15.5px] font-bold text-[var(--en-on-gold)] shadow-[0_2px_8px_rgba(245,166,35,.35)] transition-transform hover:-translate-y-px"
           >
             {loggedIn ? t("toefl_startTest") : t("toefl_tryFreeSample")}

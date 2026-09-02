@@ -19,8 +19,8 @@
 // 진행 중인 시험 이어하기는 여기서 더 이상 자동으로 안 띄운다 — /toefl/mypage에서 지난 기록과
 // 중단된 시험을 사용자가 직접 골라 이어하거나 폐기한다(2026-08-18 요청).
 
-import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { formatDuration, summarizeBySection, totalSummary, type BlueprintSummaryRow } from "@/lib/toefl/blueprint-summary";
 import { SECTION_DESCRIPTION_KEY, SECTION_LABEL_KEY, SECTION_ORDER } from "@/lib/toefl/section-order";
@@ -34,6 +34,7 @@ type Phase = "loading" | "gate" | "ready";
 
 export default function ToeflStartPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { t } = useLang();
   const [phase, setPhase] = useState<Phase>("loading");
   const [forms, setForms] = useState<FormWithBlueprint[]>([]);
@@ -41,6 +42,24 @@ export default function ToeflStartPage() {
   // (2026-08-18 추가 요청). 진행 중인 것과는 별개 — 완료된 것만 센다.
   const [completedCountByForm, setCompletedCountByForm] = useState<Record<string, number>>({});
   const [error, setError] = useState<string | null>(null);
+
+  // 랜딩의 STEP2(영역 연습)/STEP3(풀 모의고사)가 둘 다 이 화면으로 오는데 화면이 하나라
+  // 구분이 안 갔다(2026-09-02 실사용 피드백) — ?focus=full|section 쿼리로 어디서 왔는지
+  // 받아서 그 카드로 스크롤 + 잠깐 강조한다. 폼이 여러 개일 때를 대비해 첫 번째 폼에만
+  // 적용한다(지금은 폼이 하나뿐이라 실질적으로 항상 맞다).
+  const focus = searchParams.get("focus");
+  const fullCardRef = useRef<HTMLDivElement>(null);
+  const sectionCardRef = useRef<HTMLDivElement>(null);
+  const [highlight, setHighlight] = useState<"full" | "section" | null>(null);
+  useEffect(() => {
+    if (phase !== "ready" || (focus !== "full" && focus !== "section")) return;
+    const target = focus === "full" ? fullCardRef.current : sectionCardRef.current;
+    if (!target) return;
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlight(focus);
+    const timer = setTimeout(() => setHighlight(null), 2500);
+    return () => clearTimeout(timer);
+  }, [phase, focus]);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -140,7 +159,7 @@ export default function ToeflStartPage() {
         </div>
       ) : (
         <div className="mt-8 space-y-8">
-          {forms.map((f) => {
+          {forms.map((f, formIndex) => {
             const total = totalSummary(f.rows);
             const perSection = summarizeBySection(f.rows);
             const bySection = new Map(perSection.map((s) => [s.section, s]));
@@ -149,7 +168,13 @@ export default function ToeflStartPage() {
             return (
               <div key={f.id}>
                 {/* 실전 모의고사 — 가장 크고 눈에 띄게. 색은 accent 하나, 버튼도 하나만. */}
-                <div className="rounded-2xl border border-[var(--border-c)] bg-white px-7 py-7" style={{ borderTopWidth: 3, borderTopColor: "var(--pink)" }}>
+                <div
+                  ref={formIndex === 0 ? fullCardRef : undefined}
+                  className={`rounded-2xl border bg-white px-7 py-7 transition-shadow ${
+                    highlight === "full" ? "border-[var(--pink-dark)] ring-4 ring-[var(--pink)]/40" : "border-[var(--border-c)]"
+                  }`}
+                  style={{ borderTopWidth: 3, borderTopColor: "var(--pink)" }}
+                >
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-semibold uppercase tracking-wide text-[var(--pink-dark)]">{t("toefl_recommended")}</p>
                     {completedCount > 0 && (
@@ -184,7 +209,12 @@ export default function ToeflStartPage() {
                 </div>
 
                 {/* 영역별 연습 — 테두리만 있는 조용한 카드로 낮은 존재감. */}
-                <div className="mt-4 rounded-2xl border border-[var(--border-c)] px-6 py-5">
+                <div
+                  ref={formIndex === 0 ? sectionCardRef : undefined}
+                  className={`mt-4 rounded-2xl border px-6 py-5 transition-shadow ${
+                    highlight === "section" ? "border-[var(--pink-dark)] ring-4 ring-[var(--pink)]/40" : "border-[var(--border-c)]"
+                  }`}
+                >
                   <p className="text-sm font-semibold text-[var(--secondary)]">{t("toefl_practiceSectionTitle")}</p>
                   <p className="text-xs text-[var(--secondary)] opacity-80">{t("toefl_practiceSectionSub")}</p>
                   <div className="mt-3">
