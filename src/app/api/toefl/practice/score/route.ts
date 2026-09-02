@@ -14,6 +14,9 @@ import { scorePracticeItem } from "@/lib/toefl/server/practice";
 
 const AUDIO_TASK_TYPES = new Set(["listen_and_repeat", "take_an_interview"]);
 const uuidSchema = z.string().uuid();
+// 유형별 연습은 무제한이었는데, 유형당 하루 20문항으로 제한한다(2026-09-02 사용자 결정).
+// 게스트도 guest_id로 똑같이 센다 — 로그인 사용자만 봐주면 게스트 쪽으로 우회하는 게 되므로.
+const DAILY_PRACTICE_LIMIT_PER_TYPE = 20;
 
 export async function POST(req: Request) {
   const service = createToeflServiceClient();
@@ -63,6 +66,22 @@ export async function POST(req: Request) {
   const isAudioType = AUDIO_TASK_TYPES.has(item.task_type);
   if (isAudioType && !audioBuffer) {
     return Response.json({ ok: false, message: "녹음 파일이 필요합니다." }, { status: 400 });
+  }
+
+  const startOfDay = new Date();
+  startOfDay.setUTCHours(0, 0, 0, 0);
+  let todayCountQuery = service
+    .from("toefl_practice_response")
+    .select("id", { count: "exact", head: true })
+    .eq("task_type", item.task_type)
+    .gte("created_at", startOfDay.toISOString());
+  todayCountQuery = userId ? todayCountQuery.eq("user_id", userId) : todayCountQuery.eq("guest_id", guestId);
+  const { count: todayCount } = await todayCountQuery;
+  if ((todayCount ?? 0) >= DAILY_PRACTICE_LIMIT_PER_TYPE) {
+    return Response.json(
+      { ok: false, message: `이 유형은 하루 ${DAILY_PRACTICE_LIMIT_PER_TYPE}문항까지 연습할 수 있습니다. 내일 다시 시도해주세요.`, limitReached: true },
+      { status: 429 }
+    );
   }
 
   const result = await scorePracticeItem(item, {

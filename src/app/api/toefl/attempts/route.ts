@@ -7,6 +7,7 @@ import { fetchBlueprint, resolveCurrentModule } from "@/lib/toefl/server/modules
 // P1~P4 범위: reading·listening·writing·speaking 단독 연습이 동작한다.
 // mode='full'이어도 지금은 reading부터 시작한다(§2: 고정 순서 R→L→S→W).
 const SUPPORTED_SECTIONS = ["reading", "listening", "writing", "speaking"] as const;
+const MONTHLY_FULL_TEST_LIMIT = 4;
 const bodySchema = z.object({
   form_id: z.string().uuid(),
   mode: z.enum(["full", "section_practice"]),
@@ -63,6 +64,22 @@ export async function POST(req: Request) {
           ? "이미 진행 중인 풀 모의고사가 있습니다. 마이페이지에서 이어하기 해주세요."
           : "이 시험은 이미 응시를 완료했습니다. 같은 폼으로 다시 응시할 수 없습니다."
       );
+    }
+
+    // 폼이 여러 개로 늘어나도(세트 자동조립 등) 한 달에 너무 많이 몰아 치는 걸 막는다
+    // (2026-09-02 사용자 결정: 월 4회). 폼당 1회 제한과는 별개 — 폼 하나뿐인 지금은 위
+    // 검사가 사실상 더 강하게 걸리지만, 폼이 늘어나면 이 한도가 실제로 작동한다.
+    const now = new Date();
+    const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+    const { count: monthlyCount } = await client
+      .from("toefl_attempt")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", auth.userId)
+      .eq("mode", "full")
+      .in("status", ["in_progress", "submitted", "scored"])
+      .gte("created_at", startOfMonth);
+    if ((monthlyCount ?? 0) >= MONTHLY_FULL_TEST_LIMIT) {
+      return jsonError(429, `이번 달 풀 모의고사 응시 횟수(${MONTHLY_FULL_TEST_LIMIT}회)를 모두 사용했습니다. 다음 달에 다시 시도해주세요.`);
     }
   }
 
