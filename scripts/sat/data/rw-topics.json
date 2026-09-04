@@ -1,0 +1,1402 @@
+[
+  {
+    "id": "RW-001",
+    "topic": "neuroscience",
+    "genre": "social criticism essay",
+    "era": "the near future (speculative)",
+    "seedPrompt": "Write about a topic in neuroscience, in the style of a social criticism essay, set in/reflecting the near future (speculative). Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-002",
+    "topic": "media studies",
+    "genre": "philosophical essay",
+    "era": "the early modern era",
+    "seedPrompt": "Write about a topic in media studies, in the style of a philosophical essay, set in/reflecting the early modern era. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-003",
+    "topic": "transportation engineering",
+    "genre": "literary criticism",
+    "era": "the early modern era",
+    "seedPrompt": "Write about a topic in transportation engineering, in the style of a literary criticism, set in/reflecting the early modern era. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-004",
+    "topic": "linguistics",
+    "genre": "literary criticism",
+    "era": "the near future (speculative)",
+    "seedPrompt": "Write about a topic in linguistics, in the style of a literary criticism, set in/reflecting the near future (speculative). Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-005",
+    "topic": "political science",
+    "genre": "policy analysis report",
+    "era": "the present day",
+    "seedPrompt": "Write about a topic in political science, in the style of a policy analysis report, set in/reflecting the present day. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-006",
+    "topic": "public health",
+    "genre": "historical narrative",
+    "era": "the 19th century",
+    "seedPrompt": "Write about a topic in public health, in the style of a historical narrative, set in/reflecting the 19th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-007",
+    "topic": "political science",
+    "genre": "literary criticism",
+    "era": "the medieval period",
+    "seedPrompt": "Write about a topic in political science, in the style of a literary criticism, set in/reflecting the medieval period. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-008",
+    "topic": "cognitive psychology",
+    "genre": "technology explainer",
+    "era": "the medieval period",
+    "seedPrompt": "Write about a topic in cognitive psychology, in the style of a technology explainer, set in/reflecting the medieval period. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-009",
+    "topic": "culinary history",
+    "genre": "personal memoir",
+    "era": "the medieval period",
+    "seedPrompt": "Write about a topic in culinary history, in the style of a personal memoir, set in/reflecting the medieval period. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-010",
+    "topic": "archaeology",
+    "genre": "policy analysis report",
+    "era": "the medieval period",
+    "seedPrompt": "Write about a topic in archaeology, in the style of a policy analysis report, set in/reflecting the medieval period. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-011",
+    "topic": "agriculture",
+    "genre": "historical narrative",
+    "era": "the early 20th century",
+    "seedPrompt": "Write about a topic in agriculture, in the style of a historical narrative, set in/reflecting the early 20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-012",
+    "topic": "geology",
+    "genre": "natural history observation",
+    "era": "ancient times",
+    "seedPrompt": "Write about a topic in geology, in the style of a natural history observation, set in/reflecting ancient times. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-013",
+    "topic": "fashion history",
+    "genre": "science explainer",
+    "era": "the near future (speculative)",
+    "seedPrompt": "Write about a topic in fashion history, in the style of a science explainer, set in/reflecting the near future (speculative). Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-014",
+    "topic": "cognitive psychology",
+    "genre": "technology explainer",
+    "era": "ancient times",
+    "seedPrompt": "Write about a topic in cognitive psychology, in the style of a technology explainer, set in/reflecting ancient times. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-015",
+    "topic": "art history",
+    "genre": "personal memoir",
+    "era": "the mid-20th century",
+    "seedPrompt": "Write about a topic in art history, in the style of a personal memoir, set in/reflecting the mid-20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-016",
+    "topic": "forestry conservation",
+    "genre": "natural history observation",
+    "era": "the 19th century",
+    "seedPrompt": "Write about a topic in forestry conservation, in the style of a natural history observation, set in/reflecting the 19th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-017",
+    "topic": "computer science",
+    "genre": "science explainer",
+    "era": "ancient times",
+    "seedPrompt": "Write about a topic in computer science, in the style of a science explainer, set in/reflecting ancient times. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-018",
+    "topic": "folklore studies",
+    "genre": "philosophical essay",
+    "era": "the early modern era",
+    "seedPrompt": "Write about a topic in folklore studies, in the style of a philosophical essay, set in/reflecting the early modern era. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-019",
+    "topic": "anthropology",
+    "genre": "technology explainer",
+    "era": "the medieval period",
+    "seedPrompt": "Write about a topic in anthropology, in the style of a technology explainer, set in/reflecting the medieval period. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-020",
+    "topic": "neuroscience",
+    "genre": "policy analysis report",
+    "era": "the mid-20th century",
+    "seedPrompt": "Write about a topic in neuroscience, in the style of a policy analysis report, set in/reflecting the mid-20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-021",
+    "topic": "forestry conservation",
+    "genre": "natural history observation",
+    "era": "ancient times",
+    "seedPrompt": "Write about a topic in forestry conservation, in the style of a natural history observation, set in/reflecting ancient times. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-022",
+    "topic": "genetics",
+    "genre": "anthropological field notes",
+    "era": "the 19th century",
+    "seedPrompt": "Write about a topic in genetics, in the style of a anthropological field notes, set in/reflecting the 19th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-023",
+    "topic": "philosophy of mind",
+    "genre": "personal memoir",
+    "era": "the present day",
+    "seedPrompt": "Write about a topic in philosophy of mind, in the style of a personal memoir, set in/reflecting the present day. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-024",
+    "topic": "cognitive psychology",
+    "genre": "literary criticism",
+    "era": "the present day",
+    "seedPrompt": "Write about a topic in cognitive psychology, in the style of a literary criticism, set in/reflecting the present day. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-025",
+    "topic": "meteorology",
+    "genre": "science explainer",
+    "era": "the near future (speculative)",
+    "seedPrompt": "Write about a topic in meteorology, in the style of a science explainer, set in/reflecting the near future (speculative). Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-026",
+    "topic": "philosophy of mind",
+    "genre": "technology explainer",
+    "era": "ancient times",
+    "seedPrompt": "Write about a topic in philosophy of mind, in the style of a technology explainer, set in/reflecting ancient times. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-027",
+    "topic": "geology",
+    "genre": "philosophical essay",
+    "era": "the early modern era",
+    "seedPrompt": "Write about a topic in geology, in the style of a philosophical essay, set in/reflecting the early modern era. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-028",
+    "topic": "applied ethics",
+    "genre": "philosophical essay",
+    "era": "the near future (speculative)",
+    "seedPrompt": "Write about a topic in applied ethics, in the style of a philosophical essay, set in/reflecting the near future (speculative). Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-029",
+    "topic": "sports science",
+    "genre": "technology explainer",
+    "era": "the medieval period",
+    "seedPrompt": "Write about a topic in sports science, in the style of a technology explainer, set in/reflecting the medieval period. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-030",
+    "topic": "marine ecology",
+    "genre": "literary criticism",
+    "era": "the early 20th century",
+    "seedPrompt": "Write about a topic in marine ecology, in the style of a literary criticism, set in/reflecting the early 20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-031",
+    "topic": "media studies",
+    "genre": "philosophical essay",
+    "era": "the early 20th century",
+    "seedPrompt": "Write about a topic in media studies, in the style of a philosophical essay, set in/reflecting the early 20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-032",
+    "topic": "economic policy",
+    "genre": "social criticism essay",
+    "era": "ancient times",
+    "seedPrompt": "Write about a topic in economic policy, in the style of a social criticism essay, set in/reflecting ancient times. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-033",
+    "topic": "climate science",
+    "genre": "technology explainer",
+    "era": "the early modern era",
+    "seedPrompt": "Write about a topic in climate science, in the style of a technology explainer, set in/reflecting the early modern era. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-034",
+    "topic": "fashion history",
+    "genre": "natural history observation",
+    "era": "the 19th century",
+    "seedPrompt": "Write about a topic in fashion history, in the style of a natural history observation, set in/reflecting the 19th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-035",
+    "topic": "economic policy",
+    "genre": "personal memoir",
+    "era": "the mid-20th century",
+    "seedPrompt": "Write about a topic in economic policy, in the style of a personal memoir, set in/reflecting the mid-20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-036",
+    "topic": "transportation engineering",
+    "genre": "anthropological field notes",
+    "era": "the early 20th century",
+    "seedPrompt": "Write about a topic in transportation engineering, in the style of a anthropological field notes, set in/reflecting the early 20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-037",
+    "topic": "marine ecology",
+    "genre": "anthropological field notes",
+    "era": "the present day",
+    "seedPrompt": "Write about a topic in marine ecology, in the style of a anthropological field notes, set in/reflecting the present day. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-038",
+    "topic": "energy policy",
+    "genre": "social criticism essay",
+    "era": "the early 20th century",
+    "seedPrompt": "Write about a topic in energy policy, in the style of a social criticism essay, set in/reflecting the early 20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-039",
+    "topic": "chemistry",
+    "genre": "personal memoir",
+    "era": "the near future (speculative)",
+    "seedPrompt": "Write about a topic in chemistry, in the style of a personal memoir, set in/reflecting the near future (speculative). Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-040",
+    "topic": "transportation engineering",
+    "genre": "philosophical essay",
+    "era": "the early 20th century",
+    "seedPrompt": "Write about a topic in transportation engineering, in the style of a philosophical essay, set in/reflecting the early 20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-041",
+    "topic": "anthropology",
+    "genre": "philosophical essay",
+    "era": "the early modern era",
+    "seedPrompt": "Write about a topic in anthropology, in the style of a philosophical essay, set in/reflecting the early modern era. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-042",
+    "topic": "architecture",
+    "genre": "natural history observation",
+    "era": "the early modern era",
+    "seedPrompt": "Write about a topic in architecture, in the style of a natural history observation, set in/reflecting the early modern era. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-043",
+    "topic": "computer science",
+    "genre": "science explainer",
+    "era": "the early 20th century",
+    "seedPrompt": "Write about a topic in computer science, in the style of a science explainer, set in/reflecting the early 20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-044",
+    "topic": "agriculture",
+    "genre": "social criticism essay",
+    "era": "ancient times",
+    "seedPrompt": "Write about a topic in agriculture, in the style of a social criticism essay, set in/reflecting ancient times. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-045",
+    "topic": "media studies",
+    "genre": "science explainer",
+    "era": "the near future (speculative)",
+    "seedPrompt": "Write about a topic in media studies, in the style of a science explainer, set in/reflecting the near future (speculative). Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-046",
+    "topic": "public health",
+    "genre": "philosophical essay",
+    "era": "the present day",
+    "seedPrompt": "Write about a topic in public health, in the style of a philosophical essay, set in/reflecting the present day. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-047",
+    "topic": "meteorology",
+    "genre": "social criticism essay",
+    "era": "ancient times",
+    "seedPrompt": "Write about a topic in meteorology, in the style of a social criticism essay, set in/reflecting ancient times. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-048",
+    "topic": "culinary history",
+    "genre": "technology explainer",
+    "era": "the mid-20th century",
+    "seedPrompt": "Write about a topic in culinary history, in the style of a technology explainer, set in/reflecting the mid-20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-049",
+    "topic": "culinary history",
+    "genre": "personal memoir",
+    "era": "the near future (speculative)",
+    "seedPrompt": "Write about a topic in culinary history, in the style of a personal memoir, set in/reflecting the near future (speculative). Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-050",
+    "topic": "materials science",
+    "genre": "personal memoir",
+    "era": "the near future (speculative)",
+    "seedPrompt": "Write about a topic in materials science, in the style of a personal memoir, set in/reflecting the near future (speculative). Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-051",
+    "topic": "cognitive psychology",
+    "genre": "natural history observation",
+    "era": "the 19th century",
+    "seedPrompt": "Write about a topic in cognitive psychology, in the style of a natural history observation, set in/reflecting the 19th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-052",
+    "topic": "education theory",
+    "genre": "historical narrative",
+    "era": "the near future (speculative)",
+    "seedPrompt": "Write about a topic in education theory, in the style of a historical narrative, set in/reflecting the near future (speculative). Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-053",
+    "topic": "sociology",
+    "genre": "historical narrative",
+    "era": "the medieval period",
+    "seedPrompt": "Write about a topic in sociology, in the style of a historical narrative, set in/reflecting the medieval period. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-054",
+    "topic": "climate science",
+    "genre": "literary criticism",
+    "era": "the 19th century",
+    "seedPrompt": "Write about a topic in climate science, in the style of a literary criticism, set in/reflecting the 19th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-055",
+    "topic": "music theory",
+    "genre": "personal memoir",
+    "era": "ancient times",
+    "seedPrompt": "Write about a topic in music theory, in the style of a personal memoir, set in/reflecting ancient times. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-056",
+    "topic": "cognitive psychology",
+    "genre": "anthropological field notes",
+    "era": "the early modern era",
+    "seedPrompt": "Write about a topic in cognitive psychology, in the style of a anthropological field notes, set in/reflecting the early modern era. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-057",
+    "topic": "archaeology",
+    "genre": "philosophical essay",
+    "era": "the near future (speculative)",
+    "seedPrompt": "Write about a topic in archaeology, in the style of a philosophical essay, set in/reflecting the near future (speculative). Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-058",
+    "topic": "energy policy",
+    "genre": "literary criticism",
+    "era": "the near future (speculative)",
+    "seedPrompt": "Write about a topic in energy policy, in the style of a literary criticism, set in/reflecting the near future (speculative). Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-059",
+    "topic": "applied ethics",
+    "genre": "social criticism essay",
+    "era": "the early modern era",
+    "seedPrompt": "Write about a topic in applied ethics, in the style of a social criticism essay, set in/reflecting the early modern era. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-060",
+    "topic": "sociology",
+    "genre": "natural history observation",
+    "era": "the present day",
+    "seedPrompt": "Write about a topic in sociology, in the style of a natural history observation, set in/reflecting the present day. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-061",
+    "topic": "meteorology",
+    "genre": "policy analysis report",
+    "era": "the 19th century",
+    "seedPrompt": "Write about a topic in meteorology, in the style of a policy analysis report, set in/reflecting the 19th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-062",
+    "topic": "climate science",
+    "genre": "philosophical essay",
+    "era": "the mid-20th century",
+    "seedPrompt": "Write about a topic in climate science, in the style of a philosophical essay, set in/reflecting the mid-20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-063",
+    "topic": "film studies",
+    "genre": "social criticism essay",
+    "era": "the 19th century",
+    "seedPrompt": "Write about a topic in film studies, in the style of a social criticism essay, set in/reflecting the 19th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-064",
+    "topic": "culinary history",
+    "genre": "natural history observation",
+    "era": "the mid-20th century",
+    "seedPrompt": "Write about a topic in culinary history, in the style of a natural history observation, set in/reflecting the mid-20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-065",
+    "topic": "astrophysics",
+    "genre": "philosophical essay",
+    "era": "the early 20th century",
+    "seedPrompt": "Write about a topic in astrophysics, in the style of a philosophical essay, set in/reflecting the early 20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-066",
+    "topic": "chemistry",
+    "genre": "policy analysis report",
+    "era": "the 19th century",
+    "seedPrompt": "Write about a topic in chemistry, in the style of a policy analysis report, set in/reflecting the 19th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-067",
+    "topic": "climate science",
+    "genre": "personal memoir",
+    "era": "the early 20th century",
+    "seedPrompt": "Write about a topic in climate science, in the style of a personal memoir, set in/reflecting the early 20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-068",
+    "topic": "oceanography",
+    "genre": "philosophical essay",
+    "era": "the 19th century",
+    "seedPrompt": "Write about a topic in oceanography, in the style of a philosophical essay, set in/reflecting the 19th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-069",
+    "topic": "music theory",
+    "genre": "science explainer",
+    "era": "the medieval period",
+    "seedPrompt": "Write about a topic in music theory, in the style of a science explainer, set in/reflecting the medieval period. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-070",
+    "topic": "energy policy",
+    "genre": "literary criticism",
+    "era": "the present day",
+    "seedPrompt": "Write about a topic in energy policy, in the style of a literary criticism, set in/reflecting the present day. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-071",
+    "topic": "forestry conservation",
+    "genre": "natural history observation",
+    "era": "the near future (speculative)",
+    "seedPrompt": "Write about a topic in forestry conservation, in the style of a natural history observation, set in/reflecting the near future (speculative). Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-072",
+    "topic": "media studies",
+    "genre": "anthropological field notes",
+    "era": "the early 20th century",
+    "seedPrompt": "Write about a topic in media studies, in the style of a anthropological field notes, set in/reflecting the early 20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-073",
+    "topic": "film studies",
+    "genre": "anthropological field notes",
+    "era": "the present day",
+    "seedPrompt": "Write about a topic in film studies, in the style of a anthropological field notes, set in/reflecting the present day. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-074",
+    "topic": "materials science",
+    "genre": "anthropological field notes",
+    "era": "the mid-20th century",
+    "seedPrompt": "Write about a topic in materials science, in the style of a anthropological field notes, set in/reflecting the mid-20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-075",
+    "topic": "transportation engineering",
+    "genre": "science explainer",
+    "era": "ancient times",
+    "seedPrompt": "Write about a topic in transportation engineering, in the style of a science explainer, set in/reflecting ancient times. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-076",
+    "topic": "public health",
+    "genre": "social criticism essay",
+    "era": "the near future (speculative)",
+    "seedPrompt": "Write about a topic in public health, in the style of a social criticism essay, set in/reflecting the near future (speculative). Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-077",
+    "topic": "geology",
+    "genre": "personal memoir",
+    "era": "ancient times",
+    "seedPrompt": "Write about a topic in geology, in the style of a personal memoir, set in/reflecting ancient times. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-078",
+    "topic": "forestry conservation",
+    "genre": "anthropological field notes",
+    "era": "the mid-20th century",
+    "seedPrompt": "Write about a topic in forestry conservation, in the style of a anthropological field notes, set in/reflecting the mid-20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-079",
+    "topic": "agriculture",
+    "genre": "literary criticism",
+    "era": "the mid-20th century",
+    "seedPrompt": "Write about a topic in agriculture, in the style of a literary criticism, set in/reflecting the mid-20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-080",
+    "topic": "computer science",
+    "genre": "technology explainer",
+    "era": "the medieval period",
+    "seedPrompt": "Write about a topic in computer science, in the style of a technology explainer, set in/reflecting the medieval period. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-081",
+    "topic": "urban planning",
+    "genre": "historical narrative",
+    "era": "the near future (speculative)",
+    "seedPrompt": "Write about a topic in urban planning, in the style of a historical narrative, set in/reflecting the near future (speculative). Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-082",
+    "topic": "microbiology",
+    "genre": "historical narrative",
+    "era": "the 19th century",
+    "seedPrompt": "Write about a topic in microbiology, in the style of a historical narrative, set in/reflecting the 19th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-083",
+    "topic": "meteorology",
+    "genre": "science explainer",
+    "era": "the medieval period",
+    "seedPrompt": "Write about a topic in meteorology, in the style of a science explainer, set in/reflecting the medieval period. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-084",
+    "topic": "materials science",
+    "genre": "literary criticism",
+    "era": "the present day",
+    "seedPrompt": "Write about a topic in materials science, in the style of a literary criticism, set in/reflecting the present day. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-085",
+    "topic": "education theory",
+    "genre": "personal memoir",
+    "era": "the medieval period",
+    "seedPrompt": "Write about a topic in education theory, in the style of a personal memoir, set in/reflecting the medieval period. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-086",
+    "topic": "architecture",
+    "genre": "philosophical essay",
+    "era": "the present day",
+    "seedPrompt": "Write about a topic in architecture, in the style of a philosophical essay, set in/reflecting the present day. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-087",
+    "topic": "sports science",
+    "genre": "historical narrative",
+    "era": "the near future (speculative)",
+    "seedPrompt": "Write about a topic in sports science, in the style of a historical narrative, set in/reflecting the near future (speculative). Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-088",
+    "topic": "astrophysics",
+    "genre": "social criticism essay",
+    "era": "the mid-20th century",
+    "seedPrompt": "Write about a topic in astrophysics, in the style of a social criticism essay, set in/reflecting the mid-20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-089",
+    "topic": "linguistics",
+    "genre": "personal memoir",
+    "era": "the 19th century",
+    "seedPrompt": "Write about a topic in linguistics, in the style of a personal memoir, set in/reflecting the 19th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-090",
+    "topic": "urban planning",
+    "genre": "anthropological field notes",
+    "era": "the medieval period",
+    "seedPrompt": "Write about a topic in urban planning, in the style of a anthropological field notes, set in/reflecting the medieval period. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-091",
+    "topic": "genetics",
+    "genre": "philosophical essay",
+    "era": "the early 20th century",
+    "seedPrompt": "Write about a topic in genetics, in the style of a philosophical essay, set in/reflecting the early 20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-092",
+    "topic": "sports science",
+    "genre": "science explainer",
+    "era": "the 19th century",
+    "seedPrompt": "Write about a topic in sports science, in the style of a science explainer, set in/reflecting the 19th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-093",
+    "topic": "film studies",
+    "genre": "policy analysis report",
+    "era": "the near future (speculative)",
+    "seedPrompt": "Write about a topic in film studies, in the style of a policy analysis report, set in/reflecting the near future (speculative). Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-094",
+    "topic": "sociology",
+    "genre": "social criticism essay",
+    "era": "the mid-20th century",
+    "seedPrompt": "Write about a topic in sociology, in the style of a social criticism essay, set in/reflecting the mid-20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-095",
+    "topic": "music theory",
+    "genre": "technology explainer",
+    "era": "the present day",
+    "seedPrompt": "Write about a topic in music theory, in the style of a technology explainer, set in/reflecting the present day. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-096",
+    "topic": "anthropology",
+    "genre": "anthropological field notes",
+    "era": "the mid-20th century",
+    "seedPrompt": "Write about a topic in anthropology, in the style of a anthropological field notes, set in/reflecting the mid-20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-097",
+    "topic": "economic policy",
+    "genre": "natural history observation",
+    "era": "the medieval period",
+    "seedPrompt": "Write about a topic in economic policy, in the style of a natural history observation, set in/reflecting the medieval period. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-098",
+    "topic": "architecture",
+    "genre": "technology explainer",
+    "era": "ancient times",
+    "seedPrompt": "Write about a topic in architecture, in the style of a technology explainer, set in/reflecting ancient times. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-099",
+    "topic": "film studies",
+    "genre": "personal memoir",
+    "era": "the present day",
+    "seedPrompt": "Write about a topic in film studies, in the style of a personal memoir, set in/reflecting the present day. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-100",
+    "topic": "fashion history",
+    "genre": "policy analysis report",
+    "era": "the early modern era",
+    "seedPrompt": "Write about a topic in fashion history, in the style of a policy analysis report, set in/reflecting the early modern era. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-101",
+    "topic": "computer science",
+    "genre": "science explainer",
+    "era": "the near future (speculative)",
+    "seedPrompt": "Write about a topic in computer science, in the style of a science explainer, set in/reflecting the near future (speculative). Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-102",
+    "topic": "art history",
+    "genre": "policy analysis report",
+    "era": "the early modern era",
+    "seedPrompt": "Write about a topic in art history, in the style of a policy analysis report, set in/reflecting the early modern era. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-103",
+    "topic": "film studies",
+    "genre": "policy analysis report",
+    "era": "the present day",
+    "seedPrompt": "Write about a topic in film studies, in the style of a policy analysis report, set in/reflecting the present day. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-104",
+    "topic": "linguistics",
+    "genre": "policy analysis report",
+    "era": "the early modern era",
+    "seedPrompt": "Write about a topic in linguistics, in the style of a policy analysis report, set in/reflecting the early modern era. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-105",
+    "topic": "genetics",
+    "genre": "policy analysis report",
+    "era": "the medieval period",
+    "seedPrompt": "Write about a topic in genetics, in the style of a policy analysis report, set in/reflecting the medieval period. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-106",
+    "topic": "fashion history",
+    "genre": "science explainer",
+    "era": "the mid-20th century",
+    "seedPrompt": "Write about a topic in fashion history, in the style of a science explainer, set in/reflecting the mid-20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-107",
+    "topic": "cognitive psychology",
+    "genre": "historical narrative",
+    "era": "the near future (speculative)",
+    "seedPrompt": "Write about a topic in cognitive psychology, in the style of a historical narrative, set in/reflecting the near future (speculative). Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-108",
+    "topic": "folklore studies",
+    "genre": "natural history observation",
+    "era": "ancient times",
+    "seedPrompt": "Write about a topic in folklore studies, in the style of a natural history observation, set in/reflecting ancient times. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-109",
+    "topic": "agriculture",
+    "genre": "personal memoir",
+    "era": "ancient times",
+    "seedPrompt": "Write about a topic in agriculture, in the style of a personal memoir, set in/reflecting ancient times. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-110",
+    "topic": "forestry conservation",
+    "genre": "philosophical essay",
+    "era": "the medieval period",
+    "seedPrompt": "Write about a topic in forestry conservation, in the style of a philosophical essay, set in/reflecting the medieval period. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-111",
+    "topic": "linguistics",
+    "genre": "technology explainer",
+    "era": "the present day",
+    "seedPrompt": "Write about a topic in linguistics, in the style of a technology explainer, set in/reflecting the present day. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-112",
+    "topic": "agriculture",
+    "genre": "literary criticism",
+    "era": "the near future (speculative)",
+    "seedPrompt": "Write about a topic in agriculture, in the style of a literary criticism, set in/reflecting the near future (speculative). Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-113",
+    "topic": "sports science",
+    "genre": "anthropological field notes",
+    "era": "the mid-20th century",
+    "seedPrompt": "Write about a topic in sports science, in the style of a anthropological field notes, set in/reflecting the mid-20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-114",
+    "topic": "linguistics",
+    "genre": "social criticism essay",
+    "era": "the medieval period",
+    "seedPrompt": "Write about a topic in linguistics, in the style of a social criticism essay, set in/reflecting the medieval period. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-115",
+    "topic": "linguistics",
+    "genre": "technology explainer",
+    "era": "the mid-20th century",
+    "seedPrompt": "Write about a topic in linguistics, in the style of a technology explainer, set in/reflecting the mid-20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-116",
+    "topic": "oceanography",
+    "genre": "anthropological field notes",
+    "era": "the early modern era",
+    "seedPrompt": "Write about a topic in oceanography, in the style of a anthropological field notes, set in/reflecting the early modern era. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-117",
+    "topic": "genetics",
+    "genre": "technology explainer",
+    "era": "the present day",
+    "seedPrompt": "Write about a topic in genetics, in the style of a technology explainer, set in/reflecting the present day. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-118",
+    "topic": "genetics",
+    "genre": "natural history observation",
+    "era": "the 19th century",
+    "seedPrompt": "Write about a topic in genetics, in the style of a natural history observation, set in/reflecting the 19th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-119",
+    "topic": "nutrition science",
+    "genre": "philosophical essay",
+    "era": "the mid-20th century",
+    "seedPrompt": "Write about a topic in nutrition science, in the style of a philosophical essay, set in/reflecting the mid-20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-120",
+    "topic": "cognitive psychology",
+    "genre": "historical narrative",
+    "era": "the 19th century",
+    "seedPrompt": "Write about a topic in cognitive psychology, in the style of a historical narrative, set in/reflecting the 19th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-121",
+    "topic": "forestry conservation",
+    "genre": "literary criticism",
+    "era": "the present day",
+    "seedPrompt": "Write about a topic in forestry conservation, in the style of a literary criticism, set in/reflecting the present day. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-122",
+    "topic": "film studies",
+    "genre": "natural history observation",
+    "era": "the medieval period",
+    "seedPrompt": "Write about a topic in film studies, in the style of a natural history observation, set in/reflecting the medieval period. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-123",
+    "topic": "fashion history",
+    "genre": "philosophical essay",
+    "era": "the mid-20th century",
+    "seedPrompt": "Write about a topic in fashion history, in the style of a philosophical essay, set in/reflecting the mid-20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-124",
+    "topic": "constitutional law",
+    "genre": "anthropological field notes",
+    "era": "the present day",
+    "seedPrompt": "Write about a topic in constitutional law, in the style of a anthropological field notes, set in/reflecting the present day. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-125",
+    "topic": "music theory",
+    "genre": "science explainer",
+    "era": "the 19th century",
+    "seedPrompt": "Write about a topic in music theory, in the style of a science explainer, set in/reflecting the 19th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-126",
+    "topic": "education theory",
+    "genre": "science explainer",
+    "era": "the 19th century",
+    "seedPrompt": "Write about a topic in education theory, in the style of a science explainer, set in/reflecting the 19th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-127",
+    "topic": "urban planning",
+    "genre": "personal memoir",
+    "era": "the early modern era",
+    "seedPrompt": "Write about a topic in urban planning, in the style of a personal memoir, set in/reflecting the early modern era. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-128",
+    "topic": "forestry conservation",
+    "genre": "literary criticism",
+    "era": "the early modern era",
+    "seedPrompt": "Write about a topic in forestry conservation, in the style of a literary criticism, set in/reflecting the early modern era. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-129",
+    "topic": "applied ethics",
+    "genre": "anthropological field notes",
+    "era": "the medieval period",
+    "seedPrompt": "Write about a topic in applied ethics, in the style of a anthropological field notes, set in/reflecting the medieval period. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-130",
+    "topic": "fashion history",
+    "genre": "science explainer",
+    "era": "the present day",
+    "seedPrompt": "Write about a topic in fashion history, in the style of a science explainer, set in/reflecting the present day. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-131",
+    "topic": "fashion history",
+    "genre": "policy analysis report",
+    "era": "the present day",
+    "seedPrompt": "Write about a topic in fashion history, in the style of a policy analysis report, set in/reflecting the present day. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-132",
+    "topic": "applied ethics",
+    "genre": "technology explainer",
+    "era": "the 19th century",
+    "seedPrompt": "Write about a topic in applied ethics, in the style of a technology explainer, set in/reflecting the 19th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-133",
+    "topic": "folklore studies",
+    "genre": "technology explainer",
+    "era": "ancient times",
+    "seedPrompt": "Write about a topic in folklore studies, in the style of a technology explainer, set in/reflecting ancient times. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-134",
+    "topic": "fashion history",
+    "genre": "personal memoir",
+    "era": "the near future (speculative)",
+    "seedPrompt": "Write about a topic in fashion history, in the style of a personal memoir, set in/reflecting the near future (speculative). Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-135",
+    "topic": "music theory",
+    "genre": "personal memoir",
+    "era": "the present day",
+    "seedPrompt": "Write about a topic in music theory, in the style of a personal memoir, set in/reflecting the present day. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-136",
+    "topic": "political science",
+    "genre": "literary criticism",
+    "era": "the mid-20th century",
+    "seedPrompt": "Write about a topic in political science, in the style of a literary criticism, set in/reflecting the mid-20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-137",
+    "topic": "astrophysics",
+    "genre": "technology explainer",
+    "era": "the near future (speculative)",
+    "seedPrompt": "Write about a topic in astrophysics, in the style of a technology explainer, set in/reflecting the near future (speculative). Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-138",
+    "topic": "sociology",
+    "genre": "social criticism essay",
+    "era": "ancient times",
+    "seedPrompt": "Write about a topic in sociology, in the style of a social criticism essay, set in/reflecting ancient times. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-139",
+    "topic": "music theory",
+    "genre": "historical narrative",
+    "era": "the mid-20th century",
+    "seedPrompt": "Write about a topic in music theory, in the style of a historical narrative, set in/reflecting the mid-20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-140",
+    "topic": "public health",
+    "genre": "natural history observation",
+    "era": "the near future (speculative)",
+    "seedPrompt": "Write about a topic in public health, in the style of a natural history observation, set in/reflecting the near future (speculative). Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-141",
+    "topic": "fashion history",
+    "genre": "literary criticism",
+    "era": "the 19th century",
+    "seedPrompt": "Write about a topic in fashion history, in the style of a literary criticism, set in/reflecting the 19th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-142",
+    "topic": "architecture",
+    "genre": "personal memoir",
+    "era": "the early 20th century",
+    "seedPrompt": "Write about a topic in architecture, in the style of a personal memoir, set in/reflecting the early 20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-143",
+    "topic": "anthropology",
+    "genre": "philosophical essay",
+    "era": "the present day",
+    "seedPrompt": "Write about a topic in anthropology, in the style of a philosophical essay, set in/reflecting the present day. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-144",
+    "topic": "urban planning",
+    "genre": "technology explainer",
+    "era": "the medieval period",
+    "seedPrompt": "Write about a topic in urban planning, in the style of a technology explainer, set in/reflecting the medieval period. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-145",
+    "topic": "music theory",
+    "genre": "historical narrative",
+    "era": "the present day",
+    "seedPrompt": "Write about a topic in music theory, in the style of a historical narrative, set in/reflecting the present day. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-146",
+    "topic": "forestry conservation",
+    "genre": "philosophical essay",
+    "era": "the early 20th century",
+    "seedPrompt": "Write about a topic in forestry conservation, in the style of a philosophical essay, set in/reflecting the early 20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-147",
+    "topic": "constitutional law",
+    "genre": "historical narrative",
+    "era": "the mid-20th century",
+    "seedPrompt": "Write about a topic in constitutional law, in the style of a historical narrative, set in/reflecting the mid-20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-148",
+    "topic": "robotics",
+    "genre": "personal memoir",
+    "era": "the early 20th century",
+    "seedPrompt": "Write about a topic in robotics, in the style of a personal memoir, set in/reflecting the early 20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-149",
+    "topic": "nutrition science",
+    "genre": "personal memoir",
+    "era": "the early modern era",
+    "seedPrompt": "Write about a topic in nutrition science, in the style of a personal memoir, set in/reflecting the early modern era. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-150",
+    "topic": "neuroscience",
+    "genre": "anthropological field notes",
+    "era": "ancient times",
+    "seedPrompt": "Write about a topic in neuroscience, in the style of a anthropological field notes, set in/reflecting ancient times. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-151",
+    "topic": "meteorology",
+    "genre": "anthropological field notes",
+    "era": "ancient times",
+    "seedPrompt": "Write about a topic in meteorology, in the style of a anthropological field notes, set in/reflecting ancient times. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-152",
+    "topic": "sports science",
+    "genre": "historical narrative",
+    "era": "the mid-20th century",
+    "seedPrompt": "Write about a topic in sports science, in the style of a historical narrative, set in/reflecting the mid-20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-153",
+    "topic": "microbiology",
+    "genre": "natural history observation",
+    "era": "the mid-20th century",
+    "seedPrompt": "Write about a topic in microbiology, in the style of a natural history observation, set in/reflecting the mid-20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-154",
+    "topic": "chemistry",
+    "genre": "natural history observation",
+    "era": "the medieval period",
+    "seedPrompt": "Write about a topic in chemistry, in the style of a natural history observation, set in/reflecting the medieval period. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-155",
+    "topic": "robotics",
+    "genre": "policy analysis report",
+    "era": "the mid-20th century",
+    "seedPrompt": "Write about a topic in robotics, in the style of a policy analysis report, set in/reflecting the mid-20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-156",
+    "topic": "public health",
+    "genre": "historical narrative",
+    "era": "the medieval period",
+    "seedPrompt": "Write about a topic in public health, in the style of a historical narrative, set in/reflecting the medieval period. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-157",
+    "topic": "robotics",
+    "genre": "literary criticism",
+    "era": "the early modern era",
+    "seedPrompt": "Write about a topic in robotics, in the style of a literary criticism, set in/reflecting the early modern era. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-158",
+    "topic": "culinary history",
+    "genre": "social criticism essay",
+    "era": "the 19th century",
+    "seedPrompt": "Write about a topic in culinary history, in the style of a social criticism essay, set in/reflecting the 19th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-159",
+    "topic": "energy policy",
+    "genre": "policy analysis report",
+    "era": "the medieval period",
+    "seedPrompt": "Write about a topic in energy policy, in the style of a policy analysis report, set in/reflecting the medieval period. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-160",
+    "topic": "economic policy",
+    "genre": "literary criticism",
+    "era": "the 19th century",
+    "seedPrompt": "Write about a topic in economic policy, in the style of a literary criticism, set in/reflecting the 19th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-161",
+    "topic": "archaeology",
+    "genre": "literary criticism",
+    "era": "the early modern era",
+    "seedPrompt": "Write about a topic in archaeology, in the style of a literary criticism, set in/reflecting the early modern era. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-162",
+    "topic": "media studies",
+    "genre": "literary criticism",
+    "era": "the early modern era",
+    "seedPrompt": "Write about a topic in media studies, in the style of a literary criticism, set in/reflecting the early modern era. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-163",
+    "topic": "microbiology",
+    "genre": "natural history observation",
+    "era": "the medieval period",
+    "seedPrompt": "Write about a topic in microbiology, in the style of a natural history observation, set in/reflecting the medieval period. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-164",
+    "topic": "geology",
+    "genre": "social criticism essay",
+    "era": "the near future (speculative)",
+    "seedPrompt": "Write about a topic in geology, in the style of a social criticism essay, set in/reflecting the near future (speculative). Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-165",
+    "topic": "astrophysics",
+    "genre": "historical narrative",
+    "era": "the mid-20th century",
+    "seedPrompt": "Write about a topic in astrophysics, in the style of a historical narrative, set in/reflecting the mid-20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-166",
+    "topic": "urban planning",
+    "genre": "personal memoir",
+    "era": "ancient times",
+    "seedPrompt": "Write about a topic in urban planning, in the style of a personal memoir, set in/reflecting ancient times. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-167",
+    "topic": "energy policy",
+    "genre": "personal memoir",
+    "era": "the present day",
+    "seedPrompt": "Write about a topic in energy policy, in the style of a personal memoir, set in/reflecting the present day. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-168",
+    "topic": "astrophysics",
+    "genre": "science explainer",
+    "era": "the 19th century",
+    "seedPrompt": "Write about a topic in astrophysics, in the style of a science explainer, set in/reflecting the 19th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-169",
+    "topic": "archaeology",
+    "genre": "technology explainer",
+    "era": "ancient times",
+    "seedPrompt": "Write about a topic in archaeology, in the style of a technology explainer, set in/reflecting ancient times. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-170",
+    "topic": "geology",
+    "genre": "natural history observation",
+    "era": "the mid-20th century",
+    "seedPrompt": "Write about a topic in geology, in the style of a natural history observation, set in/reflecting the mid-20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-171",
+    "topic": "archaeology",
+    "genre": "philosophical essay",
+    "era": "the medieval period",
+    "seedPrompt": "Write about a topic in archaeology, in the style of a philosophical essay, set in/reflecting the medieval period. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-172",
+    "topic": "music theory",
+    "genre": "anthropological field notes",
+    "era": "the present day",
+    "seedPrompt": "Write about a topic in music theory, in the style of a anthropological field notes, set in/reflecting the present day. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-173",
+    "topic": "folklore studies",
+    "genre": "literary criticism",
+    "era": "the early modern era",
+    "seedPrompt": "Write about a topic in folklore studies, in the style of a literary criticism, set in/reflecting the early modern era. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-174",
+    "topic": "folklore studies",
+    "genre": "philosophical essay",
+    "era": "the mid-20th century",
+    "seedPrompt": "Write about a topic in folklore studies, in the style of a philosophical essay, set in/reflecting the mid-20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-175",
+    "topic": "chemistry",
+    "genre": "policy analysis report",
+    "era": "the present day",
+    "seedPrompt": "Write about a topic in chemistry, in the style of a policy analysis report, set in/reflecting the present day. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-176",
+    "topic": "forestry conservation",
+    "genre": "philosophical essay",
+    "era": "the near future (speculative)",
+    "seedPrompt": "Write about a topic in forestry conservation, in the style of a philosophical essay, set in/reflecting the near future (speculative). Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-177",
+    "topic": "energy policy",
+    "genre": "social criticism essay",
+    "era": "the medieval period",
+    "seedPrompt": "Write about a topic in energy policy, in the style of a social criticism essay, set in/reflecting the medieval period. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-178",
+    "topic": "political science",
+    "genre": "philosophical essay",
+    "era": "the early 20th century",
+    "seedPrompt": "Write about a topic in political science, in the style of a philosophical essay, set in/reflecting the early 20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-179",
+    "topic": "marine ecology",
+    "genre": "historical narrative",
+    "era": "the mid-20th century",
+    "seedPrompt": "Write about a topic in marine ecology, in the style of a historical narrative, set in/reflecting the mid-20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-180",
+    "topic": "astrophysics",
+    "genre": "technology explainer",
+    "era": "ancient times",
+    "seedPrompt": "Write about a topic in astrophysics, in the style of a technology explainer, set in/reflecting ancient times. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-181",
+    "topic": "media studies",
+    "genre": "science explainer",
+    "era": "the medieval period",
+    "seedPrompt": "Write about a topic in media studies, in the style of a science explainer, set in/reflecting the medieval period. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-182",
+    "topic": "meteorology",
+    "genre": "anthropological field notes",
+    "era": "the near future (speculative)",
+    "seedPrompt": "Write about a topic in meteorology, in the style of a anthropological field notes, set in/reflecting the near future (speculative). Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-183",
+    "topic": "education theory",
+    "genre": "science explainer",
+    "era": "the present day",
+    "seedPrompt": "Write about a topic in education theory, in the style of a science explainer, set in/reflecting the present day. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-184",
+    "topic": "geology",
+    "genre": "policy analysis report",
+    "era": "the near future (speculative)",
+    "seedPrompt": "Write about a topic in geology, in the style of a policy analysis report, set in/reflecting the near future (speculative). Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-185",
+    "topic": "fashion history",
+    "genre": "literary criticism",
+    "era": "the near future (speculative)",
+    "seedPrompt": "Write about a topic in fashion history, in the style of a literary criticism, set in/reflecting the near future (speculative). Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-186",
+    "topic": "architecture",
+    "genre": "historical narrative",
+    "era": "the medieval period",
+    "seedPrompt": "Write about a topic in architecture, in the style of a historical narrative, set in/reflecting the medieval period. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-187",
+    "topic": "culinary history",
+    "genre": "personal memoir",
+    "era": "the 19th century",
+    "seedPrompt": "Write about a topic in culinary history, in the style of a personal memoir, set in/reflecting the 19th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-188",
+    "topic": "agriculture",
+    "genre": "technology explainer",
+    "era": "the present day",
+    "seedPrompt": "Write about a topic in agriculture, in the style of a technology explainer, set in/reflecting the present day. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-189",
+    "topic": "fashion history",
+    "genre": "natural history observation",
+    "era": "the present day",
+    "seedPrompt": "Write about a topic in fashion history, in the style of a natural history observation, set in/reflecting the present day. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-190",
+    "topic": "economic policy",
+    "genre": "historical narrative",
+    "era": "the near future (speculative)",
+    "seedPrompt": "Write about a topic in economic policy, in the style of a historical narrative, set in/reflecting the near future (speculative). Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-191",
+    "topic": "sociology",
+    "genre": "natural history observation",
+    "era": "the mid-20th century",
+    "seedPrompt": "Write about a topic in sociology, in the style of a natural history observation, set in/reflecting the mid-20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-192",
+    "topic": "oceanography",
+    "genre": "literary criticism",
+    "era": "the mid-20th century",
+    "seedPrompt": "Write about a topic in oceanography, in the style of a literary criticism, set in/reflecting the mid-20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-193",
+    "topic": "education theory",
+    "genre": "literary criticism",
+    "era": "ancient times",
+    "seedPrompt": "Write about a topic in education theory, in the style of a literary criticism, set in/reflecting ancient times. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-194",
+    "topic": "transportation engineering",
+    "genre": "policy analysis report",
+    "era": "the present day",
+    "seedPrompt": "Write about a topic in transportation engineering, in the style of a policy analysis report, set in/reflecting the present day. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-195",
+    "topic": "computer science",
+    "genre": "policy analysis report",
+    "era": "ancient times",
+    "seedPrompt": "Write about a topic in computer science, in the style of a policy analysis report, set in/reflecting ancient times. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-196",
+    "topic": "music theory",
+    "genre": "technology explainer",
+    "era": "the near future (speculative)",
+    "seedPrompt": "Write about a topic in music theory, in the style of a technology explainer, set in/reflecting the near future (speculative). Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-197",
+    "topic": "geology",
+    "genre": "literary criticism",
+    "era": "the early modern era",
+    "seedPrompt": "Write about a topic in geology, in the style of a literary criticism, set in/reflecting the early modern era. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-198",
+    "topic": "agriculture",
+    "genre": "technology explainer",
+    "era": "the near future (speculative)",
+    "seedPrompt": "Write about a topic in agriculture, in the style of a technology explainer, set in/reflecting the near future (speculative). Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-199",
+    "topic": "cognitive psychology",
+    "genre": "technology explainer",
+    "era": "the near future (speculative)",
+    "seedPrompt": "Write about a topic in cognitive psychology, in the style of a technology explainer, set in/reflecting the near future (speculative). Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  },
+  {
+    "id": "RW-200",
+    "topic": "film studies",
+    "genre": "technology explainer",
+    "era": "the early 20th century",
+    "seedPrompt": "Write about a topic in film studies, in the style of a technology explainer, set in/reflecting the early 20th century. Invent a fictional author and fictional publication — do not reference any real person, book, or study."
+  }
+]
