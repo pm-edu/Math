@@ -20,15 +20,18 @@ export default function Header() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   // "등록 과목 기준" 네비게이션 분리(2026-08-28) — 학생이 실제로 등록된 과목에만 그 메뉴를
-  // 보여준다. 지금은 TOEFL만 해당(SAT는 아직 학생용 화면 자체가 없음, [[toefl-subsystem-plan]] [A]).
+  // 보여준다. SAT도 이제 학생용 화면(라우팅 뼈대)이 생겨서 TOEFL과 같은 방식으로 켠다
+  // (2026-09-04, [[toefl-subsystem-plan]] [A] 참고).
   const [programs, setPrograms] = useState<StudentProgram[]>([]);
-  // TOEFL 랜딩의 "PM EDU" 로고를 누르면 여기(메인 사이트)로 오는데, 등록 과목 기준으로만
-  // TOEFL 링크를 보여주면 미등록 게스트는 돌아갈 방법이 없어진다(2026-09-02 실사용 중 발견).
-  // referrer로 방금 TOEFL에서 왔는지만 추가로 확인해서, 그 경우엔 등록 여부와 무관하게
+  // TOEFL/SAT 랜딩의 "PM EDU" 로고를 누르면 여기(메인 사이트)로 오는데, 등록 과목 기준으로만
+  // 링크를 보여주면 미등록 게스트는 돌아갈 방법이 없어진다(2026-09-02 실사용 중 발견, TOEFL).
+  // referrer로 방금 그 사이트에서 왔는지만 추가로 확인해서, 그 경우엔 등록 여부와 무관하게
   // 링크를 보여준다.
   const [cameFromToefl, setCameFromToefl] = useState(false);
+  const [cameFromSat, setCameFromSat] = useState(false);
   useEffect(() => {
     setCameFromToefl(document.referrer.includes("/toefl"));
+    setCameFromSat(document.referrer.includes("/sat"));
   }, []);
 
   useEffect(() => {
@@ -125,6 +128,14 @@ export default function Header() {
               TOEFL
             </Link>
           )}
+          {(programs.includes("sat") || cameFromSat) && (
+            <Link
+              href="/sat"
+              className="hidden text-sm text-[var(--secondary)] transition-colors hover:text-[var(--foreground)] md:inline"
+            >
+              SAT
+            </Link>
+          )}
           {isAdmin && (
             <Link
               href="/admin"
@@ -190,6 +201,15 @@ export default function Header() {
                 className="text-sm text-[var(--secondary)] hover:text-[var(--foreground)]"
               >
                 TOEFL
+              </Link>
+            )}
+            {(programs.includes("sat") || cameFromSat) && (
+              <Link
+                href="/sat"
+                onClick={() => setMobileOpen(false)}
+                className="text-sm text-[var(--secondary)] hover:text-[var(--foreground)]"
+              >
+                SAT
               </Link>
             )}
             {loggedIn !== null && (

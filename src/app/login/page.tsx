@@ -6,17 +6,20 @@ import { useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ToeflHeader from "@/components/toefl/ToeflHeader";
+import SatHeader from "@/components/sat/SatHeader";
 import PasswordField from "@/components/PasswordField";
 import { createClient } from "@/lib/supabase/client";
 import { authErrorMessage } from "@/lib/auth-errors";
 import { useLang } from "@/lib/i18n";
 
-// TOEFL을 "완전히 독립된 사이트처럼" 보이게 하기 위해(signup/page.tsx 상단 주석 참고),
-// ?toefl=1로 넘어온 방문자에게는 수학 사이트 공용 Header/Footer 대신 ToeflHeader만 보여주고,
-// 로그인 성공 후에도 수학 홈("/") 대신 /toefl로 돌려보낸다.
+// TOEFL/SAT을 "완전히 독립된 사이트처럼" 보이게 하기 위해(signup/page.tsx 상단 주석 참고),
+// ?toefl=1 / ?sat=1로 넘어온 방문자에게는 수학 사이트 공용 Header/Footer 대신 각자의 전용
+// 헤더만 보여주고, 로그인 성공 후에도 수학 홈("/") 대신 각자의 랜딩으로 돌려보낸다.
 export default function LoginPage() {
   const { t } = useLang();
-  const isToefl = useSearchParams().get("toefl") === "1";
+  const params = useSearchParams();
+  const isToefl = params.get("toefl") === "1";
+  const isSat = params.get("sat") === "1";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -35,12 +38,14 @@ export default function LoginPage() {
       setError(authErrorMessage(error, "이메일 또는 비밀번호가 올바르지 않습니다."));
       return;
     }
-    window.location.href = isToefl ? "/toefl" : "/";
+    window.location.href = isToefl ? "/toefl" : isSat ? "/sat" : "/";
   }
 
+  const isolated = isToefl || isSat;
+
   return (
-    <div data-theme={isToefl ? "en" : undefined} className={isToefl ? "min-h-screen bg-[var(--background)]" : undefined}>
-      {isToefl ? <ToeflHeader /> : <Header />}
+    <div data-theme={isolated ? "en" : undefined} className={isolated ? "min-h-screen bg-[var(--background)]" : undefined}>
+      {isToefl ? <ToeflHeader /> : isSat ? <SatHeader /> : <Header />}
       <main className="mx-auto max-w-md px-6 py-16">
         <h1 className="text-2xl font-medium text-[var(--foreground)]">{t("login")}</h1>
 
@@ -85,12 +90,15 @@ export default function LoginPage() {
 
         <p className="mt-6 text-center text-sm text-[var(--secondary)]">
           {t("noAccount")}{" "}
-          <Link href={isToefl ? "/signup?toefl=1" : "/signup"} className="text-[var(--foreground)] underline">
+          <Link
+            href={isToefl ? "/signup?toefl=1" : isSat ? "/signup?sat=1" : "/signup"}
+            className="text-[var(--foreground)] underline"
+          >
             {t("signup")}
           </Link>
         </p>
       </main>
-      {!isToefl && <Footer />}
+      {!isolated && <Footer />}
     </div>
   );
 }

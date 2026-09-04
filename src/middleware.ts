@@ -22,6 +22,20 @@ const TOEFL_ALLOWED_PREFIXES = [
   "/reset-password",
 ];
 
+// SAT(디지털 SAT, sat.pmedu4u.com)도 TOEFL과 똑같은 방식으로 독립시킨다. 관리 화면 접두사는
+// "/admin/sat"이 아니라 "/admin/digital-sat"이다 — /admin/sat은 기존 범용 문제은행에 SAT
+// 지문·문항을 넣는 레거시 도구가 이미 그 이름을 쓰고 있어서(사용자 확인, 2026-09-04) 이름을
+// 겹치지 않게 새로 골랐다.
+const SAT_ALLOWED_PREFIXES = [
+  "/sat",
+  "/api/sat",
+  "/admin/digital-sat",
+  "/api/admin/digital-sat",
+  "/login",
+  "/signup",
+  "/reset-password",
+];
+
 export function middleware(request: NextRequest) {
   const hostname = request.headers.get("host") || "";
   const { pathname } = request.nextUrl;
@@ -35,6 +49,10 @@ export function middleware(request: NextRequest) {
 
   if (hostname.startsWith("toefl.") && !TOEFL_ALLOWED_PREFIXES.some((p) => pathname.startsWith(p))) {
     return NextResponse.redirect(new URL("/toefl", request.url));
+  }
+
+  if (hostname.startsWith("sat.") && !SAT_ALLOWED_PREFIXES.some((p) => pathname.startsWith(p))) {
+    return NextResponse.redirect(new URL("/sat", request.url));
   }
 
   const response = NextResponse.next();
