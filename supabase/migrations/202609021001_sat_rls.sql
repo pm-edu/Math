@@ -14,18 +14,23 @@ alter table sat_attempts enable row level security;
 alter table sat_responses enable row level security;
 
 -- ============ 폼: 학생은 공개된(is_published) 것만, 직원은 전부 ============
+drop policy if exists "read published or staff sat forms" on sat_forms;
 create policy "read published or staff sat forms" on sat_forms
   for select to authenticated using (is_published = true or is_staff());
+drop policy if exists "staff manage sat forms" on sat_forms;
 create policy "staff manage sat forms" on sat_forms
   for all to authenticated using (is_staff()) with check (is_staff());
 
 -- ============ 모듈: 직원만 (학생은 아직 폼/모듈을 직접 조회할 경로가 없음 — 조립은 이후 단계) ============
+drop policy if exists "staff manage sat form modules" on sat_form_modules;
 create policy "staff manage sat form modules" on sat_form_modules
   for all to authenticated using (is_staff()) with check (is_staff());
 
 -- ============ 지문/문항(정답 포함): 직원만 직접 접근. 학생은 public 뷰로만 읽는다 ============
+drop policy if exists "staff manage sat stimuli" on sat_stimuli;
 create policy "staff manage sat stimuli" on sat_stimuli
   for all to authenticated using (is_staff()) with check (is_staff());
+drop policy if exists "staff manage sat questions" on sat_questions;
 create policy "staff manage sat questions" on sat_questions
   for all to authenticated using (is_staff()) with check (is_staff());
 
@@ -34,12 +39,14 @@ grant select on sat_stimuli_public to authenticated;
 grant select on sat_questions_public to authenticated;
 
 -- ============ 응시 기록: 본인 것만, 직원은 전체 조회(모니터링·검수용) ============
+drop policy if exists "own sat attempts" on sat_attempts;
 create policy "own sat attempts" on sat_attempts
   for all to authenticated using (user_id = auth.uid() or is_staff())
   with check (user_id = auth.uid());
 
 -- sat_responses는 user_id 컬럼이 없다(PK가 attempt_id+question_id) — 소유권은 sat_attempts를 통해 확인.
 -- 다른 학생의 응답은 attempt_id가 다르므로 이 EXISTS 자체가 걸러낸다.
+drop policy if exists "own sat responses" on sat_responses;
 create policy "own sat responses" on sat_responses
   for all to authenticated using (
     exists (
