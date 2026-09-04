@@ -574,6 +574,16 @@ const DICT = {
   toefl_rail_firstModuleDetermines: { ko: "첫 모듈이 점수 상한을 결정합니다", en: "The first module sets your score ceiling" },
   toefl_rail_tapTargetBand: { ko: "목표 밴드를 눌러보세요 ↓", en: "Tap your target band ↓" },
   toefl_rail_targetBandSelection: { ko: "목표 밴드 선택", en: "Target band selection" },
+
+  // SAT(디지털 SAT) 랜딩·연습 화면 — TOEFL과 같은 상표권 disclaimer 패턴(2026-09-04).
+  sat_trademark: {
+    ko: "SAT®는 College Board의 등록상표이며, 본 서비스는 College Board의 승인이나 제휴 관계가 없습니다.",
+    en: "SAT® is a registered trademark of College Board. This service is not endorsed or affiliated with College Board.",
+  },
+  sat_landing_footerCopyright: {
+    ko: "© PM EDU · sat.pmedu4u.com — SAT®는 College Board의 등록상표이며, 본 사이트의 문항은 자체 제작 콘텐츠입니다.",
+    en: "© PM EDU · sat.pmedu4u.com — SAT® is a registered trademark of College Board. All questions on this site are original content.",
+  },
 } as const;
 
 // 강좌 분류는 값이 4개로 정해져 있어서 화면에서 번역할 수 있다.

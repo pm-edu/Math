@@ -282,12 +282,14 @@ async function runRw(args: Args, db: SupabaseClient, batchId: string) {
 
 // ───────── Math ─────────
 
+function rawSprToRationalJson(raw: string): { n: string; d: string } {
+  const parsed = parseSpr(raw);
+  if (!parsed.ok) throw new Error(`Gate A5를 통과했는데 파싱 실패 — 버그: ${raw}`);
+  return { n: parsed.value.n.toString(), d: parsed.value.d.toString() };
+}
+
 function sprAcceptedToJson(raw: string[]): { n: string; d: string }[] {
-  return raw.map((s) => {
-    const parsed = parseSpr(s);
-    if (!parsed.ok) throw new Error(`Gate A5를 통과했는데 파싱 실패 — 버그: ${s}`);
-    return { n: parsed.value.n.toString(), d: parsed.value.d.toString() };
-  });
+  return raw.map(rawSprToRationalJson);
 }
 
 async function runMath(args: Args, db: SupabaseClient, batchId: string) {
@@ -364,7 +366,7 @@ async function runMath(args: Args, db: SupabaseClient, batchId: string) {
         type: "spr",
         accepted: sprAcceptedToJson(item.sprAccepted),
         tolerance: item.sprTolerance
-          ? { min: parseSpr(item.sprTolerance.min), max: parseSpr(item.sprTolerance.max) }
+          ? { min: rawSprToRationalJson(item.sprTolerance.min), max: rawSprToRationalJson(item.sprTolerance.max) }
           : null,
       };
     }
