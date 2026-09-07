@@ -12,7 +12,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { MathText } from "@/components/ProblemBody";
+import { QuestionCard } from "@/components/math/QuestionCard";
 import { useLang } from "@/lib/i18n";
 
 interface SessionItem {
@@ -24,8 +24,6 @@ interface SessionItem {
   choices: string[];
   difficulty: string;
 }
-
-const LETTERS = ["A", "B", "C", "D"];
 
 export default function StudySessionPage() {
   const router = useRouter();
@@ -206,65 +204,17 @@ export default function StudySessionPage() {
           <p className="text-sm text-[var(--secondary)]">{t("study_noItems")}</p>
         ) : (
           <section className="rounded-2xl border border-[var(--border-c)] bg-white p-8">
-            <MathText text={current.contentText} className="text-base leading-relaxed text-[var(--foreground)]" />
-            {current.imageUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={current.imageUrl} alt="" className="mt-4 max-w-full rounded-lg" />
-            )}
-
-            <div className="mt-6">
-              {current.answerFormat === "mcq" ? (
-                <div className="flex flex-col gap-3">
-                  {current.choices.map((choice, i) => {
-                    const isSelected = mcqChoice === i;
-                    const stateClass = !feedback
-                      ? isSelected
-                        ? "border-[var(--pink)] bg-[var(--pink-light)]/40"
-                        : "border-[var(--border-c)] hover:bg-[var(--mint)]/10"
-                      : isSelected
-                        ? feedback.correct
-                          ? "border-[var(--mint-dark)] bg-[var(--mint)]/50"
-                          : "border-red-400 bg-red-50"
-                        : "border-[var(--border-c)] opacity-60";
-                    return (
-                      <button
-                        key={i}
-                        type="button"
-                        disabled={!!feedback}
-                        onClick={() => setMcqChoice(i)}
-                        className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm transition-colors ${stateClass}`}
-                      >
-                        <span className="font-medium text-[var(--secondary)]">{LETTERS[i]}</span>
-                        <MathText text={choice} className="text-[var(--foreground)]" />
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : (
-                <input
-                  type="text"
-                  inputMode="text"
-                  value={submitted}
-                  disabled={!!feedback}
-                  onChange={(e) => setSubmitted(e.target.value)}
-                  placeholder="예: 7/2 또는 0.5"
-                  className="w-40 rounded-lg border border-[var(--border-c)] px-4 py-2.5 text-sm outline-none focus:border-[var(--pink)]"
-                />
-              )}
-            </div>
-
-            {feedback && (
-              <div
-                className={`mt-6 rounded-xl p-4 text-sm ${
-                  feedback.correct ? "bg-[var(--mint)]/40 text-[var(--mint-dark)]" : "bg-red-50 text-red-700"
-                }`}
-              >
-                <p className="font-medium">{feedback.correct ? t("study_correct") : t("study_incorrect")}</p>
-                {!feedback.correct && (
-                  <MathText text={feedback.solution} className="mt-2 text-[var(--foreground)]" />
-                )}
-              </div>
-            )}
+            <QuestionCard
+              contentText={current.contentText}
+              imageUrl={current.imageUrl}
+              answerFormat={current.answerFormat}
+              choices={current.choices}
+              mcqChoice={mcqChoice}
+              onMcqChoice={setMcqChoice}
+              numericValue={submitted}
+              onNumericChange={setSubmitted}
+              feedback={feedback}
+            />
 
             <div className="mt-6">
               {!feedback ? (

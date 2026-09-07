@@ -41,6 +41,14 @@ export default function StudyPage() {
         return;
       }
 
+      // 아직 커리큘럼 배치(진단/건너뛰기)를 안 거친 신규 학생은 대시보드보다 온보딩이 먼저다
+      // (PG4). math_placements에 본인 행이 없으면 온보딩으로 보낸다.
+      const { data: placement } = await supabase.from("math_placements").select("user_id").maybeSingle();
+      if (!placement) {
+        router.replace("/study/onboarding");
+        return;
+      }
+
       const weekAgo = new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10);
       const [actionResult, streakResult, weeklyResult] = await Promise.all([
         supabase.from("v_math_next_action").select("*").maybeSingle(),

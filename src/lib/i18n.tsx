@@ -620,6 +620,18 @@ const DICT = {
   study_resultMastered: { ko: "이 단원을 숙달했어요!", en: "You've mastered this unit!" },
   study_resultContinue: { ko: "계속하기", en: "Continue" },
   study_resultBackToDashboard: { ko: "대시보드로", en: "Back to dashboard" },
+
+  // 온보딩 · 진단(/study/onboarding, PG4)
+  onboarding_title: { ko: "학습을 시작해 볼까요?", en: "Ready to start learning?" },
+  onboarding_curriculumLabel: { ko: "커리큘럼", en: "Curriculum" },
+  onboarding_diagnosticIntro: {
+    ko: "간단한 진단(12문항)으로 지금 실력에 맞는 단원부터 시작할 수 있어요.",
+    en: "A short diagnostic (12 items) helps us start you at the right unit.",
+  },
+  onboarding_startDiagnostic: { ko: "진단 시작하기", en: "Start diagnostic" },
+  onboarding_skip: { ko: "건너뛰고 처음부터 시작", en: "Skip and start from the beginning" },
+  onboarding_diagnosticTitle: { ko: "실력 진단", en: "Diagnostic" },
+  onboarding_finishing: { ko: "결과를 정리하는 중...", en: "Preparing your results..." },
 } as const;
 
 // v_math_next_action.reason_ko는 DB 뷰에 한국어 리터럴로 고정돼 있다(컬럼명부터 _ko, 지시서
