@@ -5,9 +5,12 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { gradeAnswer, type AnswerFormat } from "@/lib/math/grading";
 import { decideNextStep, judgeMastery, type NextStepAction } from "@/lib/math/progression";
 import { requireEntitlement } from "@/lib/access/entitlement";
+import { scheduleNext as fsrsScheduleNext } from "@/lib/math/fsrs";
 
 const SESSION_ITEM_COUNT = 8; // D-PG-3
+const REVIEW_ITEM_COUNT = 4; // PG5 5-1: "복습 세션은 4문항"
 const MASTERY_TARGET_ACCURACY = 0.85; // D-PG-4
+const REVIEW_PASS_ACCURACY = 0.7; // PG5 5-1: "복습 첫시도 정답률 < 0.70 → 되돌림"
 const RECENT_EXCLUSION_DAYS = 30;
 const FIRST_TRY_WINDOW = 20; // judgeMastery에 넘길 "최근 시도" 창 크기(과거 전체를 다 끌고 오지 않음)
 // 지시서 원문의 [1,1,2,2,3,3,4,?]을 그대로 쓴다. 현재 데이터엔 numeric_difficulty=3인 문항이
@@ -123,7 +126,8 @@ export async function createSession(
     .maybeSingle();
   const lastAccuracy = lastCompleted && lastCompleted.item_count > 0 ? lastCompleted.correct_count / lastCompleted.item_count : null;
 
-  const plan = buildDifficultyPlan(lastAccuracy).slice(0, SESSION_ITEM_COUNT);
+  const targetCount = kind === "review" ? REVIEW_ITEM_COUNT : SESSION_ITEM_COUNT;
+  const plan = buildDifficultyPlan(lastAccuracy).slice(0, targetCount);
   const selected = pickSessionItems((pool ?? []) as CandidateProblem[], plan);
 
   const { data: session, error: sessionErr } = await db
@@ -242,6 +246,70 @@ export interface CompleteSessionResult {
   };
 }
 
+// PG5 5-1: 복습 세션 완료 — FSRS로 다음 간격을 계산하고, 정답률 0.70 미만이면 mastered를
+// in_progress로 되돌리며 fsrs_lapses를 늘린다("복습 실패 = 잊어버렸다"는 신호).
+async function completeReviewSession(
+  db: SupabaseClient,
+  userId: string,
+  session: { id: number; unit_id: string; item_count: number; correct_count: number }
+): Promise<CompleteSessionResult> {
+  const accuracy = session.item_count > 0 ? session.correct_count / session.item_count : 0;
+  const passed = accuracy >= REVIEW_PASS_ACCURACY;
+
+  const { data: existingState } = await db
+    .from("math_unit_states")
+    .select("fsrs_stability, fsrs_difficulty, fsrs_reps, fsrs_lapses, consecutive_failed_sessions")
+    .eq("user_id", userId)
+    .eq("unit_id", session.unit_id)
+    .maybeSingle();
+
+  // 세션 레벨 정답률 하나로 등급을 매긴다(문항별이 아니라 unit당 FSRS 상태 하나이므로) —
+  // 0.70 미만은 그대로 again(1), 그 이상은 정답률 높이에 따라 good/easy로 나눈다.
+  const grade = !passed ? 1 : accuracy >= 0.9 ? 4 : 3;
+  const scheduled = fsrsScheduleNext(
+    {
+      stability: existingState?.fsrs_stability ?? null,
+      difficulty: existingState?.fsrs_difficulty ?? null,
+      reps: existingState?.fsrs_reps ?? 0,
+      lapses: existingState?.fsrs_lapses ?? 0,
+    },
+    grade
+  );
+
+  const newStatus = passed ? "mastered" : "in_progress";
+  const newReps = (existingState?.fsrs_reps ?? 0) + 1;
+  const newLapses = (existingState?.fsrs_lapses ?? 0) + (passed ? 0 : 1);
+  const nextReviewAt = new Date(Date.now() + scheduled.intervalDays * 86_400_000).toISOString();
+
+  const { error: rpcErr } = await db.rpc("math_apply_review_completion", {
+    p_session_id: session.id,
+    p_user_id: userId,
+    p_unit_id: session.unit_id,
+    p_status: newStatus,
+    p_fsrs_stability: scheduled.stability,
+    p_fsrs_difficulty: scheduled.difficulty,
+    p_fsrs_reps: newReps,
+    p_fsrs_lapses: newLapses,
+    p_next_review_at: nextReviewAt,
+    p_activity_date: todayIsoDate(),
+    p_item_count: session.item_count,
+  });
+  if (rpcErr) throw new Error(`복습 완료 반영 실패: ${rpcErr.message}`);
+
+  return {
+    accuracy,
+    nextStep: passed
+      ? { action: "master", difficultyDelta: 0 }
+      : { action: "retry_easier", difficultyDelta: -1 },
+    unitState: {
+      status: newStatus,
+      masteryScore: null,
+      firstTryAccuracy: accuracy,
+      consecutiveFailedSessions: existingState?.consecutive_failed_sessions ?? 0,
+    },
+  };
+}
+
 export async function completeSession(userId: string, sessionId: number): Promise<CompleteSessionResult> {
   const db = serviceClient();
 
@@ -253,6 +321,12 @@ export async function completeSession(userId: string, sessionId: number): Promis
     .eq("status", "in_progress")
     .maybeSingle();
   if (!session) throw new Error("진행 중인 세션이 아닙니다.");
+
+  // 복습(kind='review')은 judgeMastery/decideNextStep(연습·진단용 판정)이 아니라 PG5의
+  // FSRS 규칙으로 완료 처리한다 — 판정 기준 자체가 다르다(정답률 0.70 기준 되돌림).
+  if (session.kind === "review") {
+    return completeReviewSession(db, userId, session);
+  }
 
   const thisSessionAccuracy = session.item_count > 0 ? session.correct_count / session.item_count : 0;
 

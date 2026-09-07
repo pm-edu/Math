@@ -54,3 +54,13 @@ export async function requireMathStaff(req: Request): Promise<MathAuthResult> {
   }
   return auth;
 }
+
+// Vercel Cron 라우트(PG5 5-2)용. Vercel이 요청에 실어 보내는 값과 서버 환경변수를 직접
+// 비교한다 — 로그인 사용자 개념이 없는 배치 작업이라 requireMathUser와는 별개다.
+export function requireCronSecret(req: Request): { ok: true } | { ok: false; status: number; message: string } {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) return { ok: false, status: 500, message: "CRON_SECRET이 설정되지 않았습니다." };
+  const auth = req.headers.get("authorization") ?? "";
+  if (auth !== `Bearer ${secret}`) return { ok: false, status: 401, message: "인증되지 않았습니다." };
+  return { ok: true };
+}

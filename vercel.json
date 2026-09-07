@@ -1,0 +1,6 @@
+{
+  "crons": [
+    { "path": "/api/cron/math-review-reminder", "schedule": "0 0 * * *" },
+    { "path": "/api/cron/math-daily-cleanup", "schedule": "0 1 * * *" }
+  ]
+}
