@@ -324,12 +324,16 @@ async function main() {
 
     const answer = item.format === "mcq" ? LETTERS[item.correctIndex] : item.answerRaw;
     const choices = item.format === "mcq" ? item.choices : [];
+    // 하=1/중=2/상=4 — PG1 진행 구조의 numeric_difficulty 매핑과 동일
+    // (supabase/migrations/202609071400_math_numeric_difficulty.sql 참고).
+    const numericDifficulty = { 하: 1, 중: 2, 상: 4 }[item.difficulty];
     return {
       subject: "math",
       curriculum_group: unit.curriculum_group,
       curriculum_detail: unit.curriculum_detail,
       unit: unit.unit_name,
       difficulty: item.difficulty,
+      numeric_difficulty: numericDifficulty,
       problem_type: "text",
       image_url: "", // NOT NULL 컬럼 — 기존 텍스트형 문항 관례 그대로(빈 문자열)
       content_text: item.contentText,
