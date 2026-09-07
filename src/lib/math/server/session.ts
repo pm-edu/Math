@@ -186,6 +186,20 @@ export async function submitAnswer(
     .single();
   if (!problem) throw new Error("문항 정보를 찾을 수 없습니다.");
 
+  // 멱등 처리 — 같은 세션의 같은 문항에 이미 채점 기록이 있으면(중복 클릭·네트워크 재시도로
+  // 같은 요청이 두 번 온 경우) 새로 채점하지 않고 기존 결과를 그대로 돌려준다. 이게 없으면
+  // question_attempts에 같은 위치가 두 번 남고 correct_count도 중복으로 올라간다
+  // (2026-09-07 브라우저 실사용 검증 중 실제로 발생시켜 발견).
+  const { data: existingAttempt } = await db
+    .from("question_attempts")
+    .select("is_correct")
+    .eq("session_id", sessionId)
+    .eq("problem_id", problem.id)
+    .maybeSingle();
+  if (existingAttempt) {
+    return { correct: existingAttempt.is_correct, solution: problem.solution_text };
+  }
+
   const result = gradeAnswer(problem.answer_format as AnswerFormat, problem.answer_spec, submitted);
 
   const { count: priorAttempts } = await db
@@ -310,6 +324,58 @@ export async function completeSession(userId: string, sessionId: number): Promis
       firstTryAccuracy: mastery.accuracy,
       consecutiveFailedSessions: newConsecutiveFailed,
     },
+  };
+}
+
+export interface ActiveSession {
+  sessionId: number;
+  items: SessionItemView[];
+  answeredCount: number;
+}
+
+// PG3 새로고침 복구용 — math_sessions.status='in_progress'인 세션이 있으면 문항 목록과
+// 이미 답한 개수를 돌려준다(로컬스토리지에 의존하지 않고 서버 상태만 본다).
+export async function getActiveSession(userId: string, unitId: string): Promise<ActiveSession | null> {
+  const db = serviceClient();
+
+  const { data: session } = await db
+    .from("math_sessions")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("unit_id", unitId)
+    .eq("status", "in_progress")
+    .maybeSingle();
+  if (!session) return null;
+
+  const { data: itemRows } = await db
+    .from("math_session_items")
+    .select("position, problem_id, problems(content_text, image_url, answer_format, choices, difficulty)")
+    .eq("session_id", session.id)
+    .order("position");
+
+  const { count: answeredCount } = await db
+    .from("question_attempts")
+    .select("id", { count: "exact", head: true })
+    .eq("session_id", session.id);
+
+  type JoinedRow = {
+    position: number;
+    problem_id: string;
+    problems: { content_text: string; image_url: string; answer_format: AnswerFormat; choices: string[] | null; difficulty: string } | null;
+  };
+
+  return {
+    sessionId: session.id,
+    answeredCount: answeredCount ?? 0,
+    items: ((itemRows ?? []) as unknown as JoinedRow[]).map((r) => ({
+      position: r.position,
+      problemId: r.problem_id,
+      contentText: r.problems?.content_text ?? "",
+      imageUrl: r.problems?.image_url ?? "",
+      answerFormat: r.problems?.answer_format ?? "numeric",
+      choices: r.problems?.choices ?? [],
+      difficulty: r.problems?.difficulty ?? "",
+    })),
   };
 }
 

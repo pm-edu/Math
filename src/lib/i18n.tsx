@@ -604,6 +604,22 @@ const DICT = {
   study_weeklyItems: { ko: "문항", en: "items" },
   study_pathLink: { ko: "커리큘럼 맵 보기", en: "View curriculum map" },
   study_reviewLink: { ko: "복습 큐 보기", en: "View review queue" },
+
+  // 세션 실행·결과 화면(/study/[unitId], PG3)
+  study_exit: { ko: "나가기", en: "Exit" },
+  study_noItems: { ko: "풀 수 있는 문항이 없습니다.", en: "No items available." },
+  study_correct: { ko: "정답입니다!", en: "Correct!" },
+  study_incorrect: { ko: "틀렸습니다", en: "Incorrect" },
+  study_submit: { ko: "제출", en: "Submit" },
+  study_next: { ko: "다음", en: "Next" },
+  study_finish: { ko: "완료", en: "Finish" },
+  study_resultTitle: { ko: "세션 결과", en: "Session results" },
+  study_resultAccuracy: { ko: "정답률", en: "Accuracy" },
+  study_resultTime: { ko: "소요 시간", en: "Time spent" },
+  study_resultMastery: { ko: "숙달도", en: "Mastery" },
+  study_resultMastered: { ko: "이 단원을 숙달했어요!", en: "You've mastered this unit!" },
+  study_resultContinue: { ko: "계속하기", en: "Continue" },
+  study_resultBackToDashboard: { ko: "대시보드로", en: "Back to dashboard" },
 } as const;
 
 // v_math_next_action.reason_ko는 DB 뷰에 한국어 리터럴로 고정돼 있다(컬럼명부터 _ko, 지시서
