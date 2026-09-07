@@ -632,6 +632,17 @@ const DICT = {
   onboarding_skip: { ko: "건너뛰고 처음부터 시작", en: "Skip and start from the beginning" },
   onboarding_diagnosticTitle: { ko: "실력 진단", en: "Diagnostic" },
   onboarding_finishing: { ko: "결과를 정리하는 중...", en: "Preparing your results..." },
+
+  // 커리큘럼 맵 · 복습 큐(/study/path, /study/review, PG6)
+  path_title: { ko: "커리큘럼 맵", en: "Curriculum map" },
+  path_legendLocked: { ko: "잠김", en: "Locked" },
+  path_legendAvailable: { ko: "시작 가능", en: "Available" },
+  path_legendInProgress: { ko: "진행 중", en: "In progress" },
+  path_legendMastered: { ko: "숙달", en: "Mastered" },
+  review_title: { ko: "복습 큐", en: "Review queue" },
+  review_empty: { ko: "지금은 복습할 단원이 없어요.", en: "No units due for review right now." },
+  review_startButton: { ko: "복습하기", en: "Review" },
+  review_dueSince: { ko: "복습 예정", en: "Due" },
 } as const;
 
 // v_math_next_action.reason_ko는 DB 뷰에 한국어 리터럴로 고정돼 있다(컬럼명부터 _ko, 지시서
