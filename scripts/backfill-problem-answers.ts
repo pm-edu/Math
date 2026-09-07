@@ -3,8 +3,12 @@
  *
  * 1) curriculum_group+curriculum_detail+unit으로 curriculum_units를 정확 일치 조회해
  *    problems.unit_id를 채운다. 유사도 매칭·추측 금지 — 실패 건은 CSV로만 남긴다.
- * 2) answer 형태로 answer_format을 분류한다: 정수/소수/분수 -> numeric(+is_auto_gradable=true),
- *    그 외 -> free. (지시서 A-3 범위 그대로 — mcq 자동판별은 여기서 안 함, 아래 요약에 별도 보고)
+ * 2) answer_format을 분류한다: choices 배열이 있으면 mcq(+is_auto_gradable=true,
+ *    answer_spec={choices, correct_index}), 정수/소수/분수면 numeric(+is_auto_gradable=true,
+ *    answer_spec={value, tolerance:0, accept:[]}), 그 외 free.
+ *    (2026-09-07 게이트3 재확인 중 발견해 수정: 원래 A-3 실행 때는 mcq 자동판별을 빼먹어서
+ *    mcq 문항(답이 A~D 글자)이 전부 free/is_auto_gradable=false로 잘못 들어갔었다 — 자동채점
+ *    비율·세션 구성 가능 단원 수 계산에 실제로 영향을 주므로 여기서 정정하고 전체 재반영한다.)
  *
  * 기본은 dry-run(집계만 출력, DB 안 건드림). --apply 플래그가 있어야 실제 UPDATE.
  *
@@ -49,6 +53,7 @@ function serviceClient(): SupabaseClient {
 interface ProblemRow {
   id: string;
   answer: string | null;
+  choices: string[] | null;
   curriculum_group: string | null;
   curriculum_detail: string | null;
   unit: string | null;
@@ -62,10 +67,24 @@ interface UnitRow {
   unit_name: string;
 }
 
-function classifyAnswer(raw: string | null): { format: "numeric" | "free"; autoGradable: boolean } {
+const LETTERS = ["A", "B", "C", "D"] as const;
+
+function classifyAnswer(
+  raw: string | null,
+  choices: string[] | null
+): { format: "mcq" | "numeric" | "free"; autoGradable: boolean; spec: Record<string, unknown> | null } {
   const a = (raw ?? "").trim();
+  if (choices && choices.length > 0) {
+    const correctIndex = LETTERS.indexOf(a as (typeof LETTERS)[number]);
+    if (correctIndex >= 0) {
+      return { format: "mcq", autoGradable: true, spec: { choices, correct_index: correctIndex } };
+    }
+  }
   const isNumeric = /^-?\d+$/.test(a) || /^-?\d+\.\d+$/.test(a) || /^-?\d+\/\d+$/.test(a);
-  return { format: isNumeric ? "numeric" : "free", autoGradable: isNumeric };
+  if (isNumeric) {
+    return { format: "numeric", autoGradable: true, spec: { value: a, tolerance: 0, accept: [] } };
+  }
+  return { format: "free", autoGradable: false, spec: null };
 }
 
 async function main() {
@@ -74,7 +93,7 @@ async function main() {
 
   const { data: problems, error: pErr } = await db
     .from("problems")
-    .select("id, answer, curriculum_group, curriculum_detail, unit, verified")
+    .select("id, answer, choices, curriculum_group, curriculum_detail, unit, verified")
     .eq("subject", "math");
   if (pErr || !problems) {
     console.error("problems 조회 실패:", pErr?.message);
@@ -95,12 +114,12 @@ async function main() {
   }
 
   let matched = 0;
+  let mcqCount = 0;
   let numericCount = 0;
   let freeCount = 0;
-  let mcqLikeInFree = 0; // free로 분류됐지만 답이 단일 알파벳이라 사실 mcq로 보이는 것(보고만, 변환은 안 함)
   const unmatchedRows: { problem_id: string; curriculum_group: string | null; curriculum_detail: string | null; unit: string | null; verified: boolean }[] = [];
   const unitIdByProblemId = new Map<string, string>();
-  const formatByProblemId = new Map<string, { format: "numeric" | "free"; autoGradable: boolean }>();
+  const formatByProblemId = new Map<string, ReturnType<typeof classifyAnswer>>();
 
   for (const p of problems as ProblemRow[]) {
     const key = `${p.curriculum_group}||${p.curriculum_detail}||${p.unit}`;
@@ -118,18 +137,15 @@ async function main() {
       });
     }
 
-    const classified = classifyAnswer(p.answer);
+    const classified = classifyAnswer(p.answer, p.choices);
     formatByProblemId.set(p.id, classified);
-    if (classified.format === "numeric") numericCount++;
-    else {
-      freeCount++;
-      if (/^[A-Ea-e]$/.test((p.answer ?? "").trim())) mcqLikeInFree++;
-    }
+    if (classified.format === "mcq") mcqCount++;
+    else if (classified.format === "numeric") numericCount++;
+    else freeCount++;
   }
 
   console.log(`총 ${problems.length}건 · unit_id 매칭 ${matched}건 · 미매칭 ${unmatchedRows.length}건`);
-  console.log(`answer_format 분류 — numeric(자동채점): ${numericCount} · free: ${freeCount}`);
-  console.log(`  (참고: free 중 답이 단일 알파벳 A~E라 실제로는 mcq로 보이는 것 ${mcqLikeInFree}건 — 이번 A-3 범위 밖이라 free로 남겨둠, 지시서에 mcq 자동판별 언급 없음)`);
+  console.log(`answer_format 분류 — mcq(자동채점): ${mcqCount} · numeric(자동채점): ${numericCount} · free: ${freeCount}`);
 
   mkdirSync("scripts/out", { recursive: true });
   const csvHeader = "problem_id,curriculum_group,curriculum_detail,unit,verified\n";
@@ -164,7 +180,7 @@ async function main() {
     const fmt = formatByProblemId.get(p.id)!;
     const { error } = await db
       .from("problems")
-      .update({ unit_id: unitId, answer_format: fmt.format, is_auto_gradable: fmt.autoGradable })
+      .update({ unit_id: unitId, answer_format: fmt.format, is_auto_gradable: fmt.autoGradable, answer_spec: fmt.spec })
       .eq("id", p.id);
     if (error) {
       console.error(`  업데이트 실패(id=${p.id}):`, error.message);
