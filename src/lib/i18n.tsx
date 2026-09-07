@@ -584,7 +584,43 @@ const DICT = {
     ko: "© PM EDU · sat.pmedu4u.com — SAT®는 College Board의 등록상표이며, 본 사이트의 문항은 자체 제작 콘텐츠입니다.",
     en: "© PM EDU · sat.pmedu4u.com — SAT® is a registered trademark of College Board. All questions on this site are original content.",
   },
+
+  // 수학 학습 진행 구조 대시보드(/study, RUN_MATH_PROGRESSION.md PG2)
+  study_navLabel: { ko: "학습하기", en: "Study" },
+  study_loading: { ko: "불러오는 중...", en: "Loading..." },
+  study_errorLoad: { ko: "학습 정보를 불러오지 못했습니다.", en: "Couldn't load your study info." },
+  study_todayTitle: { ko: "오늘의 학습", en: "Today's study" },
+  study_startButton: { ko: "시작하기", en: "Start" },
+  study_resumeButton: { ko: "이어서 풀기", en: "Resume" },
+  study_doneTitle: { ko: "모든 단원을 마쳤어요", en: "You've completed every unit" },
+  study_doneBody: {
+    ko: "지금까지 배운 내용을 복습하며 실력을 유지해 보세요.",
+    en: "Keep reviewing what you've learned to stay sharp.",
+  },
+  study_streakLabel: { ko: "연속 학습일", en: "Day streak" },
+  study_streakUnit: { ko: "일", en: "days" },
+  study_weeklyTitle: { ko: "이번 주 진척", en: "This week" },
+  study_weeklySessions: { ko: "세션", en: "sessions" },
+  study_weeklyItems: { ko: "문항", en: "items" },
+  study_pathLink: { ko: "커리큘럼 맵 보기", en: "View curriculum map" },
+  study_reviewLink: { ko: "복습 큐 보기", en: "View review queue" },
 } as const;
+
+// v_math_next_action.reason_ko는 DB 뷰에 한국어 리터럴로 고정돼 있다(컬럼명부터 _ko, 지시서
+// 원문 그대로) — action_type 하나에 여러 reason_ko가 대응될 수 있어(예: 'practice'가 진행중/
+// 다음단원/약점 세 가지) action_type만으론 영어 문구를 못 고른다. 그래서 실제 문자열로 매핑한다.
+const REASON_KO_TO_EN: Record<string, string> = {
+  "이어서 풀기": "Continue where you left off",
+  "복습할 때가 됐어요": "Time for a review",
+  "진행 중인 단원이에요": "You're partway through this unit",
+  "다음 단원으로 넘어가요": "Moving on to the next unit",
+  "약점을 보완해요": "Let's shore up a weak spot",
+  "모든 단원을 마쳤어요": "You've completed every unit",
+};
+
+export function nextActionReasonLabel(reasonKo: string, lang: Lang): string {
+  return lang === "en" ? REASON_KO_TO_EN[reasonKo] ?? reasonKo : reasonKo;
+}
 
 // 강좌 분류는 값이 4개로 정해져 있어서 화면에서 번역할 수 있다.
 const CATEGORY_EN: Record<string, string> = {

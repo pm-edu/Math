@@ -144,6 +144,14 @@ export default function Header() {
               {t("admin")}
             </Link>
           )}
+          {loggedIn && (
+            <Link
+              href="/study"
+              className="hidden text-sm text-[var(--secondary)] transition-colors hover:text-[var(--foreground)] md:inline"
+            >
+              {t("study_navLabel")}
+            </Link>
+          )}
           {loggedIn !== null && (
             <Link
               href={loggedIn ? "/mypage" : "/login"}
@@ -210,6 +218,15 @@ export default function Header() {
                 className="text-sm text-[var(--secondary)] hover:text-[var(--foreground)]"
               >
                 SAT
+              </Link>
+            )}
+            {loggedIn && (
+              <Link
+                href="/study"
+                onClick={() => setMobileOpen(false)}
+                className="text-sm text-[var(--secondary)] hover:text-[var(--foreground)]"
+              >
+                {t("study_navLabel")}
               </Link>
             )}
             {loggedIn !== null && (
