@@ -50,14 +50,14 @@ export default function ReviewForm({
   }
 
   return (
-    <div className="mt-3 rounded-xl border border-[var(--border-c)] bg-[var(--mint)]/10 p-4">
+    <div className="mt-3 rounded-xl border border-en-line bg-en-gold-soft/40 p-4">
       <div className="flex gap-1">
         {[1, 2, 3, 4, 5].map((n) => (
           <button
             key={n}
             type="button"
             onClick={() => setRating(n)}
-            className={`text-xl ${n <= rating ? "text-[var(--pink-dark)]" : "text-[var(--border-c)]"}`}
+            className={`text-xl ${n <= rating ? "text-en-gold" : "text-en-line"}`}
             aria-label={`${n}점`}
           >
             ★
@@ -70,14 +70,14 @@ export default function ReviewForm({
         placeholder={t("reviewPlaceholder")}
         rows={3}
         maxLength={500}
-        className="mt-2 w-full rounded-lg border border-[var(--border-c)] bg-white px-3 py-2 text-sm outline-none focus:border-[var(--pink)]"
+        className="mt-2 w-full rounded-[10px] border border-en-line bg-white px-3 py-2 text-sm outline-none focus:border-en-gold"
       />
       {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
       <div className="mt-2 flex justify-end">
         <button
           onClick={handleSubmit}
           disabled={saving || !content.trim()}
-          className="rounded-full bg-[var(--pink)] px-5 py-2 text-xs font-medium text-[var(--pink-dark)] disabled:opacity-60"
+          className="rounded-[11px] bg-en-gold px-5 py-2 text-xs font-bold text-en-ink transition-colors hover:bg-en-gold-deep disabled:opacity-60"
         >
           {saving ? t("reviewSaving") : t("reviewSubmit")}
         </button>

@@ -46,57 +46,59 @@ export default function LoginPage() {
   return (
     <div data-theme={isolated ? "en" : undefined} className={isolated ? "min-h-screen bg-[var(--background)]" : undefined}>
       {isToefl ? <ToeflHeader /> : isSat ? <SatHeader /> : <Header />}
-      <main className="mx-auto max-w-md px-6 py-16">
-        <h1 className="text-2xl font-medium text-[var(--foreground)]">{t("login")}</h1>
+      <main className="min-h-screen bg-en-paper px-6 py-16">
+        <div data-theme="en" className="mx-auto max-w-md rounded-2xl border border-en-line bg-en-card p-8 shadow-sm">
+          <h1 className="text-2xl font-bold text-en-ink">{t("login")}</h1>
 
-        <form onSubmit={handleLogin} className="mt-8 space-y-4">
-          <div>
-            <label className="text-sm font-medium text-[var(--foreground)]">{t("email")}</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@example.com"
-              className="mt-1.5 w-full rounded-lg border border-[var(--border-c)] bg-white px-4 py-2.5 text-sm outline-none focus:border-[var(--pink)]"
+          <form onSubmit={handleLogin} className="mt-8 space-y-4">
+            <div>
+              <label className="text-sm font-semibold text-en-ink">{t("email")}</label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@example.com"
+                className="mt-1.5 w-full rounded-[10px] border border-en-line bg-white px-4 py-2.5 text-sm outline-none focus:border-en-gold"
+              />
+            </div>
+            <PasswordField
+              label={t("password")}
+              value={password}
+              onChange={setPassword}
+              placeholder="••••••••"
             />
-          </div>
-          <PasswordField
-            label={t("password")}
-            value={password}
-            onChange={setPassword}
-            placeholder="••••••••"
-          />
 
-          <p className="text-right">
-            <Link
-              href="/reset-password"
-              className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]"
+            <p className="text-right">
+              <Link
+                href="/reset-password"
+                className="text-sm text-en-ink-soft underline hover:text-en-ink"
+              >
+                {t("forgotPassword")}
+              </Link>
+            </p>
+
+            {error && <p className="text-sm text-red-600">{error}</p>}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-[11px] bg-en-gold py-3 text-sm font-bold text-en-ink transition-colors hover:bg-en-gold-deep disabled:opacity-60"
             >
-              {t("forgotPassword")}
+              {loading ? t("loggingIn") : t("login")}
+            </button>
+          </form>
+
+          <p className="mt-6 text-center text-sm text-en-ink-soft">
+            {t("noAccount")}{" "}
+            <Link
+              href={isToefl ? "/signup?toefl=1" : isSat ? "/signup?sat=1" : "/signup"}
+              className="font-semibold text-en-gold-deep underline"
+            >
+              {t("signup")}
             </Link>
           </p>
-
-          {error && <p className="text-sm text-red-600">{error}</p>}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-full bg-[var(--pink)] py-3 text-sm font-medium text-[var(--pink-dark)] transition-transform hover:scale-[1.01] disabled:opacity-60"
-          >
-            {loading ? t("loggingIn") : t("login")}
-          </button>
-        </form>
-
-        <p className="mt-6 text-center text-sm text-[var(--secondary)]">
-          {t("noAccount")}{" "}
-          <Link
-            href={isToefl ? "/signup?toefl=1" : isSat ? "/signup?sat=1" : "/signup"}
-            className="text-[var(--foreground)] underline"
-          >
-            {t("signup")}
-          </Link>
-        </p>
+        </div>
       </main>
       {!isolated && <Footer />}
     </div>

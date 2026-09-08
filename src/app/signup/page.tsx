@@ -52,14 +52,14 @@ export default function SignupPage() {
     return (
       <div data-theme={isolated ? "en" : undefined} className={isolated ? "min-h-screen bg-[var(--background)]" : undefined}>
         {isToefl ? <ToeflHeader /> : isSat ? <SatHeader /> : <Header />}
-        <main className="mx-auto max-w-md px-6 py-24 text-center">
-          <h1 className="text-2xl font-medium text-[var(--foreground)]">
+        <main className="min-h-screen bg-en-paper px-6 py-24 text-center">
+          <h1 className="text-2xl font-bold text-en-ink">
             {t("signupDone")}
           </h1>
-          <p className="mt-3 text-sm text-[var(--secondary)]">{t("signupDoneSub")}</p>
+          <p className="mt-3 text-sm text-en-ink-soft">{t("signupDoneSub")}</p>
           <Link
             href={isToefl ? "/login?toefl=1" : isSat ? "/login?sat=1" : "/login"}
-            className="mt-8 inline-block rounded-full bg-[var(--pink)] px-6 py-3 text-sm font-medium text-[var(--pink-dark)]"
+            className="mt-8 inline-block rounded-[11px] bg-en-gold px-6 py-3 text-sm font-bold text-en-ink transition-colors hover:bg-en-gold-deep"
           >
             {t("goLogin")}
           </Link>
@@ -72,60 +72,62 @@ export default function SignupPage() {
   return (
     <div data-theme={isolated ? "en" : undefined} className={isolated ? "min-h-screen bg-[var(--background)]" : undefined}>
       {isToefl ? <ToeflHeader /> : isSat ? <SatHeader /> : <Header />}
-      <main className="mx-auto max-w-md px-6 py-16">
-        <h1 className="text-2xl font-medium text-[var(--foreground)]">{t("signup")}</h1>
+      <main className="min-h-screen bg-en-paper px-6 py-16">
+        <div data-theme="en" className="mx-auto max-w-md rounded-2xl border border-en-line bg-en-card p-8 shadow-sm">
+          <h1 className="text-2xl font-bold text-en-ink">{t("signup")}</h1>
 
-        <form onSubmit={handleSignup} className="mt-8 space-y-4">
-          <div>
-            <label className="text-sm font-medium text-[var(--foreground)]">{t("name")}</label>
-            <input
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="홍길동"
-              className="mt-1.5 w-full rounded-lg border border-[var(--border-c)] bg-white px-4 py-2.5 text-sm outline-none focus:border-[var(--pink)]"
+          <form onSubmit={handleSignup} className="mt-8 space-y-4">
+            <div>
+              <label className="text-sm font-semibold text-en-ink">{t("name")}</label>
+              <input
+                type="text"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="홍길동"
+                className="mt-1.5 w-full rounded-[10px] border border-en-line bg-white px-4 py-2.5 text-sm outline-none focus:border-en-gold"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-semibold text-en-ink">{t("email")}</label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@example.com"
+                className="mt-1.5 w-full rounded-[10px] border border-en-line bg-white px-4 py-2.5 text-sm outline-none focus:border-en-gold"
+              />
+            </div>
+            <PasswordField
+              label={t("password")}
+              value={password}
+              onChange={setPassword}
+              placeholder={t("pwPlaceholder")}
+              minLength={6}
             />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-[var(--foreground)]">{t("email")}</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@example.com"
-              className="mt-1.5 w-full rounded-lg border border-[var(--border-c)] bg-white px-4 py-2.5 text-sm outline-none focus:border-[var(--pink)]"
-            />
-          </div>
-          <PasswordField
-            label={t("password")}
-            value={password}
-            onChange={setPassword}
-            placeholder={t("pwPlaceholder")}
-            minLength={6}
-          />
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-red-600">{error}</p>}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-full bg-[var(--pink)] py-3 text-sm font-medium text-[var(--pink-dark)] transition-transform hover:scale-[1.01] disabled:opacity-60"
-          >
-            {loading ? t("signingUp") : t("signup")}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-[11px] bg-en-gold py-3 text-sm font-bold text-en-ink transition-colors hover:bg-en-gold-deep disabled:opacity-60"
+            >
+              {loading ? t("signingUp") : t("signup")}
+            </button>
+          </form>
 
-        <p className="mt-6 text-center text-sm text-[var(--secondary)]">
-          {t("haveAccount")}{" "}
-          <Link
-            href={isToefl ? "/login?toefl=1" : isSat ? "/login?sat=1" : "/login"}
-            className="text-[var(--foreground)] underline"
-          >
-            {t("login")}
-          </Link>
-        </p>
+          <p className="mt-6 text-center text-sm text-en-ink-soft">
+            {t("haveAccount")}{" "}
+            <Link
+              href={isToefl ? "/login?toefl=1" : isSat ? "/login?sat=1" : "/login"}
+              className="font-semibold text-en-gold-deep underline"
+            >
+              {t("login")}
+            </Link>
+          </p>
+        </div>
       </main>
       {!isolated && <Footer />}
     </div>

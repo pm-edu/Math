@@ -95,151 +95,153 @@ export default function MyPage() {
   return (
     <>
       <Header />
-      <main className="mx-auto max-w-4xl px-6 py-16">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-medium text-[var(--foreground)]">{t("mypage")}</h1>
-          {!loading && (
-            <button
-              onClick={handleLogout}
-              className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]"
-            >
-              {t("logout")}
-            </button>
+      <main className="min-h-screen bg-en-paper">
+        <div className="mx-auto max-w-4xl px-6 py-16">
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold text-en-ink">{t("mypage")}</h1>
+            {!loading && (
+              <button
+                onClick={handleLogout}
+                className="text-sm text-en-ink-soft underline hover:text-en-ink"
+              >
+                {t("logout")}
+              </button>
+            )}
+          </div>
+
+          {loading ? (
+            <p className="mt-10 text-sm text-en-ink-soft">{t("loading")}</p>
+          ) : error ? (
+            <p className="mt-10 text-sm text-red-600">{error}</p>
+          ) : (
+            <>
+              <section className="mt-8 rounded-2xl border border-en-line bg-en-card p-6 shadow-sm">
+                <p className="text-sm font-bold text-en-ink">{t("myInfo")}</p>
+                <dl className="mt-4 space-y-2 text-sm">
+                  <div className="flex gap-3">
+                    <dt className="w-20 text-en-ink-soft">{t("name")}</dt>
+                    <dd className="text-en-ink">{profile?.name ?? "-"}</dd>
+                  </div>
+                  <div className="flex gap-3">
+                    <dt className="w-20 text-en-ink-soft">{t("email")}</dt>
+                    <dd className="text-en-ink">{profile?.email ?? "-"}</dd>
+                  </div>
+                </dl>
+
+                <div className="mt-6 flex flex-wrap gap-2">
+                  <Link
+                    href="/worksheets"
+                    className="inline-block rounded-full bg-en-gold-soft px-5 py-2.5 text-sm font-bold text-en-gold-deep"
+                  >
+                    {t("myWorksheets")}
+                  </Link>
+                  <Link
+                    href="/english"
+                    className="inline-block rounded-full bg-en-gold-soft px-5 py-2.5 text-sm font-bold text-en-gold-deep"
+                  >
+                    영어 학습
+                  </Link>
+                  {isStaff(profile?.role) && (
+                    <Link
+                      href="/admin"
+                      className="inline-block rounded-full bg-en-gold-soft px-5 py-2.5 text-sm font-bold text-en-gold-deep"
+                    >
+                      {t("adminPanel")}
+                    </Link>
+                  )}
+                </div>
+              </section>
+
+              <section className="mt-10">
+                <h2 className="text-lg font-bold text-en-ink">{t("myCourses")}</h2>
+
+                {purchases.length === 0 ? (
+                  <div className="mt-4 rounded-2xl border border-en-line bg-en-card p-8 text-center shadow-sm">
+                    <p className="text-sm text-en-ink-soft">{t("noCourses")}</p>
+                    <Link
+                      href="/courses"
+                      className="mt-5 inline-block rounded-[11px] bg-en-gold px-5 py-2.5 text-sm font-bold text-en-ink transition-colors hover:bg-en-gold-deep"
+                    >
+                      {t("browse")}
+                    </Link>
+                  </div>
+                ) : (
+                  <ul className="mt-4 space-y-3">
+                    {purchases.map((item) => {
+                      const courseId = item.course?.id ?? null;
+                      const existingReview = courseId ? myReviews.get(courseId) ?? null : null;
+                      return (
+                        <li key={item.id} className="rounded-2xl border border-en-line bg-en-card p-5 shadow-sm">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="inline-block rounded-full bg-en-gold-soft px-3 py-1 text-xs font-bold text-en-gold-deep">
+                                  {item.course ? categoryLabel(item.course.category, lang) : "-"}
+                                </span>
+                                <span
+                                  className={`rounded-full px-3 py-1 text-xs font-bold ${
+                                    item.status === "paid"
+                                      ? "bg-en-gold-soft text-en-gold-deep"
+                                      : "bg-en-line text-en-ink-soft"
+                                  }`}
+                                >
+                                  {item.status === "paid" ? t("enrolled") : t("enrollPending")}
+                                </span>
+                              </div>
+                              <p className="mt-2 text-sm font-bold text-en-ink">
+                                {item.course?.title ?? "삭제된 강좌"}
+                              </p>
+                            </div>
+                            {item.course && item.status === "paid" && (
+                              <div className="flex items-center gap-3">
+                                <button
+                                  onClick={() => setOpenReviewFor(openReviewFor === courseId ? null : courseId)}
+                                  className="text-sm text-en-ink-soft underline hover:text-en-ink"
+                                >
+                                  {existingReview ? t("editReview") : t("writeReview")}
+                                </button>
+                                <Link
+                                  href={`/courses/${item.course.slug}/learn`}
+                                  className="text-sm text-en-ink-soft underline hover:text-en-ink"
+                                >
+                                  {t("goWatch")}
+                                </Link>
+                              </div>
+                            )}
+                          </div>
+
+                          {courseId && openReviewFor === courseId && (
+                            <ReviewForm
+                              courseId={courseId}
+                              userId={profile?.id ?? ""}
+                              existing={existingReview}
+                              onSaved={(saved) => {
+                                setMyReviews((prev) => new Map(prev).set(courseId, saved));
+                                setOpenReviewFor(null);
+                              }}
+                            />
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </section>
+
+              <section className="mt-14 border-t border-en-line pt-8">
+                <h2 className="text-sm font-medium text-en-ink-soft">
+                  {t("dangerZone")}
+                </h2>
+                <button
+                  onClick={handleWithdraw}
+                  className="mt-3 text-sm text-red-600 underline hover:text-red-700"
+                >
+                  {t("withdraw")}
+                </button>
+              </section>
+            </>
           )}
         </div>
-
-        {loading ? (
-          <p className="mt-10 text-sm text-[var(--secondary)]">{t("loading")}</p>
-        ) : error ? (
-          <p className="mt-10 text-sm text-red-600">{error}</p>
-        ) : (
-          <>
-            <section className="mt-8 rounded-2xl border border-[var(--border-c)] bg-white p-6">
-              <p className="text-sm font-medium text-[var(--foreground)]">{t("myInfo")}</p>
-              <dl className="mt-4 space-y-2 text-sm">
-                <div className="flex gap-3">
-                  <dt className="w-20 text-[var(--secondary)]">{t("name")}</dt>
-                  <dd className="text-[var(--foreground)]">{profile?.name ?? "-"}</dd>
-                </div>
-                <div className="flex gap-3">
-                  <dt className="w-20 text-[var(--secondary)]">{t("email")}</dt>
-                  <dd className="text-[var(--foreground)]">{profile?.email ?? "-"}</dd>
-                </div>
-              </dl>
-
-              <div className="mt-6 flex flex-wrap gap-2">
-                <Link
-                  href="/worksheets"
-                  className="inline-block rounded-full bg-[var(--pink)] px-5 py-2.5 text-sm font-medium text-[var(--pink-dark)]"
-                >
-                  {t("myWorksheets")}
-                </Link>
-                <Link
-                  href="/english"
-                  className="inline-block rounded-full bg-[var(--mint)] px-5 py-2.5 text-sm font-medium text-[var(--mint-dark)]"
-                >
-                  영어 학습
-                </Link>
-                {isStaff(profile?.role) && (
-                  <Link
-                    href="/admin"
-                    className="inline-block rounded-full bg-[var(--mint)] px-5 py-2.5 text-sm font-medium text-[var(--mint-dark)]"
-                  >
-                    {t("adminPanel")}
-                  </Link>
-                )}
-              </div>
-            </section>
-
-            <section className="mt-10">
-              <h2 className="text-lg font-medium text-[var(--foreground)]">{t("myCourses")}</h2>
-
-              {purchases.length === 0 ? (
-                <div className="mt-4 rounded-2xl border border-[var(--border-c)] bg-white p-8 text-center">
-                  <p className="text-sm text-[var(--secondary)]">{t("noCourses")}</p>
-                  <Link
-                    href="/courses"
-                    className="mt-5 inline-block rounded-full bg-[var(--pink)] px-5 py-2.5 text-sm font-medium text-[var(--pink-dark)]"
-                  >
-                    {t("browse")}
-                  </Link>
-                </div>
-              ) : (
-                <ul className="mt-4 space-y-3">
-                  {purchases.map((item) => {
-                    const courseId = item.course?.id ?? null;
-                    const existingReview = courseId ? myReviews.get(courseId) ?? null : null;
-                    return (
-                      <li key={item.id} className="rounded-2xl border border-[var(--border-c)] bg-white p-5">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="inline-block rounded-full bg-[var(--mint)] px-3 py-1 text-xs font-medium text-[var(--mint-dark)]">
-                                {item.course ? categoryLabel(item.course.category, lang) : "-"}
-                              </span>
-                              <span
-                                className={`rounded-full px-3 py-1 text-xs font-medium ${
-                                  item.status === "paid"
-                                    ? "bg-[var(--pink)] text-[var(--pink-dark)]"
-                                    : "bg-[var(--border-c)] text-[var(--secondary)]"
-                                }`}
-                              >
-                                {item.status === "paid" ? t("enrolled") : t("enrollPending")}
-                              </span>
-                            </div>
-                            <p className="mt-2 text-sm font-medium text-[var(--foreground)]">
-                              {item.course?.title ?? "삭제된 강좌"}
-                            </p>
-                          </div>
-                          {item.course && item.status === "paid" && (
-                            <div className="flex items-center gap-3">
-                              <button
-                                onClick={() => setOpenReviewFor(openReviewFor === courseId ? null : courseId)}
-                                className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]"
-                              >
-                                {existingReview ? t("editReview") : t("writeReview")}
-                              </button>
-                              <Link
-                                href={`/courses/${item.course.slug}/learn`}
-                                className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]"
-                              >
-                                {t("goWatch")}
-                              </Link>
-                            </div>
-                          )}
-                        </div>
-
-                        {courseId && openReviewFor === courseId && (
-                          <ReviewForm
-                            courseId={courseId}
-                            userId={profile?.id ?? ""}
-                            existing={existingReview}
-                            onSaved={(saved) => {
-                              setMyReviews((prev) => new Map(prev).set(courseId, saved));
-                              setOpenReviewFor(null);
-                            }}
-                          />
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </section>
-
-            <section className="mt-14 border-t border-[var(--border-c)] pt-8">
-              <h2 className="text-sm font-medium text-[var(--secondary)]">
-                {t("dangerZone")}
-              </h2>
-              <button
-                onClick={handleWithdraw}
-                className="mt-3 text-sm text-red-600 underline hover:text-red-700"
-              >
-                {t("withdraw")}
-              </button>
-            </section>
-          </>
-        )}
       </main>
       <Footer />
     </>

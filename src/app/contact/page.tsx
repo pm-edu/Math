@@ -43,68 +43,70 @@ export default function ContactPage() {
   return (
     <>
       <Header />
-      <main className="mx-auto max-w-2xl px-6 py-16">
-        <h1 className="text-3xl font-medium text-[var(--foreground)]">
-          {t("contactPageTitle")}
-        </h1>
-        <p className="mt-2 text-[var(--secondary)]">{t("contactSubtitle")}</p>
+      <main className="min-h-screen bg-en-paper">
+        <div className="mx-auto max-w-2xl px-6 py-16">
+          <h1 className="text-3xl font-bold text-en-ink">
+            {t("contactPageTitle")}
+          </h1>
+          <p className="mt-2 text-en-ink-soft">{t("contactSubtitle")}</p>
 
-        <div className="mt-6">
-          <WhatsAppButton />
-        </div>
-
-        {done ? (
-          <div className="mt-10 rounded-2xl border border-[var(--border-c)] bg-white p-8 text-center">
-            <p className="text-lg font-medium text-[var(--foreground)]">{t("contactDone")}</p>
-            <p className="mt-2 text-sm text-[var(--secondary)]">{t("contactDoneSub")}</p>
+          <div className="mt-6">
+            <WhatsAppButton />
           </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="mt-10 space-y-5">
-            <div>
-              <label className="text-sm font-medium text-[var(--foreground)]">{t("name")}</label>
-              <input
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="홍길동"
-                className="mt-1.5 w-full rounded-lg border border-[var(--border-c)] bg-white px-4 py-2.5 text-sm outline-none focus:border-[var(--pink)]"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-[var(--foreground)]">{t("email")}</label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@example.com"
-                className="mt-1.5 w-full rounded-lg border border-[var(--border-c)] bg-white px-4 py-2.5 text-sm outline-none focus:border-[var(--pink)]"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-[var(--foreground)]">{t("message")}</label>
-              <textarea
-                rows={5}
-                required
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="문의하실 내용을 입력해주세요"
-                className="mt-1.5 w-full rounded-lg border border-[var(--border-c)] bg-white px-4 py-2.5 text-sm outline-none focus:border-[var(--pink)]"
-              />
-            </div>
 
-            {error && <p className="text-sm text-red-600">{error}</p>}
+          {done ? (
+            <div className="mt-10 rounded-2xl border border-en-line bg-en-card p-8 text-center shadow-sm">
+              <p className="text-lg font-bold text-en-ink">{t("contactDone")}</p>
+              <p className="mt-2 text-sm text-en-ink-soft">{t("contactDoneSub")}</p>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="mt-10 space-y-5">
+              <div>
+                <label className="text-sm font-semibold text-en-ink">{t("name")}</label>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="홍길동"
+                  className="mt-1.5 w-full rounded-[10px] border border-en-line bg-white px-4 py-2.5 text-sm outline-none focus:border-en-gold"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-en-ink">{t("email")}</label>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  className="mt-1.5 w-full rounded-[10px] border border-en-line bg-white px-4 py-2.5 text-sm outline-none focus:border-en-gold"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-en-ink">{t("message")}</label>
+                <textarea
+                  rows={5}
+                  required
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="문의하실 내용을 입력해주세요"
+                  className="mt-1.5 w-full rounded-[10px] border border-en-line bg-white px-4 py-2.5 text-sm outline-none focus:border-en-gold"
+                />
+              </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="rounded-full bg-[var(--pink)] px-6 py-3 text-sm font-medium text-[var(--pink-dark)] transition-transform hover:scale-[1.02] disabled:opacity-60"
-            >
-              {loading ? t("sending") : t("send")}
-            </button>
-          </form>
-        )}
+              {error && <p className="text-sm text-red-600">{error}</p>}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="rounded-[11px] bg-en-gold px-6 py-3 text-sm font-bold text-en-ink transition-colors hover:bg-en-gold-deep disabled:opacity-60"
+              >
+                {loading ? t("sending") : t("send")}
+              </button>
+            </form>
+          )}
+        </div>
       </main>
       <Footer />
     </>

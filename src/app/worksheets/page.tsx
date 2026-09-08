@@ -46,34 +46,36 @@ export default function MyWorksheetsPage() {
       <Header />
       <main
         data-theme={subject === "english" ? "en" : undefined}
-        className="mx-auto max-w-3xl bg-[var(--background)] px-6 py-16"
+        className="min-h-screen bg-en-paper"
       >
-        <h1 className="text-3xl font-medium text-[var(--foreground)]">내 학습지</h1>
-        <p className="mt-2 text-[var(--secondary)]">선생님이 배포한 문제지입니다.</p>
+        <div className="mx-auto max-w-3xl px-6 py-16">
+          <h1 className="text-3xl font-bold text-en-ink">내 학습지</h1>
+          <p className="mt-2 text-en-ink-soft">선생님이 배포한 문제지입니다.</p>
 
-        {loading ? (
-          <p className="mt-10 text-sm text-[var(--secondary)]">불러오는 중...</p>
-        ) : worksheets.length === 0 ? (
-          <div className="mt-10 rounded-2xl border border-[var(--border-c)] bg-white p-12 text-center">
-            <p className="text-[var(--foreground)]">아직 받은 학습지가 없습니다.</p>
-          </div>
-        ) : (
-          <ul className="mt-8 space-y-3">
-            {worksheets.map((w) => (
-              <li key={w.id}>
-                <Link
-                  href={`/worksheets/${w.id}`}
-                  className="block rounded-2xl border border-[var(--border-c)] bg-white p-5 transition-shadow hover:shadow-md"
-                >
-                  <p className="text-sm font-medium text-[var(--foreground)]">{w.title}</p>
-                  {w.description && (
-                    <p className="mt-1 text-sm text-[var(--secondary)]">{w.description}</p>
-                  )}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
+          {loading ? (
+            <p className="mt-10 text-sm text-en-ink-soft">불러오는 중...</p>
+          ) : worksheets.length === 0 ? (
+            <div className="mt-10 rounded-2xl border border-en-line bg-en-card p-12 text-center shadow-sm">
+              <p className="text-en-ink">아직 받은 학습지가 없습니다.</p>
+            </div>
+          ) : (
+            <ul className="mt-8 space-y-3">
+              {worksheets.map((w) => (
+                <li key={w.id}>
+                  <Link
+                    href={`/worksheets/${w.id}`}
+                    className="block rounded-2xl border border-en-line bg-en-card p-5 shadow-sm transition-shadow hover:shadow-md"
+                  >
+                    <p className="text-sm font-bold text-en-ink">{w.title}</p>
+                    {w.description && (
+                      <p className="mt-1 text-sm text-en-ink-soft">{w.description}</p>
+                    )}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </main>
       <Footer />
     </>
