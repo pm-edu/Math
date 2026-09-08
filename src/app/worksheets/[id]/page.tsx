@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
@@ -17,11 +17,18 @@ type Submission = {
   is_correct: boolean | null;
 };
 
-// 한 문제 채점: 정답이 없거나 서술형이면 자동채점 불가(null)
+// 한 문제 채점(연습용 문제지에서만 씀): 정답이 없거나 서술형이면 자동채점 불가(null)
 function gradeOne(p: Problem, ans: string): boolean | null {
   if (!p.answer) return null;
   if (p.problem_format === "서술형") return null;
   return normAnswer(ans) === normAnswer(p.answer);
+}
+
+function formatClock(totalSeconds: number): string {
+  const s = Math.max(0, totalSeconds);
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}`;
 }
 
 export default function WorksheetDetailPage({
@@ -43,6 +50,18 @@ export default function WorksheetDetailPage({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [scoreSummary, setScoreSummary] = useState<{ correct: number; gradable: number } | null>(null);
+
+  // 실전 시험 모드
+  const [isExam, setIsExam] = useState(false);
+  const [timeLimitMinutes, setTimeLimitMinutes] = useState<number | null>(null);
+  const [examStarted, setExamStarted] = useState(false);
+  const [examDeadline, setExamDeadline] = useState<number | null>(null); // epoch ms
+  const [remainingSec, setRemainingSec] = useState<number | null>(null);
+  const [startingExam, setStartingExam] = useState(false);
+  const autoSubmittedRef = useRef(false);
+  const answersRef = useRef(answers);
+  answersRef.current = answers;
 
   useEffect(() => {
     const supabase = createClient();
@@ -51,10 +70,16 @@ export default function WorksheetDetailPage({
       if (!auth.user) { router.replace("/login"); return; }
       setUserId(auth.user.id);
 
-      const { data: ws } = await supabase.from("worksheets").select("title, subject").eq("id", id).maybeSingle();
+      const { data: ws } = await supabase
+        .from("worksheets")
+        .select("title, subject, is_exam, time_limit_minutes")
+        .eq("id", id)
+        .maybeSingle();
       if (!ws) { setLoading(false); return; }
       setTitle(ws.title);
       setWorksheetSubject(ws.subject);
+      setIsExam(!!ws.is_exam);
+      setTimeLimitMinutes(ws.time_limit_minutes ?? null);
 
       const { data } = await supabase
         .from("worksheet_problems")
@@ -86,6 +111,20 @@ export default function WorksheetDetailPage({
         setAnswers(a);
         setResults(r);
         setSubmitted(true);
+      } else if (ws.is_exam) {
+        // 이미 시작한 적이 있으면(새로고침 등) 시작 화면 없이 바로 남은 시간으로 이어간다.
+        const { data: attempt } = await supabase
+          .from("worksheet_attempts")
+          .select("started_at, submitted_at")
+          .eq("worksheet_id", id)
+          .eq("user_id", auth.user.id)
+          .maybeSingle();
+        if (attempt && !attempt.submitted_at && ws.time_limit_minutes) {
+          const deadline = new Date(attempt.started_at).getTime() + ws.time_limit_minutes * 60_000;
+          setExamDeadline(deadline);
+          setExamStarted(true);
+          setStartedAt(new Date(attempt.started_at).getTime());
+        }
       } else {
         setStartedAt(Date.now());
       }
@@ -94,19 +133,82 @@ export default function WorksheetDetailPage({
     load();
   }, [id, router]);
 
-  async function handleSubmit() {
+  // 실전 시험 타이머
+  useEffect(() => {
+    if (!isExam || !examStarted || !examDeadline || submitted) return;
+    const tick = () => {
+      const left = Math.round((examDeadline - Date.now()) / 1000);
+      setRemainingSec(left);
+      if (left <= 0 && !autoSubmittedRef.current) {
+        autoSubmittedRef.current = true;
+        handleSubmit(true);
+      }
+    };
+    tick();
+    const timer = setInterval(tick, 1000);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isExam, examStarted, examDeadline, submitted]);
+
+  async function startExam() {
+    setError(null);
+    setStartingExam(true);
+    const supabase = createClient();
+    const { data: session } = await supabase.auth.getSession();
+    const token = session.session?.access_token;
+    const res = await fetch(`/api/worksheets/${id}/start-attempt`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    setStartingExam(false);
+    if (!res.ok || !data.ok) { setError(data.message ?? "시험 시작에 실패했습니다."); return; }
+    const deadline = new Date(data.startedAt).getTime() + (data.timeLimitMinutes ?? 0) * 60_000;
+    setExamDeadline(deadline);
+    setExamStarted(true);
+    setStartedAt(new Date(data.startedAt).getTime());
+  }
+
+  async function handleSubmit(auto = false) {
     if (!userId) return;
     setError(null);
-    const answered = problems.filter((p) => (answers[p.id] ?? "").trim()).length;
-    if (answered === 0) {
-      setError("답을 하나 이상 입력한 뒤 제출해주세요.");
-      return;
+    const currentAnswers = answersRef.current;
+    const answered = problems.filter((p) => (currentAnswers[p.id] ?? "").trim()).length;
+    if (!auto) {
+      if (answered === 0) {
+        setError("답을 하나 이상 입력한 뒤 제출해주세요.");
+        return;
+      }
+      const confirmMsg = isExam
+        ? "제출하면 채점되고, 실전 시험은 다시 응시할 수 없습니다. 제출할까요?"
+        : "제출하면 채점되고 답지가 공개됩니다. 제출할까요?";
+      if (!confirm(confirmMsg)) return;
     }
-    if (!confirm("제출하면 채점되고 답지가 공개됩니다. 제출할까요?")) return;
 
     setSaving(true);
+
+    if (isExam) {
+      const supabase = createClient();
+      const { data: session } = await supabase.auth.getSession();
+      const token = session.session?.access_token;
+      const res = await fetch(`/api/worksheets/${id}/submit-attempt`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ answers: currentAnswers }),
+      });
+      const data = await res.json();
+      setSaving(false);
+      if (!res.ok || !data.ok) { setError(data.message ?? "제출에 실패했습니다."); return; }
+      setResults(data.results ?? {});
+      setScoreSummary({ correct: data.correctCount ?? 0, gradable: data.gradableCount ?? 0 });
+      setSubmitted(true);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    // 연습용 문제지(기존 방식): 클라이언트에서 채점해 바로 저장
     const rows = problems.map((p) => {
-      const ans = (answers[p.id] ?? "").trim();
+      const ans = (currentAnswers[p.id] ?? "").trim();
       return {
         user_id: userId,
         problem_id: p.id,
@@ -145,204 +247,270 @@ export default function WorksheetDetailPage({
   }
 
   const gradable = problems.filter((p) => results[p.id] !== null && results[p.id] !== undefined);
-  const correctCount = gradable.filter((p) => results[p.id] === true).length;
+  const correctCount = scoreSummary ? scoreSummary.correct : gradable.filter((p) => results[p.id] === true).length;
+  const gradableCount = scoreSummary ? scoreSummary.gradable : gradable.length;
+
+  const showExamStartScreen = isExam && !submitted && !examStarted && !loading;
 
   return (
     <>
       <Header />
       <main
         data-theme={worksheetSubject === "english" ? "en" : undefined}
-        className="mx-auto max-w-3xl bg-[var(--background)] px-6 py-16"
+        className="min-h-screen bg-en-paper"
       >
-        <Link href="/worksheets" className="text-sm text-[var(--secondary)] underline hover:text-[var(--foreground)]">
-          ← 내 학습지로
-        </Link>
+        <div className="mx-auto max-w-3xl px-6 py-16">
+          <Link href="/worksheets" className="text-sm text-en-ink-soft underline hover:text-en-ink">
+            ← 내 학습지로
+          </Link>
 
-        {loading ? (
-          <p className="mt-10 text-sm text-[var(--secondary)]">불러오는 중...</p>
-        ) : (
-          <>
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-              <h1 className="text-3xl font-medium text-[var(--foreground)]">{title || "학습지"}</h1>
-              {submitted && (
-                <button
-                  onClick={retry}
-                  className="rounded-full border border-[var(--border-c)] bg-white px-4 py-1.5 text-sm text-[var(--foreground)] hover:bg-[var(--mint)]/40"
-                >
-                  다시 풀기
-                </button>
-              )}
+          {loading ? (
+            <p className="mt-10 text-sm text-en-ink-soft">불러오는 중...</p>
+          ) : showExamStartScreen ? (
+            <div className="mt-6 rounded-2xl border border-en-line bg-en-card p-8 shadow-sm">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-en-gold-soft px-3 py-1 text-xs font-bold text-en-gold-deep">
+                ⏱ 실전 시험
+              </span>
+              <h1 className="mt-4 text-xl font-bold text-en-ink">{title || "문제지"}</h1>
+              <p className="mt-1 text-sm text-en-ink-soft">시작을 누르면 바로 타이머가 시작됩니다.</p>
+
+              <dl className="mt-6 divide-y divide-en-line border-t border-en-line text-sm">
+                <div className="flex items-center justify-between py-3">
+                  <dt className="font-semibold text-en-ink-soft">문항 수</dt>
+                  <dd className="font-bold text-en-ink">{problems.length}문항</dd>
+                </div>
+                <div className="flex items-center justify-between py-3">
+                  <dt className="font-semibold text-en-ink-soft">제한 시간</dt>
+                  <dd className="font-bold text-en-ink">{timeLimitMinutes}분</dd>
+                </div>
+                <div className="flex items-center justify-between py-3">
+                  <dt className="font-semibold text-en-ink-soft">응시 횟수</dt>
+                  <dd className="font-bold text-en-ink">1회</dd>
+                </div>
+              </dl>
+
+              <p className="mt-4 rounded-lg bg-red-50 px-3 py-2.5 text-xs font-medium text-red-700">
+                ⚠ 제출 후에는 다시 풀 수 없습니다. 시간이 다 되면 그때까지 답한 것으로 자동 제출됩니다.
+              </p>
+
+              {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+
+              <button
+                onClick={startExam}
+                disabled={startingExam}
+                className="mt-6 w-full rounded-[11px] bg-en-gold py-3.5 text-sm font-bold text-en-ink transition-colors hover:bg-en-gold-deep disabled:opacity-60"
+              >
+                {startingExam ? "시작하는 중..." : "준비됐어요, 시작하기"}
+              </button>
             </div>
-
-            {/* 제출 후 점수 요약 */}
-            {submitted && (
-              <div className="mt-4 rounded-2xl border border-[var(--mint-dark)]/30 bg-[var(--mint)]/30 px-5 py-4">
-                <p className="text-sm text-[var(--foreground)]">
-                  제출 완료 · 자동채점 결과{" "}
-                  <span className="font-bold text-[var(--mint-dark)]">
-                    {gradable.length > 0 ? `${correctCount} / ${gradable.length} 정답` : "채점 가능한 문제 없음"}
-                  </span>
-                </p>
-                {problems.length > gradable.length && (
-                  <p className="mt-1 text-xs text-[var(--secondary)]">
-                    서술형·정답 미등록 문제는 자동채점되지 않아 답지만 공개됩니다.
-                  </p>
+          ) : (
+            <>
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                <h1 className="flex items-center gap-2 text-3xl font-bold text-en-ink">
+                  {title || "학습지"}
+                  {isExam && (
+                    <span className="rounded-full bg-en-gold-soft px-2.5 py-0.5 text-xs font-bold text-en-gold-deep">
+                      ⏱ 실전 시험
+                    </span>
+                  )}
+                </h1>
+                {submitted && !isExam && (
+                  <button
+                    onClick={retry}
+                    className="rounded-full border border-en-line bg-white px-4 py-1.5 text-sm text-en-ink hover:bg-en-gold-soft/40"
+                  >
+                    다시 풀기
+                  </button>
                 )}
               </div>
-            )}
 
-            {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+              {/* 실전 시험 응시 중 타이머 바 */}
+              {isExam && examStarted && !submitted && remainingSec !== null && (
+                <div className="sticky top-2 z-10 mt-4 flex items-center justify-between rounded-[13px] bg-en-ink px-4 py-3 shadow-md">
+                  <span className="text-xs font-bold text-en-ink-soft">
+                    {problems.filter((p) => (answers[p.id] ?? "").trim()).length} / {problems.length} 답변함
+                  </span>
+                  <span className={`font-mono text-base font-bold ${remainingSec <= 60 ? "text-red-400" : "text-en-gold"}`}>
+                    남은 시간 · {formatClock(remainingSec)}
+                  </span>
+                </div>
+              )}
 
-            {problems.length === 0 ? (
-              <p className="mt-10 text-sm text-[var(--secondary)]">문제가 없습니다.</p>
-            ) : (
-              <>
-                <ol className="mt-8 space-y-8">
-                  {problems.map((p, i) => {
-                    const res = results[p.id];
-                    return (
-                      <li key={p.id}>
-                        <div className="mb-2 flex items-center gap-2">
-                          <p className="text-sm font-medium text-[var(--secondary)]">{i + 1}번</p>
-                          {submitted && res === true && (
-                            <span className="rounded-full bg-[var(--mint)] px-2 py-0.5 text-xs font-medium text-[var(--mint-dark)]">맞음</span>
-                          )}
-                          {submitted && res === false && (
-                            <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-600">틀림</span>
-                          )}
-                          {submitted && (res === null || res === undefined) && (
-                            <span className="rounded-full bg-[var(--pink-light)] px-2 py-0.5 text-xs text-[var(--secondary)]">채점 안 됨</span>
-                          )}
-                        </div>
+              {/* 제출 후 점수 요약 */}
+              {submitted && (
+                <div className="mt-4 rounded-2xl border border-en-line bg-en-card px-5 py-4 shadow-sm">
+                  <p className="text-sm text-en-ink">
+                    제출 완료 · 자동채점 결과{" "}
+                    <span className="font-bold text-en-gold-deep">
+                      {gradableCount > 0 ? `${correctCount} / ${gradableCount} 정답` : "채점 가능한 문제 없음"}
+                    </span>
+                  </p>
+                  {problems.length > gradableCount && (
+                    <p className="mt-1 text-xs text-en-ink-soft">
+                      서술형·정답 미등록 문제는 자동채점되지 않아 답지만 공개됩니다.
+                    </p>
+                  )}
+                  {isExam && (
+                    <p className="mt-3 flex items-start gap-2 rounded-lg bg-en-paper px-3 py-2.5 text-xs text-en-ink-soft">
+                      🔒 실전 시험은 1회만 응시할 수 있어 다시 풀기 버튼이 없습니다.
+                    </p>
+                  )}
+                </div>
+              )}
 
-                        <ProblemBody
-                          problem={p}
-                          imgClassName="w-full rounded-xl border border-[var(--border-c)]"
-                          textClassName="rounded-xl border border-[var(--border-c)] bg-white p-5 text-[15px] leading-relaxed text-[var(--foreground)]"
-                        />
+              {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
 
-                        {/* 답 입력. 보기(choices)가 있으면 객관식(A~D 클릭), 없으면 자유 입력 */}
-                        {(() => {
-                          const choices = (p.choices ?? []).filter((c) => (c ?? "").trim());
-                          const isMcq = choices.length > 0;
+              {problems.length === 0 ? (
+                <p className="mt-10 text-sm text-en-ink-soft">문제가 없습니다.</p>
+              ) : (
+                <>
+                  <ol className="mt-8 space-y-8">
+                    {problems.map((p, i) => {
+                      const res = results[p.id];
+                      return (
+                        <li key={p.id}>
+                          <div className="mb-2 flex items-center gap-2">
+                            <p className="text-sm font-bold text-en-ink-soft">{i + 1}번</p>
+                            {submitted && res === true && (
+                              <span className="rounded-full bg-en-gold-soft px-2 py-0.5 text-xs font-bold text-en-gold-deep">맞음</span>
+                            )}
+                            {submitted && res === false && (
+                              <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-600">틀림</span>
+                            )}
+                            {submitted && (res === null || res === undefined) && (
+                              <span className="rounded-full bg-en-line px-2 py-0.5 text-xs text-en-ink-soft">채점 안 됨</span>
+                            )}
+                          </div>
 
-                          if (isMcq) {
-                            if (!submitted) {
+                          <ProblemBody
+                            problem={p}
+                            imgClassName="w-full rounded-xl border border-en-line"
+                            textClassName="rounded-xl border border-en-line bg-white p-5 text-[15px] leading-relaxed text-en-ink"
+                          />
+
+                          {/* 답 입력. 보기(choices)가 있으면 객관식(A~D 클릭), 없으면 자유 입력 */}
+                          {(() => {
+                            const choices = (p.choices ?? []).filter((c) => (c ?? "").trim());
+                            const isMcq = choices.length > 0;
+
+                            if (isMcq) {
+                              if (!submitted) {
+                                return (
+                                  <div className="mt-3 space-y-2">
+                                    {choices.map((c, ci) => {
+                                      const letter = String.fromCharCode(65 + ci);
+                                      const selected = answers[p.id] === letter;
+                                      return (
+                                        <button
+                                          key={ci}
+                                          type="button"
+                                          onClick={() => setAnswers((prev) => ({ ...prev, [p.id]: letter }))}
+                                          className={`flex w-full items-start gap-3 rounded-lg border px-4 py-2.5 text-left text-sm transition-colors ${
+                                            selected
+                                              ? "border-en-gold bg-en-gold-soft/60"
+                                              : "border-en-line bg-white hover:bg-en-gold-soft/20"
+                                          }`}
+                                        >
+                                          <span className="font-semibold text-en-ink-soft">{letter}</span>
+                                          <MathText text={c} className="text-en-ink" />
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                );
+                              }
                               return (
                                 <div className="mt-3 space-y-2">
                                   {choices.map((c, ci) => {
                                     const letter = String.fromCharCode(65 + ci);
-                                    const selected = answers[p.id] === letter;
+                                    const isCorrect = normAnswer(letter) === normAnswer(p.answer);
+                                    const isMine = answers[p.id] === letter;
                                     return (
-                                      <button
+                                      <div
                                         key={ci}
-                                        type="button"
-                                        onClick={() => setAnswers((prev) => ({ ...prev, [p.id]: letter }))}
-                                        className={`flex w-full items-start gap-3 rounded-lg border px-4 py-2.5 text-left text-sm transition-colors ${
-                                          selected
-                                            ? "border-[var(--pink)] bg-[var(--pink-light)]/40"
-                                            : "border-[var(--border-c)] bg-white hover:bg-[var(--mint)]/20"
+                                        className={`flex w-full items-start gap-3 rounded-lg border px-4 py-2.5 text-sm ${
+                                          isCorrect
+                                            ? "border-en-gold-deep bg-en-gold-soft/60"
+                                            : isMine
+                                            ? "border-red-400 bg-red-50"
+                                            : "border-en-line bg-white"
                                         }`}
                                       >
-                                        <span className="font-semibold text-[var(--secondary)]">{letter}</span>
-                                        <MathText text={c} className="text-[var(--foreground)]" />
-                                      </button>
+                                        <span className="font-semibold text-en-ink-soft">{letter}</span>
+                                        <MathText text={c} className="flex-1 text-en-ink" />
+                                        {isCorrect && <span className="text-xs font-bold text-en-gold-deep">정답</span>}
+                                        {isMine && !isCorrect && <span className="text-xs font-medium text-red-600">내 선택</span>}
+                                      </div>
                                     );
                                   })}
                                 </div>
                               );
                             }
-                            return (
-                              <div className="mt-3 space-y-2">
-                                {choices.map((c, ci) => {
-                                  const letter = String.fromCharCode(65 + ci);
-                                  const isCorrect = normAnswer(letter) === normAnswer(p.answer);
-                                  const isMine = answers[p.id] === letter;
-                                  return (
-                                    <div
-                                      key={ci}
-                                      className={`flex w-full items-start gap-3 rounded-lg border px-4 py-2.5 text-sm ${
-                                        isCorrect
-                                          ? "border-[var(--mint-dark)] bg-[var(--mint)]/40"
-                                          : isMine
-                                          ? "border-red-400 bg-red-50"
-                                          : "border-[var(--border-c)] bg-white"
-                                      }`}
-                                    >
-                                      <span className="font-semibold text-[var(--secondary)]">{letter}</span>
-                                      <MathText text={c} className="flex-1 text-[var(--foreground)]" />
-                                      {isCorrect && <span className="text-xs font-medium text-[var(--mint-dark)]">정답</span>}
-                                      {isMine && !isCorrect && <span className="text-xs font-medium text-red-600">내 선택</span>}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            );
-                          }
 
-                          return !submitted ? (
-                            <div className="mt-3">
-                              <label className="text-xs text-[var(--secondary)]">내 답</label>
-                              <input
-                                type="text"
-                                value={answers[p.id] ?? ""}
-                                onChange={(e) => setAnswers((prev) => ({ ...prev, [p.id]: e.target.value }))}
-                                placeholder="정답 입력"
-                                className="mt-1 w-full rounded-lg border border-[var(--border-c)] bg-white px-4 py-2.5 text-sm outline-none focus:border-[var(--pink)]"
-                              />
-                            </div>
-                          ) : (
-                            <p className="mt-3 text-sm text-[var(--secondary)]">
-                              내 답: <span className="text-[var(--foreground)]">{answers[p.id]?.trim() || "(무응답)"}</span>
-                            </p>
-                          );
-                        })()}
-
-                        {/* 답지 (제출 후에만 공개): 정답 + 풀이 */}
-                        {submitted && (
-                          <div className="mt-2 rounded-xl border border-[var(--border-c)] bg-[var(--mint)]/20 p-4">
-                            {p.answer ? (
-                              <p className="text-sm text-[var(--foreground)]">
-                                <span className="font-medium">정답:</span> {p.answer}
-                              </p>
-                            ) : (
-                              <p className="text-sm text-[var(--secondary)]">정답이 아직 등록되지 않았습니다.</p>
-                            )}
-                            {p.solution_text && (
-                              <div className="mt-2">
-                                <p className="mb-1 text-xs font-medium text-[var(--secondary)]">풀이</p>
-                                <MathText
-                                  text={p.solution_text}
-                                  className="text-sm leading-relaxed text-[var(--foreground)]"
+                            return !submitted ? (
+                              <div className="mt-3">
+                                <label className="text-xs text-en-ink-soft">내 답</label>
+                                <input
+                                  type="text"
+                                  value={answers[p.id] ?? ""}
+                                  onChange={(e) => setAnswers((prev) => ({ ...prev, [p.id]: e.target.value }))}
+                                  placeholder="정답 입력"
+                                  className="mt-1 w-full rounded-lg border border-en-line bg-white px-4 py-2.5 text-sm outline-none focus:border-en-gold"
                                 />
                               </div>
-                            )}
-                            {p.solution_image_url && (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img src={p.solution_image_url} alt={`${i + 1}번 해설`} className="mt-2 w-full rounded-lg border border-[var(--border-c)]" />
-                            )}
-                          </div>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ol>
+                            ) : (
+                              <p className="mt-3 text-sm text-en-ink-soft">
+                                내 답: <span className="text-en-ink">{answers[p.id]?.trim() || "(무응답)"}</span>
+                              </p>
+                            );
+                          })()}
 
-                {!submitted && (
-                  <div className="mt-8 flex justify-end">
-                    <button
-                      onClick={handleSubmit}
-                      disabled={saving}
-                      className="rounded-full bg-[var(--pink)] px-8 py-3 text-sm font-medium text-[var(--pink-dark)] disabled:opacity-60"
-                    >
-                      {saving ? "제출 중..." : "제출하고 답지 보기"}
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
-          </>
-        )}
+                          {/* 답지 (제출 후에만 공개): 정답 + 풀이 */}
+                          {submitted && (
+                            <div className="mt-2 rounded-xl border border-en-line bg-en-gold-soft/30 p-4">
+                              {p.answer ? (
+                                <p className="text-sm text-en-ink">
+                                  <span className="font-semibold">정답:</span> {p.answer}
+                                </p>
+                              ) : (
+                                <p className="text-sm text-en-ink-soft">정답이 아직 등록되지 않았습니다.</p>
+                              )}
+                              {p.solution_text && (
+                                <div className="mt-2">
+                                  <p className="mb-1 text-xs font-semibold text-en-ink-soft">풀이</p>
+                                  <MathText
+                                    text={p.solution_text}
+                                    className="text-sm leading-relaxed text-en-ink"
+                                  />
+                                </div>
+                              )}
+                              {p.solution_image_url && (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={p.solution_image_url} alt={`${i + 1}번 해설`} className="mt-2 w-full rounded-lg border border-en-line" />
+                              )}
+                            </div>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ol>
+
+                  {!submitted && (
+                    <div className="mt-8 flex justify-end">
+                      <button
+                        onClick={() => handleSubmit(false)}
+                        disabled={saving}
+                        className="rounded-[11px] bg-en-gold px-8 py-3 text-sm font-bold text-en-ink transition-colors hover:bg-en-gold-deep disabled:opacity-60"
+                      >
+                        {saving ? "제출 중..." : "제출하고 답지 보기"}
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          )}
+        </div>
       </main>
       <Footer />
     </>

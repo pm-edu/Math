@@ -30,5 +30,7 @@ export type Worksheet = {
   title: string;
   description: string | null;
   subject: string; // 'math' | 'english'
+  is_exam: boolean; // 실전 시험 모드(제한시간·1회 응시) 여부
+  time_limit_minutes: number | null;
   created_at: string;
 };

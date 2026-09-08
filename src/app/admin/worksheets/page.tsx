@@ -28,6 +28,8 @@ export default function AdminWorksheetsPage() {
   // 새 문제지 구성
   const [title, setTitle] = useState("");
   const [picked, setPicked] = useState<string[]>([]); // problem ids (선택 순서 유지)
+  const [isExam, setIsExam] = useState(false);
+  const [timeLimitMinutes, setTimeLimitMinutes] = useState("");
   const [filterCat, setFilterCat] = useState("");
   const [filterCourseLevel, setFilterCourseLevel] = useState("");
   const [filterUnit, setFilterUnit] = useState("");
@@ -115,10 +117,23 @@ export default function AdminWorksheetsPage() {
     setError(null); setMessage(null);
     if (!title.trim()) { setError("문제지 제목을 입력해주세요."); return; }
     if (picked.length === 0) { setError("문제를 하나 이상 선택해주세요."); return; }
+    if (isExam && (!timeLimitMinutes || Number(timeLimitMinutes) <= 0)) {
+      setError("실전 시험은 제한시간(분)을 입력해주세요.");
+      return;
+    }
 
     setSaving(true);
     const supabase = createClient();
-    const { data: ws, error: wErr } = await supabase.from("worksheets").insert({ title: title.trim(), subject }).select("id").single();
+    const { data: ws, error: wErr } = await supabase
+      .from("worksheets")
+      .insert({
+        title: title.trim(),
+        subject,
+        is_exam: isExam,
+        time_limit_minutes: isExam ? Number(timeLimitMinutes) : null,
+      })
+      .select("id")
+      .single();
     if (wErr || !ws) { setSaving(false); setError(`생성 실패: ${wErr?.message}`); return; }
 
     // 선택한 순서(picked 배열 순서)대로 position 1,2,3... 을 매긴다.
@@ -127,7 +142,7 @@ export default function AdminWorksheetsPage() {
     setSaving(false);
     if (linkErr) { setError(`문제 추가 실패: ${linkErr.message}`); return; }
 
-    setTitle(""); setPicked([]);
+    setTitle(""); setPicked([]); setIsExam(false); setTimeLimitMinutes("");
     setMessage(`"${title}" 문제지를 만들었습니다. 아래에서 미리보기로 확인한 뒤 학생에게 배포하세요.`);
     loadWorksheets();
   }
@@ -217,6 +232,27 @@ export default function AdminWorksheetsPage() {
           <p className="mt-2 text-xs text-[var(--secondary)]">
             문제를 클릭한 순서대로 번호가 매겨집니다. 순서를 바꾸려면 선택을 해제했다가 원하는 순서로 다시 클릭하세요.
           </p>
+
+          <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-[var(--border-c)] bg-[var(--background)]/60 px-4 py-3">
+            <label className="flex items-center gap-2 text-sm font-medium text-[var(--foreground)]">
+              <input type="checkbox" checked={isExam} onChange={(e) => setIsExam(e.target.checked)} />
+              실전 시험으로 만들기 (제한시간 · 1회 응시)
+            </label>
+            {isExam && (
+              <label className="flex items-center gap-2 text-sm text-[var(--secondary)]">
+                제한시간
+                <input
+                  type="number"
+                  min={1}
+                  value={timeLimitMinutes}
+                  onChange={(e) => setTimeLimitMinutes(e.target.value)}
+                  placeholder="30"
+                  className="w-20 rounded-lg border border-[var(--border-c)] px-2 py-1 text-sm outline-none focus:border-[var(--pink)]"
+                />
+                분
+              </label>
+            )}
+          </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
             {isMath ? (
@@ -308,7 +344,14 @@ export default function AdminWorksheetsPage() {
             return (
               <li key={w.id} className="rounded-2xl border border-[var(--border-c)] bg-white p-5">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-sm font-medium text-[var(--foreground)]">{w.title}</p>
+                  <p className="flex items-center gap-2 text-sm font-medium text-[var(--foreground)]">
+                    {w.title}
+                    {w.is_exam && (
+                      <span className="rounded-full bg-[var(--pink-light)] px-2.5 py-0.5 text-xs font-medium text-[var(--pink-dark)]">
+                        ⏱ 실전 시험 · {w.time_limit_minutes}분
+                      </span>
+                    )}
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     <button onClick={() => togglePreview(w.id)}
                       className="rounded-full border border-[var(--border-c)] px-4 py-1.5 text-sm text-[var(--foreground)] hover:bg-[var(--mint)]/40">
