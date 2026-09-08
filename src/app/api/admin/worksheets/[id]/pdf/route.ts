@@ -9,6 +9,10 @@ import { generateWorksheetPdf, type PdfPart } from "@/lib/pdf/worksheet-pdf";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 
+// 헤드리스 브라우저 launch + 인쇄가 콜드 스타트에서 서버리스 기본 실행시간 제한(10초)을
+// 넘을 수 있어(TOEFL 문항 생성 라우트와 같은 이유) 넉넉히 늘려둔다.
+export const maxDuration = 60;
+
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const token = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");

@@ -11,6 +11,10 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY ?? "";
 const MAIL_FROM = process.env.MAIL_FROM ?? "수학클래스 <noreply@send.pmedu4u.com>";
 const SITE_URL = "https://www.pmedu4u.com";
 
+// PDF 첨부 시 헤드리스 브라우저를 띄우고(콜드 스타트 포함), 구독자가 많으면 배치 발송도
+// 여러 번 도니 서버리스 기본 실행시간 제한(10초)을 넘을 수 있어 넉넉히 늘려둔다.
+export const maxDuration = 60;
+
 type Body = {
   subject?: string;
   html?: string;
