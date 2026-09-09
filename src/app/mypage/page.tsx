@@ -10,9 +10,11 @@ import { createClient } from "@/lib/supabase/client";
 import type { Profile, PurchasedCourse } from "@/lib/profile";
 import { isStaff } from "@/lib/roles";
 import { useLang, categoryLabel } from "@/lib/i18n";
+import { useSubject } from "@/lib/subject";
 
 export default function MyPage() {
   const router = useRouter();
+  const { subject } = useSubject();
   const { lang, t } = useLang();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [purchases, setPurchases] = useState<PurchasedCourse[]>([]);
@@ -143,7 +145,7 @@ export default function MyPage() {
                   </Link>
                   {isStaff(profile?.role) && (
                     <Link
-                      href="/admin"
+                      href={subject === "math" ? "/admin/math" : "/admin"}
                       className="inline-block rounded-full bg-en-gold-soft px-5 py-2.5 text-sm font-bold text-en-gold-deep"
                     >
                       {t("adminPanel")}

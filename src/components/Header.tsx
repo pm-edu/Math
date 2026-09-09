@@ -138,7 +138,7 @@ export default function Header() {
           )}
           {isAdmin && (
             <Link
-              href="/admin"
+              href={subject === "math" ? "/admin/math" : "/admin"}
               className="rounded-full border border-[var(--border-c)] bg-white px-4 py-1.5 text-sm text-[var(--foreground)] transition-colors hover:bg-[var(--mint)]/40"
             >
               {t("admin")}
