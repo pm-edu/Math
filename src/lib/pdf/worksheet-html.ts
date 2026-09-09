@@ -31,7 +31,9 @@ function renderMathHtml(text: string): string {
 
 function questionBodyHtml(p: Problem): string {
   if (p.problem_type === "text" && p.content_text) {
-    const extraImg = p.image_url ? `<img class="q-img" src="${esc(p.image_url)}" alt="참고 그림" />` : "";
+    // 본문 아래 딸린 보조 도형(그래프·삼각형 등)은 작게 — 전체가 이미지인 문제(.q-img)와
+    // 같은 클래스를 쓰면 도형까지 페이지 폭만큼 커진다(2026-09-09 사용자 지적).
+    const extraImg = p.image_url ? `<img class="q-diagram" src="${esc(p.image_url)}" alt="참고 그림" />` : "";
     return `<div class="q-text">${renderMathHtml(p.content_text)}</div>${extraImg}`;
   }
   return `<img class="q-img" src="${esc(p.image_url)}" alt="문제 이미지" />`;
@@ -71,11 +73,13 @@ const BASE_CSS = `
 `;
 
 const QUESTIONS_CSS = `
+  .q-grid { column-count: 2; column-gap: 16px; }
   .q { margin-bottom: 20px; break-inside: avoid; }
   .q-head { display: flex; gap: 8px; align-items: baseline; font-size: 12px; font-weight: 800; color: #182A4E; margin-bottom: 6px; }
   .q-badge { font-size: 9px; font-weight: 700; color: #D98C0F; background: #FFF4DF; padding: 2px 8px; border-radius: 999px; }
   .q-text { font-size: 12px; line-height: 1.7; color: #33405E; }
   .q-img { max-width: 90%; margin-top: 6px; border-radius: 6px; border: 1px solid #E3E9F4; }
+  .q-diagram { max-width: 240px; width: 100%; height: auto; display: block; margin-top: 6px; border-radius: 6px; border: 1px solid #E3E9F4; }
   .q-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; font-size: 11.5px; color: #33405E; margin-top: 6px; }
   .q-blank { border-bottom: 1px dashed #C7D0E4; height: 26px; margin-top: 8px; width: 55%; }
   .q-blank.wide { width: 100%; height: 22px; }
@@ -131,7 +135,7 @@ export function buildProblemsHtml(worksheet: Worksheet, problems: Problem[]): st
     ${headerHtml(worksheet)}
     <p class="title">${esc(worksheet.title)}</p>
     <p class="sub">이름 ___________________　　점수 _______ / ${problems.length}</p>
-    ${questionsHtml}
+    <div class="q-grid">${questionsHtml}</div>
     <p class="foot-brand">PM EDU · pmedu4u.com</p>
   </div>`;
 
@@ -196,7 +200,7 @@ export function buildWorksheetPrintHtml(worksheet: Worksheet, problems: Problem[
     ${headerHtml(worksheet)}
     <p class="title">${esc(worksheet.title)}</p>
     <p class="sub">이름 ___________________　　점수 _______ / ${problems.length}</p>
-    ${questionsHtml}
+    <div class="q-grid">${questionsHtml}</div>
     <p class="foot-brand">PM EDU · pmedu4u.com</p>
     <div class="answers" style="page-break-before: always; padding-top: 6mm;">
       <p class="a-title">정답 및 해설</p>

@@ -75,8 +75,11 @@ export function ProblemBody({
           }
         />
         {problem.image_url && (
+          // 본문 아래 딸린 보조 도형이라 원래 문제 전체가 이미지인 경우(아래 return문,
+          // imgClassName의 w-full이 맞음)와 달리 폭을 작게 제한한다 — imgClassName을
+          // 그대로 쓰면 카드 폭만큼 커져서 그래프 하나가 화면을 다 차지한다(2026-09-09 지적).
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={problem.image_url} alt="그래프" className={`mt-2 ${imgClassName ?? ""}`} />
+          <img src={problem.image_url} alt="그래프" className={`mt-2 ${imgClassName ?? ""}`} style={{ maxWidth: 280 }} />
         )}
       </>
     );
