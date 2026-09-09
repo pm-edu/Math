@@ -64,6 +64,10 @@ export default function MathAdminHome() {
         <StatCard label="입금 대기 수강신청" value={stats?.pendingEnrollments} tone={stats && stats.pendingEnrollments > 0 ? "alert" : undefined} />
         <StatCard label="문의 누적" value={stats?.newContacts} />
       </div>
+
+      <Link href="/admin/dashboard" className="mt-4 inline-block text-sm font-semibold text-en-gold-deep underline">
+        매출 · 취약단원 · 리스크 학생 등 자세한 운영 통계 보기 →
+      </Link>
     </div>
   );
 }

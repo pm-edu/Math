@@ -29,10 +29,10 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       title: "자료 관리",
       items: [
         { label: "문제은행", icon: "📚", href: "/admin/problems", show: canMaterials },
-        { label: "문제지 · 배포", icon: "📄", href: "/admin/worksheets", show: canMaterials },
-        { label: "자동 출제", icon: "🧩", href: "/admin/assemble", show: canMaterials },
-        { label: "문제 추출", icon: "🔍", href: "/admin/extract", show: canMaterials },
-        { label: "AI 문제 생성", icon: "✨", href: "/admin/generate", show: canMaterials },
+        { label: "문제지 만들기 · 배포", icon: "📄", href: "/admin/worksheets", show: canMaterials },
+        { label: "문제지 자동 만들기", icon: "🧩", href: "/admin/assemble", show: canMaterials },
+        { label: "PDF · 문서에서 문제 가져오기", icon: "🔍", href: "/admin/extract", show: canMaterials },
+        { label: "AI로 문제 생성", icon: "✨", href: "/admin/generate", show: canMaterials },
       ],
     },
     {
@@ -54,25 +54,22 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       ],
     },
     {
-      title: "진행 구조",
+      title: "구독 커리큘럼",
       items: [
-        { label: "학습 진행 대시보드", icon: "🧭", href: "/admin/math-progression", show: canGrades },
+        { label: "진행 현황", icon: "🧭", href: "/admin/math-progression", show: canGrades },
         { label: "선수관계 편집", icon: "🔗", href: "/admin/math-progression/prereqs", show: canSite },
         { label: "수강권 부여", icon: "🎟️", href: "/admin/math-progression/grants", show: canSite },
       ],
     },
     {
       title: "사이트",
-      items: [
-        { label: "전체 대시보드", icon: "📈", href: "/admin/dashboard", show: canGrades },
-        { label: "설정", icon: "⚙️", href: "/admin/settings", show: canSite },
-      ],
+      items: [{ label: "설정", icon: "⚙️", href: "/admin/settings", show: canSite }],
     },
   ];
 
   return (
     <div className="min-h-screen bg-en-paper text-en-ink lg:grid lg:grid-cols-[232px_1fr]">
-      <aside className="flex flex-col gap-1 border-b border-en-line bg-white px-3.5 py-5 lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r">
+      <aside className="flex flex-col gap-1 overflow-y-auto border-b border-en-line bg-white px-3.5 py-5 lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r">
         <span className="flex items-baseline gap-2 px-2.5 pb-4 pt-1 text-[15px] font-extrabold tracking-[-.02em]">
           <Link href="/" title="PM EDU 메인으로" className="hover:text-en-ink-soft">
             PM EDU
