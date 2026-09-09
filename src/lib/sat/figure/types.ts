@@ -22,6 +22,9 @@ export type TriangleSpec = {
   labels?: [string, string, string]; // 꼭짓점 이름, 예: ["A", "B", "C"]
   sideLabels?: { ab?: string; bc?: string; ca?: string }; // 변 위에 표시할 텍스트(길이 등)
   rightAngleAt?: 0 | 1 | 2; // 직각 표시할 꼭짓점 인덱스
+  angleLabels?: { at: 0 | 1 | 2; text: string }[]; // 각 크기 표시(예: "50°") — 꼭짓점 안쪽에 텍스트로
+  extraPoints?: Point[]; // 보조점(각의 이등분선이 만나는 점, 변의 연장선 위의 점 등)
+  extraSegments?: { from: Point; to: Point; dashed?: boolean }[]; // 보조선(이등분선, 연장선 등)
 };
 
 export type CircleSpec = {

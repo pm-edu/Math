@@ -26,6 +26,19 @@ export const FigureSpecSchema: z.ZodType<FigureSpec> = z.union([
       labels: z.tuple([z.string(), z.string(), z.string()]).optional(),
       sideLabels: z.object({ ab: z.string().optional(), bc: z.string().optional(), ca: z.string().optional() }).optional(),
       rightAngleAt: z.union([z.literal(0), z.literal(1), z.literal(2)]).optional(),
+      angleLabels: z
+        .array(z.object({ at: z.union([z.literal(0), z.literal(1), z.literal(2)]), text: z.string() }))
+        .optional(),
+      extraPoints: z.array(z.object({ x: z.number(), y: z.number(), label: z.string().optional() })).optional(),
+      extraSegments: z
+        .array(
+          z.object({
+            from: z.object({ x: z.number(), y: z.number(), label: z.string().optional() }),
+            to: z.object({ x: z.number(), y: z.number(), label: z.string().optional() }),
+            dashed: z.boolean().optional(),
+          })
+        )
+        .optional(),
     }),
     z.object({
       kind: z.literal("circle"),

@@ -121,8 +121,11 @@ function renderCoordinatePlane(spec: CoordinatePlaneSpec): RenderedFigure {
 // ───────── triangle ─────────
 
 function renderTriangle(spec: TriangleSpec): RenderedFigure {
-  const xs = spec.vertices.map((v) => v.x);
-  const ys = spec.vertices.map((v) => v.y);
+  // 보조점·보조선(각의 이등분선이 만나는 점, 변의 연장선 위의 점 등)이 원래 3꼭짓점의
+  // 바깥으로 나갈 수 있어(예: 연장선) 축척 계산에 같이 넣어야 화면 밖으로 안 벗어난다.
+  const auxPts = [...(spec.extraPoints ?? []), ...(spec.extraSegments ?? []).flatMap((s) => [s.from, s.to])];
+  const xs = [...spec.vertices.map((v) => v.x), ...auxPts.map((p) => p.x)];
+  const ys = [...spec.vertices.map((v) => v.y), ...auxPts.map((p) => p.y)];
   const xMin = Math.min(...xs);
   const xMax = Math.max(...xs);
   const yMin = Math.min(...ys);
@@ -171,10 +174,54 @@ function renderTriangle(spec: TriangleSpec): RenderedFigure {
     parts.push(`<rect x="${fmt(toPx(v.x) - 8)}" y="${fmt(py(v.y) - 8)}" width="8" height="8" fill="none" stroke="${COLOR.gold}" stroke-width="1.5"/>`);
   }
 
+  // 보조선(각의 이등분선, 변의 연장선 등) — 원래 변과 구분되도록 점선으로 그릴 수 있게 한다.
+  for (const seg of spec.extraSegments ?? []) {
+    const x1 = toPx(seg.from.x);
+    const y1 = py(seg.from.y);
+    const x2 = toPx(seg.to.x);
+    const y2 = py(seg.to.y);
+    const dash = seg.dashed ? ` stroke-dasharray="4 3"` : "";
+    parts.push(`<line x1="${fmt(x1)}" y1="${fmt(y1)}" x2="${fmt(x2)}" y2="${fmt(y2)}" stroke="${COLOR.inkSoft}" stroke-width="1.5"${dash}/>`);
+  }
+
+  // 보조점(각의 이등분선이 만나는 점 등) — 꼭짓점과 같은 스타일로 표시.
+  for (const p of spec.extraPoints ?? []) {
+    const px = toPx(p.x);
+    const pyPos = py(p.y);
+    parts.push(`<circle cx="${fmt(px)}" cy="${fmt(pyPos)}" r="3" fill="${COLOR.ink}"/>`);
+    if (p.label) {
+      parts.push(`<text x="${fmt(px + 8)}" y="${fmt(pyPos - 4)}" fill="${COLOR.ink}" font-size="14" font-weight="bold">${escapeXml(p.label)}</text>`);
+    }
+  }
+
+  // 각 크기 표시 — 실제 호를 그리지 않고, 그 꼭짓점에서 삼각형 안쪽(두 변의 이등분 방향)으로
+  // 텍스트만 놓는다. 호의 방향(sweep)을 매번 정확히 계산하는 것보다 단순하고 오류 위험이 적다.
+  for (const al of spec.angleLabels ?? []) {
+    const v = spec.vertices[al.at];
+    const others = spec.vertices.filter((_, i) => i !== al.at);
+    const vx = toPx(v.x);
+    const vy = py(v.y);
+    const dirs = others.map((o) => {
+      const dx = toPx(o.x) - vx;
+      const dy = py(o.y) - vy;
+      const len = Math.hypot(dx, dy) || 1;
+      return { x: dx / len, y: dy / len };
+    });
+    const bisX = dirs[0].x + dirs[1].x;
+    const bisY = dirs[0].y + dirs[1].y;
+    const bisLen = Math.hypot(bisX, bisY) || 1;
+    const R = 26;
+    const lx = vx + (bisX / bisLen) * R;
+    const ly = vy + (bisY / bisLen) * R;
+    parts.push(`<text x="${fmt(lx)}" y="${fmt(ly)}" fill="${COLOR.gold}" font-size="12" text-anchor="middle">${escapeXml(al.text)}</text>`);
+  }
+
   const alt =
     `삼각형 ${labels.join("")}` +
     (spec.rightAngleAt !== undefined ? `, 직각은 ${labels[spec.rightAngleAt]}에 있음` : "") +
+    (spec.angleLabels?.length ? `, 각 표시: ${spec.angleLabels.map((a) => `${labels[a.at]}=${a.text}`).join(", ")}` : "") +
     (spec.sideLabels ? `, 변 길이: ${Object.values(spec.sideLabels).filter(Boolean).join(", ")}` : "") +
+    (spec.extraPoints?.length ? `, 보조점: ${spec.extraPoints.map((p) => p.label ?? "?").join(", ")}` : "") +
     ".";
 
   return { svg: svgRoot(parts.join("")), alt };
