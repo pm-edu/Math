@@ -103,7 +103,7 @@ function renderCoordinatePlane(spec: CoordinatePlaneSpec): RenderedFigure {
     parts.push(`<circle cx="${fmt(toPx(p.x))}" cy="${fmt(toPy(p.y))}" r="4" fill="${COLOR.ink}"/>`);
     if (p.label) {
       parts.push(
-        `<text x="${fmt(toPx(p.x) + 6)}" y="${fmt(toPy(p.y) - 6)}" fill="${COLOR.ink}" font-size="13">${escapeXml(p.label)}</text>`,
+        `<text x="${fmt(toPx(p.x) + 6)}" y="${fmt(toPy(p.y) - 6)}" fill="${COLOR.ink}" font-size="17">${escapeXml(p.label)}</text>`,
       );
     }
   }
@@ -149,7 +149,7 @@ function renderTriangle(spec: TriangleSpec): RenderedFigure {
     const lx = toPx(v.x);
     const ly = py(v.y);
     parts.push(`<circle cx="${fmt(lx)}" cy="${fmt(ly)}" r="3" fill="${COLOR.ink}"/>`);
-    parts.push(`<text x="${fmt(lx + 8)}" y="${fmt(ly - 4)}" fill="${COLOR.ink}" font-size="14" font-weight="bold">${escapeXml(labels[i])}</text>`);
+    parts.push(`<text x="${fmt(lx + 8)}" y="${fmt(ly - 4)}" fill="${COLOR.ink}" font-size="19" font-weight="bold">${escapeXml(labels[i])}</text>`);
   });
 
   if (spec.sideLabels) {
@@ -157,15 +157,15 @@ function renderTriangle(spec: TriangleSpec): RenderedFigure {
     const { ab, bc, ca } = spec.sideLabels;
     if (ab) {
       const m = mid(v0, v1);
-      parts.push(`<text x="${fmt(m.x)}" y="${fmt(m.y)}" fill="${COLOR.inkSoft}" font-size="12" text-anchor="middle">${escapeXml(ab)}</text>`);
+      parts.push(`<text x="${fmt(m.x)}" y="${fmt(m.y)}" fill="${COLOR.inkSoft}" font-size="16" text-anchor="middle">${escapeXml(ab)}</text>`);
     }
     if (bc) {
       const m = mid(v1, v2);
-      parts.push(`<text x="${fmt(m.x)}" y="${fmt(m.y)}" fill="${COLOR.inkSoft}" font-size="12" text-anchor="middle">${escapeXml(bc)}</text>`);
+      parts.push(`<text x="${fmt(m.x)}" y="${fmt(m.y)}" fill="${COLOR.inkSoft}" font-size="16" text-anchor="middle">${escapeXml(bc)}</text>`);
     }
     if (ca) {
       const m = mid(v2, v0);
-      parts.push(`<text x="${fmt(m.x)}" y="${fmt(m.y)}" fill="${COLOR.inkSoft}" font-size="12" text-anchor="middle">${escapeXml(ca)}</text>`);
+      parts.push(`<text x="${fmt(m.x)}" y="${fmt(m.y)}" fill="${COLOR.inkSoft}" font-size="16" text-anchor="middle">${escapeXml(ca)}</text>`);
     }
   }
 
@@ -190,7 +190,7 @@ function renderTriangle(spec: TriangleSpec): RenderedFigure {
     const pyPos = py(p.y);
     parts.push(`<circle cx="${fmt(px)}" cy="${fmt(pyPos)}" r="3" fill="${COLOR.ink}"/>`);
     if (p.label) {
-      parts.push(`<text x="${fmt(px + 8)}" y="${fmt(pyPos - 4)}" fill="${COLOR.ink}" font-size="14" font-weight="bold">${escapeXml(p.label)}</text>`);
+      parts.push(`<text x="${fmt(px + 8)}" y="${fmt(pyPos - 4)}" fill="${COLOR.ink}" font-size="19" font-weight="bold">${escapeXml(p.label)}</text>`);
     }
   }
 
@@ -210,10 +210,10 @@ function renderTriangle(spec: TriangleSpec): RenderedFigure {
     const bisX = dirs[0].x + dirs[1].x;
     const bisY = dirs[0].y + dirs[1].y;
     const bisLen = Math.hypot(bisX, bisY) || 1;
-    const R = 26;
+    const R = 30; // 글자가 커져서(2026-09-09) 꼭짓점과 안 겹치게 약간 더 띄움
     const lx = vx + (bisX / bisLen) * R;
     const ly = vy + (bisY / bisLen) * R;
-    parts.push(`<text x="${fmt(lx)}" y="${fmt(ly)}" fill="${COLOR.gold}" font-size="12" text-anchor="middle">${escapeXml(al.text)}</text>`);
+    parts.push(`<text x="${fmt(lx)}" y="${fmt(ly)}" fill="${COLOR.gold}" font-size="16" text-anchor="middle">${escapeXml(al.text)}</text>`);
   }
 
   const alt =
@@ -257,7 +257,7 @@ function renderQuadrilateral(spec: QuadrilateralSpec): RenderedFigure {
     const lx = toPx(v.x);
     const ly = py(v.y);
     parts.push(`<circle cx="${fmt(lx)}" cy="${fmt(ly)}" r="3" fill="${COLOR.ink}"/>`);
-    parts.push(`<text x="${fmt(lx + 8)}" y="${fmt(ly - 4)}" fill="${COLOR.ink}" font-size="14" font-weight="bold">${escapeXml(labels[i])}</text>`);
+    parts.push(`<text x="${fmt(lx + 8)}" y="${fmt(ly - 4)}" fill="${COLOR.ink}" font-size="19" font-weight="bold">${escapeXml(labels[i])}</text>`);
   });
 
   if (spec.sideLabels) {
@@ -272,7 +272,7 @@ function renderQuadrilateral(spec: QuadrilateralSpec): RenderedFigure {
     for (const [text, a, b] of sides) {
       if (!text) continue;
       const m = mid(a, b);
-      parts.push(`<text x="${fmt(m.x)}" y="${fmt(m.y)}" fill="${COLOR.inkSoft}" font-size="12" text-anchor="middle">${escapeXml(text)}</text>`);
+      parts.push(`<text x="${fmt(m.x)}" y="${fmt(m.y)}" fill="${COLOR.inkSoft}" font-size="16" text-anchor="middle">${escapeXml(text)}</text>`);
     }
   }
 
@@ -295,7 +295,7 @@ function renderQuadrilateral(spec: QuadrilateralSpec): RenderedFigure {
     const pyPos = py(p.y);
     parts.push(`<circle cx="${fmt(px)}" cy="${fmt(pyPos)}" r="3" fill="${COLOR.ink}"/>`);
     if (p.label) {
-      parts.push(`<text x="${fmt(px + 8)}" y="${fmt(pyPos - 4)}" fill="${COLOR.ink}" font-size="14" font-weight="bold">${escapeXml(p.label)}</text>`);
+      parts.push(`<text x="${fmt(px + 8)}" y="${fmt(pyPos - 4)}" fill="${COLOR.ink}" font-size="19" font-weight="bold">${escapeXml(p.label)}</text>`);
     }
   }
 
@@ -316,10 +316,10 @@ function renderQuadrilateral(spec: QuadrilateralSpec): RenderedFigure {
     const bisX = dirs[0].x + dirs[1].x;
     const bisY = dirs[0].y + dirs[1].y;
     const bisLen = Math.hypot(bisX, bisY) || 1;
-    const R = 26;
+    const R = 30; // 글자가 커져서(2026-09-09) 꼭짓점과 안 겹치게 약간 더 띄움
     const lx = vx + (bisX / bisLen) * R;
     const ly = vy + (bisY / bisLen) * R;
-    parts.push(`<text x="${fmt(lx)}" y="${fmt(ly)}" fill="${COLOR.gold}" font-size="12" text-anchor="middle">${escapeXml(al.text)}</text>`);
+    parts.push(`<text x="${fmt(lx)}" y="${fmt(ly)}" fill="${COLOR.gold}" font-size="16" text-anchor="middle">${escapeXml(al.text)}</text>`);
   }
 
   const alt =
@@ -352,14 +352,14 @@ function renderCircle(spec: CircleSpec): RenderedFigure {
   if (spec.radiusLabel) {
     parts.push(
       `<line x1="${fmt(cx)}" y1="${fmt(cy)}" x2="${fmt(cx + r)}" y2="${fmt(cy)}" stroke="${COLOR.gold}" stroke-width="1.5"/>`,
-      `<text x="${fmt(cx + r / 2)}" y="${fmt(cy - 6)}" fill="${COLOR.inkSoft}" font-size="12" text-anchor="middle">${escapeXml(spec.radiusLabel)}</text>`,
+      `<text x="${fmt(cx + r / 2)}" y="${fmt(cy - 6)}" fill="${COLOR.inkSoft}" font-size="16" text-anchor="middle">${escapeXml(spec.radiusLabel)}</text>`,
     );
   }
 
   for (const p of spec.points ?? []) {
     parts.push(`<circle cx="${fmt(toPx(p.x))}" cy="${fmt(toPy(p.y))}" r="3" fill="${COLOR.ink}"/>`);
     if (p.label) {
-      parts.push(`<text x="${fmt(toPx(p.x) + 6)}" y="${fmt(toPy(p.y) - 6)}" fill="${COLOR.ink}" font-size="13">${escapeXml(p.label)}</text>`);
+      parts.push(`<text x="${fmt(toPx(p.x) + 6)}" y="${fmt(toPy(p.y) - 6)}" fill="${COLOR.ink}" font-size="17">${escapeXml(p.label)}</text>`);
     }
   }
 
@@ -397,9 +397,9 @@ function renderBarChart(spec: BarChartSpec): RenderedFigure {
     const y = HEIGHT - PAD - h;
     parts.push(`<rect x="${fmt(x)}" y="${fmt(y)}" width="${fmt(barW)}" height="${fmt(h)}" fill="${COLOR.gold}"/>`);
     parts.push(
-      `<text x="${fmt(x + barW / 2)}" y="${HEIGHT - PAD + 16}" fill="${COLOR.ink}" font-size="12" text-anchor="middle">${escapeXml(spec.categories[i])}</text>`,
+      `<text x="${fmt(x + barW / 2)}" y="${HEIGHT - PAD + 16}" fill="${COLOR.ink}" font-size="16" text-anchor="middle">${escapeXml(spec.categories[i])}</text>`,
     );
-    parts.push(`<text x="${fmt(x + barW / 2)}" y="${fmt(y - 6)}" fill="${COLOR.inkSoft}" font-size="11" text-anchor="middle">${fmt(v)}</text>`);
+    parts.push(`<text x="${fmt(x + barW / 2)}" y="${fmt(y - 6)}" fill="${COLOR.inkSoft}" font-size="14" text-anchor="middle">${fmt(v)}</text>`);
   });
 
   const alt = `막대그래프. ${spec.xLabel ?? "항목"}별 ${spec.yLabel ?? "값"}: ${spec.categories.map((c, i) => `${c}=${fmt(spec.values[i])}`).join(", ")}.`;
@@ -459,7 +459,7 @@ function renderTable(spec: TableSpec): RenderedFigure {
       const y = PAD + r * cellH;
       parts.push(`<rect x="${fmt(x)}" y="${fmt(y)}" width="${fmt(cellW)}" height="${fmt(cellH)}" fill="none" stroke="${COLOR.line}" stroke-width="1"/>`);
       parts.push(
-        `<text x="${fmt(x + cellW / 2)}" y="${fmt(y + cellH / 2 + 4)}" fill="${COLOR.ink}" font-size="12" font-weight="${r === 0 ? "bold" : "normal"}" text-anchor="middle">${escapeXml(cell)}</text>`,
+        `<text x="${fmt(x + cellW / 2)}" y="${fmt(y + cellH / 2 + 4)}" fill="${COLOR.ink}" font-size="16" font-weight="${r === 0 ? "bold" : "normal"}" text-anchor="middle">${escapeXml(cell)}</text>`,
       );
     });
   });

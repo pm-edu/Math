@@ -18,6 +18,8 @@ export function buildMathUnitPrompt(unit: MathUnit, count: number): string {
 
 Mix both formats across the batch — roughly half "mcq" and half "numeric", whichever fits each specific problem better. Vary difficulty across the batch ("하"/"중"/"상", not all the same).
 
+Every "mcq" item MUST have EXACTLY 5 choices (Korean math convention — 5지선다, like ①~⑤), never 4. "correctIndex" is 0-4.
+
 Some problems need a diagram (a graph, a triangle, a circle, a chart, a table) to make sense. For those, add an optional "figure" field with ONE of these shapes — do NOT describe the picture in words instead, and do NOT add "figure" to a problem that doesn't need one:
 - Coordinate plane / function graph: {"kind":"coordinate_plane","xRange":[-5,5],"yRange":[-5,5],"lines":[{"a":1,"b":-1,"c":0}],"curves":[{"expr":"x^2 - 3*x + 2"}],"points":[{"x":1,"y":2,"label":"A"}]} (curves.expr is a JS-style expression in x; lines are ax+by=c)
 - Triangle: {"kind":"triangle","vertices":[{"x":0,"y":0},{"x":6,"y":0},{"x":0,"y":8}],"labels":["A","B","C"],"sideLabels":{"ab":"6cm","ca":"8cm"},"rightAngleAt":0,"angleLabels":[{"at":1,"text":"50°"}],"extraPoints":[{"x":3,"y":0,"label":"D"}],"extraSegments":[{"from":{"x":0,"y":8},"to":{"x":3,"y":0},"dashed":true}]}
@@ -33,7 +35,7 @@ The numbers in "figure" MUST exactly match the numbers stated in "contentText" (
 Return ONLY this JSON shape, filled in (no markdown fences, no extra text):
 {
   "items": [
-    {"format":"mcq","contentText":"...","choices":["...","...","...","..."],"correctIndex":0,"solutionText":"...","difficulty":"중"},
+    {"format":"mcq","contentText":"...","choices":["...","...","...","...","..."],"correctIndex":0,"solutionText":"...","difficulty":"중"},
     {"format":"numeric","contentText":"...","answerRaw":"3/4","solutionText":"...","difficulty":"하","figure":{"kind":"triangle","vertices":[...],...}}
     /* ... ${count} items total ... */
   ]

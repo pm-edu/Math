@@ -38,7 +38,7 @@ import { MathGeneratedItemSchema, type MathGeneratedItem } from "@/lib/math/serv
 const MODEL = "claude-sonnet-5";
 const MAX_TOKENS = 8000; // countPerUnit이 작을 때(6~8개) 기준으로 잡은 기본값
 const MAX_TOKENS_PER_ITEM = 900; // countPerUnit이 크면 응답이 잘릴 수 있어 문항 수에 비례해 늘림
-const LETTERS = ["A", "B", "C", "D"] as const;
+const LETTERS = ["A", "B", "C", "D", "E"] as const; // 5지선다 — src/app/admin/generate/page.tsx와 같은 관례
 
 // src/lib/graph-svg.ts와 같은 고정 팔레트 — Storage에 올려 <img>로 쓰는 SVG는 페이지 CSS 밖이라
 // var(--en-ink) 같은 변수가 안 먹힌다(같은 이유가 그 파일에도 적혀 있음).
@@ -250,7 +250,7 @@ async function collectReadyRows(
 /** 단원 단위(생성과 같은 크기)로 쪼개서 순차 재검증 — 한 번에 몰아 보내면 응답이 잘린다. */
 async function verifyByUnit(anthropic: Anthropic, rowsForUnit: ReadyRow[]): Promise<boolean[]> {
   const prompt = `Solve each problem below independently from scratch. Do not assume any given answer is correct.
-For "mcq" items, answer with the 0-based index (0,1,2, or 3) of the correct choice.
+For "mcq" items, answer with the 0-based index (0,1,2,3, or 4) of the correct choice.
 For "numeric" items, answer with a single rational number as a string (e.g. "3/4", "-2.5", "12").
 
 Problems:
