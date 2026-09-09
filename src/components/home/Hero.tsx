@@ -1,9 +1,11 @@
 import Link from "next/link";
 import ReportPreview from "./ReportPreview";
+import { getHeroReportSettings } from "@/lib/home-report";
 
 const TAGS = ["초등 · 중등 · 고등", "IB AA / AI", "TOEFL iBT", "1:1 · 소수정예"];
 
-export default function Hero() {
+export default async function Hero() {
+  const reportSettings = await getHeroReportSettings();
   return (
     <section className="bg-en-ink text-white relative overflow-hidden">
       {/* 은은한 가로줄 텍스처 — 순수 장식, 스크린리더 대상 아님(배경이라 aria 불필요). */}
@@ -52,7 +54,7 @@ export default function Hero() {
         </div>
 
         <div className="motion-safe:animate-[rise_.62s_cubic-bezier(0.2,0.7,0.3,1)_both] motion-safe:[animation-delay:.1s]">
-          <ReportPreview />
+          <ReportPreview {...reportSettings} />
         </div>
       </div>
     </section>

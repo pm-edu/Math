@@ -10,8 +10,9 @@ import { pretendardHome } from "@/lib/home-fonts";
 // 홈페이지 리디자인(2026-09-02, 지시서 "메인페이지 리디자인 — TOEFL 팔레트 승격").
 // 기존 헤더/푸터는 그대로 재사용하고, 본문만 "큰 카테고리 2개(수학/영어)" 구성으로 교체한다.
 // 사용자 결정: 두 도메인(pmedu4u.com/english.pmedu4u.com) 모두 동일한 화면을 보여준다 —
-// 그래서 예전처럼 getSubject()로 과목별 콘텐츠를 갈라 보여주던 로직은 여기서 더 안 쓴다
-// (Header의 수학/English 전환 pill은 그대로 동작 — 그건 이 페이지가 아니라 도메인 이동용).
+// 그래서 예전처럼 getSubject()로 과목별 콘텐츠를 갈라 보여주던 로직은 여기서 더 안 쓴다.
+// 헤더의 수학/영어 전환 pill은 이 화면의 과목 선택 카드(TrackSelector)와 중복이라
+// 2026-09-09에 제거함 — 과목 전환은 이 카드와 푸터 링크로 한다.
 export default function Home() {
   return (
     <>
