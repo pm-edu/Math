@@ -103,7 +103,7 @@ export default function Header() {
               href="/toefl"
               className="hidden text-sm text-[var(--secondary)] transition-colors hover:text-[var(--foreground)] md:inline"
             >
-              TOEFL
+              TOEFL Prep
             </Link>
           )}
           {(programs.includes("sat") || cameFromSat) && (
@@ -111,7 +111,7 @@ export default function Header() {
               href="/sat"
               className="hidden text-sm text-[var(--secondary)] transition-colors hover:text-[var(--foreground)] md:inline"
             >
-              SAT
+              SAT Prep
             </Link>
           )}
           {isAdmin && (
@@ -186,7 +186,7 @@ export default function Header() {
                 onClick={() => setMobileOpen(false)}
                 className="text-sm text-[var(--secondary)] hover:text-[var(--foreground)]"
               >
-                TOEFL
+                TOEFL Prep
               </Link>
             )}
             {(programs.includes("sat") || cameFromSat) && (
@@ -195,7 +195,7 @@ export default function Header() {
                 onClick={() => setMobileOpen(false)}
                 className="text-sm text-[var(--secondary)] hover:text-[var(--foreground)]"
               >
-                SAT
+                SAT Prep
               </Link>
             )}
             {loggedIn && (

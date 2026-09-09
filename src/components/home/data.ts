@@ -15,7 +15,7 @@ export interface Program {
 export const PROGRAMS: Program[] = [
   {
     id: "toefl",
-    label: "TOEFL",
+    label: "TOEFL Prep",
     labelLang: "en",
     description: "2026 개편 포맷 그대로. 12유형 연습과 적응형 모의고사",
     status: "live",
@@ -33,7 +33,7 @@ export const PROGRAMS: Program[] = [
   },
   {
     id: "sat",
-    label: "SAT",
+    label: "SAT Prep",
     labelLang: "en",
     description: "출시 알림을 신청하면 오픈할 때 알려드립니다",
     status: "soon",
@@ -41,7 +41,7 @@ export const PROGRAMS: Program[] = [
   },
   {
     id: "ielts",
-    label: "IELTS",
+    label: "IELTS Prep",
     labelLang: "en",
     description: "출시 알림을 신청하면 오픈할 때 알려드립니다",
     status: "soon",
@@ -134,11 +134,11 @@ export const FLOW_STEPS: { no: string; title: string; body: string }[] = [
 ];
 
 export const CURRICULUM_CHIPS: { name: string; note?: string }[] = [
-  { name: "IGCSE", note: "0607" },
+  { name: "IGCSE" },
   { name: "Cambridge", note: "AS · A Level" },
   { name: "IB", note: "AA HL · SL" },
   { name: "IB", note: "AI HL · SL" },
   { name: "인도", note: "CBSE" },
   { name: "한국 교육과정" },
-  { name: "TOEFL", note: "iBT 2026" },
+  { name: "TOEFL Prep", note: "iBT 2026" },
 ];

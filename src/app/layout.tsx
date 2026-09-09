@@ -22,7 +22,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const hostname = headerList.get("host") ?? "";
   if (hostname.startsWith("toefl.")) {
     return {
-      title: "TOEFL Practice | PM EDU",
+      title: "TOEFL Prep | PM EDU",
       description: "Reading, Listening, Speaking, Writing practice and full-length mock tests for the 2026 TOEFL format.",
     };
   }
