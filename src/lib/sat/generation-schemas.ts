@@ -7,7 +7,7 @@ import type { FigureSpec } from "./figure/types";
 const RW_SKILL_KEYS = RW_SKILLS.map((s) => s.key) as [string, ...string[]];
 const MATH_SKILL_KEYS = MATH_SKILLS.map((s) => s.key) as [string, ...string[]];
 
-const FigureSpecSchema: z.ZodType<FigureSpec> = z.union([
+export const FigureSpecSchema: z.ZodType<FigureSpec> = z.union([
     z.object({
       kind: z.literal("coordinate_plane"),
       xRange: z.tuple([z.number(), z.number()]),

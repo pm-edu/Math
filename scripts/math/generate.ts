@@ -21,11 +21,14 @@
  */
 
 import { readFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import Anthropic from "@anthropic-ai/sdk";
 import katex from "katex";
 import { extractJsonText } from "@/lib/llm-server";
 import { parseSpr } from "@/lib/sat/spr";
+import { renderFigureToSvg, type FigureColors } from "@/lib/sat/figure/render";
+import type { FigureSpec } from "@/lib/sat/figure/types";
 import { MATH_SYSTEM_PROMPT } from "@/lib/math/server/generation-system-prompt";
 import { buildMathUnitPrompt, type MathUnit } from "@/lib/math/server/unit-prompt";
 import { MathGeneratedBatchSchema, type MathGeneratedItem } from "@/lib/math/server/generation-schemas";
@@ -33,6 +36,10 @@ import { MathGeneratedBatchSchema, type MathGeneratedItem } from "@/lib/math/ser
 const MODEL = "claude-sonnet-5";
 const MAX_TOKENS = 8000;
 const LETTERS = ["A", "B", "C", "D"] as const;
+
+// src/lib/graph-svg.ts와 같은 고정 팔레트 — Storage에 올려 <img>로 쓰는 SVG는 페이지 CSS 밖이라
+// var(--en-ink) 같은 변수가 안 먹힌다(같은 이유가 그 파일에도 적혀 있음).
+const MATH_FIGURE_COLORS: FigureColors = { ink: "#2C2C2A", inkSoft: "#5C5A52", line: "#E8E0CC", gold: "#4B1528" };
 
 function loadEnvLocal() {
   let raw: string;
@@ -109,14 +116,34 @@ function allLatexCompiles(texts: string[]): boolean {
   return true;
 }
 
-/** 구조 검증만 — A1(zod)/A3(mcq 선택지 중복)/A5(numeric 파싱)/A6(LaTeX) 성격. 실패면 폐기. */
+/** 구조 검증만 — A1(zod)/A3(mcq 선택지 중복)/A5(numeric 파싱)/A6(LaTeX)/A7(도형 렌더) 성격. 실패면 폐기. */
 function structurallyValid(item: MathGeneratedItem): boolean {
   if (!allLatexCompiles([item.contentText, item.solutionText])) return false;
+  if (item.figure) {
+    try {
+      renderFigureToSvg(item.figure);
+    } catch {
+      return false;
+    }
+  }
   if (item.format === "mcq") {
     const seen = new Set(item.choices.map((c) => c.trim().toLowerCase()));
     return seen.size === item.choices.length;
   }
   return parseSpr(item.answerRaw).ok;
+}
+
+/** 도형 스펙을 SVG로 그려 Storage에 올리고 공개 URL을 돌려준다(problems 버킷,
+ * src/app/api/generate-math-problems/route.ts의 함수 그래프 업로드와 동일한 방식). */
+async function uploadFigureSvg(db: SupabaseClient, figure: FigureSpec): Promise<string> {
+  const { svg } = renderFigureToSvg(figure, MATH_FIGURE_COLORS);
+  const path = `${randomUUID()}.svg`;
+  const { error } = await db.storage
+    .from("problems")
+    .upload(path, new Blob([svg], { type: "image/svg+xml" }), { contentType: "image/svg+xml" });
+  if (error) throw error;
+  const { data } = db.storage.from("problems").getPublicUrl(path);
+  return data.publicUrl;
 }
 
 interface ReadyRow {
@@ -317,7 +344,12 @@ async function main() {
 
   let verifiedTrue = 0;
   let verifiedFalse = 0;
-  const insertRows = readyRows.map(({ item, unit }, i) => {
+  let figuresUploaded = 0;
+  let figuresFailed = 0;
+  const withFigure = readyRows.filter((r) => r.item.figure).length;
+  const insertRows: Record<string, unknown>[] = [];
+  for (let i = 0; i < readyRows.length; i++) {
+    const { item, unit } = readyRows[i];
     const matches = matchResults[i];
     if (matches) verifiedTrue++;
     else verifiedFalse++;
@@ -327,7 +359,21 @@ async function main() {
     // 하=1/중=2/상=4 — PG1 진행 구조의 numeric_difficulty 매핑과 동일
     // (supabase/migrations/202609071400_math_numeric_difficulty.sql 참고).
     const numericDifficulty = { 하: 1, 중: 2, 상: 4 }[item.difficulty];
-    return {
+
+    // dry-run은 DB에 넣지 않으므로 Storage에도 안 올린다 — 렌더 자체는 structurallyValid에서
+    // 이미 검증됨(A7). 실제 실행일 때만 업로드하고, 실패해도 문항은 그림 없이 그대로 저장한다.
+    let imageUrl = "";
+    if (item.figure && !args.dryRun) {
+      try {
+        imageUrl = await uploadFigureSvg(db, item.figure);
+        figuresUploaded++;
+      } catch (e) {
+        figuresFailed++;
+        console.warn(`  도형 업로드 실패(그림 없이 저장): ${e instanceof Error ? e.message : e}`);
+      }
+    }
+
+    insertRows.push({
       subject: "math",
       curriculum_group: unit.curriculum_group,
       curriculum_detail: unit.curriculum_detail,
@@ -335,17 +381,24 @@ async function main() {
       difficulty: item.difficulty,
       numeric_difficulty: numericDifficulty,
       problem_type: "text",
-      image_url: "", // NOT NULL 컬럼 — 기존 텍스트형 문항 관례 그대로(빈 문자열)
+      image_url: imageUrl, // NOT NULL 컬럼 — 도형 없으면 기존 텍스트형 문항 관례 그대로(빈 문자열)
       content_text: item.contentText,
       solution_text: item.solutionText,
       answer,
       choices,
       source: "ai",
       verified: matches,
-    };
-  });
+    });
+  }
 
   console.log(`재검증 결과 — 일치(verified=true): ${verifiedTrue} · 불일치(verified=false, 검토 대기): ${verifiedFalse}`);
+  if (withFigure > 0) {
+    console.log(
+      args.dryRun
+        ? `도형 포함 문항: ${withFigure}건 (dry-run이라 업로드는 생략, 렌더 자체는 이미 검증됨)`
+        : `도형 업로드 — 성공: ${figuresUploaded} · 실패(그림 없이 저장): ${figuresFailed}`
+    );
+  }
 
   if (args.dryRun) {
     console.log("\n--dry-run 이라 DB에 삽입하지 않았습니다.");

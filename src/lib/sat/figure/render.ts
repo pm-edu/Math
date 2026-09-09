@@ -20,6 +20,13 @@ export interface RenderedFigure {
   alt: string;
 }
 
+export interface FigureColors {
+  ink: string;
+  inkSoft: string;
+  line: string;
+  gold: string;
+}
+
 function escapeXml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
@@ -313,19 +320,29 @@ function renderTable(spec: TableSpec): RenderedFigure {
   return { svg: svgRoot(parts.join("")), alt };
 }
 
-export function renderFigureToSvg(spec: FigureSpec): RenderedFigure {
-  switch (spec.kind) {
-    case "coordinate_plane":
-      return renderCoordinatePlane(spec);
-    case "triangle":
-      return renderTriangle(spec);
-    case "circle":
-      return renderCircle(spec);
-    case "bar_chart":
-      return renderBarChart(spec);
-    case "scatter":
-      return renderScatter(spec);
-    case "table":
-      return renderTable(spec);
+// colors를 넘기면 CSS 변수 대신 그 값을 잠깐 써서 렌더링한다. Supabase Storage에 올려
+// <img>로 쓰는 SVG(수학 문제 도형)는 페이지 CSS 밖이라 var(--en-ink) 같은 변수가 안 먹힌다
+// (graph-svg.ts가 hex를 그대로 박아둔 것과 같은 이유) — 반면 SAT는 지금처럼 인라인
+// <svg>로 그려서 CSS 변수가 그대로 통하므로 colors를 안 넘기면 기존 동작 그대로다.
+export function renderFigureToSvg(spec: FigureSpec, colors?: FigureColors): RenderedFigure {
+  const prev = { ...COLOR };
+  if (colors) Object.assign(COLOR, colors);
+  try {
+    switch (spec.kind) {
+      case "coordinate_plane":
+        return renderCoordinatePlane(spec);
+      case "triangle":
+        return renderTriangle(spec);
+      case "circle":
+        return renderCircle(spec);
+      case "bar_chart":
+        return renderBarChart(spec);
+      case "scatter":
+        return renderScatter(spec);
+      case "table":
+        return renderTable(spec);
+    }
+  } finally {
+    Object.assign(COLOR, prev);
   }
 }

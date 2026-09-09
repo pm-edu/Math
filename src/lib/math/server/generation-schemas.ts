@@ -3,7 +3,11 @@
 // 문항을 먼저 채워 넣는 이 파이프라인이 그 STOP을 풀기 위한 선행 작업).
 
 import { z } from "zod";
+import { FigureSpecSchema } from "@/lib/sat/generation-schemas";
 
+// 도형·그래프 스펙 — SAT 서브시스템의 결정론적 렌더러(src/lib/sat/figure)를 그대로 재사용한다.
+// LLM이 SVG 좌표를 직접 만들면 틀리기 쉽고, PDF 교재에서 추출하면 출판사 저작권 문제가 있어
+// (2026-09-09 사용자 지적) 구조화된 스펙만 생성하게 하고 그리기는 코드가 결정론적으로 한다.
 const McqItemSchema = z.object({
   format: z.literal("mcq"),
   contentText: z.string().min(1),
@@ -11,6 +15,7 @@ const McqItemSchema = z.object({
   correctIndex: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
   solutionText: z.string().min(1),
   difficulty: z.enum(["하", "중", "상"]),
+  figure: FigureSpecSchema.optional(),
 });
 
 const NumericItemSchema = z.object({
@@ -19,6 +24,7 @@ const NumericItemSchema = z.object({
   answerRaw: z.string().min(1), // "3/4", "12", "-2.5" 같은 형태 — parseSpr로 검증
   solutionText: z.string().min(1),
   difficulty: z.enum(["하", "중", "상"]),
+  figure: FigureSpecSchema.optional(),
 });
 
 export const MathGeneratedItemSchema = z.discriminatedUnion("format", [McqItemSchema, NumericItemSchema]);
