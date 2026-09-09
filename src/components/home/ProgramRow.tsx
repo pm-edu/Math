@@ -75,6 +75,28 @@ function ProgramIcon({ icon }: { icon: Program["icon"] }) {
           <path d="M8.5 12.5 6 21l6-3 6 3-2.5-8.5" />
         </svg>
       );
+    case "igcse":
+      return (
+        <svg {...common} aria-hidden="true">
+          <rect x="5" y="3" width="14" height="18" rx="2" />
+          <path d="M9 8h6M9 12h6M9 16h3" />
+        </svg>
+      );
+    case "aslevel":
+      return (
+        <svg {...common} aria-hidden="true">
+          <path d="M4 20h4v-4H4v4Z" />
+          <path d="M10 20h4v-9h-4v9Z" />
+          <path d="M16 20h4V6h-4v14Z" />
+        </svg>
+      );
+    case "cbse":
+      return (
+        <svg {...common} aria-hidden="true">
+          <path d="M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11Z" />
+          <circle cx="12" cy="10" r="2.5" />
+        </svg>
+      );
   }
 }
 

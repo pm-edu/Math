@@ -2,8 +2,6 @@ import Link from "next/link";
 import ReportPreview from "./ReportPreview";
 import { getHeroReportSettings } from "@/lib/home-report";
 
-const TAGS = ["초등 · 중등 · 고등", "IB AA / AI", "TOEFL iBT", "1:1 · 소수정예"];
-
 export default async function Hero() {
   const reportSettings = await getHeroReportSettings();
   return (
@@ -42,14 +40,6 @@ export default async function Hero() {
             >
               강좌 둘러보기
             </Link>
-          </div>
-
-          <div className="mt-[34px] pt-6 border-t border-white/[.13] flex flex-wrap gap-2.5">
-            {TAGS.map((tag) => (
-              <span key={tag} className="inline-flex items-center h-[30px] px-3 rounded-full border border-white/20 text-[.8125rem] font-medium text-white/[.78]">
-                {tag}
-              </span>
-            ))}
           </div>
         </div>
 

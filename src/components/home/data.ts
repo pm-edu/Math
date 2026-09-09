@@ -9,7 +9,7 @@ export interface Program {
   description: string;
   status: ProgramStatus;
   href?: string; // live일 때만
-  icon: "toefl" | "vocab" | "sat" | "ielts" | "general" | "elementary" | "middle" | "high" | "ib";
+  icon: "toefl" | "vocab" | "sat" | "ielts" | "general" | "elementary" | "middle" | "high" | "ib" | "igcse" | "aslevel" | "cbse";
 }
 
 export const PROGRAMS: Program[] = [
@@ -96,6 +96,33 @@ export const MATH_PROGRAMS: Program[] = [
     status: "live",
     href: "/courses",
     icon: "ib",
+  },
+  {
+    id: "igcse",
+    label: "IGCSE",
+    labelLang: "en",
+    description: "케임브리지 0607 과정, 학년별 커리큘럼",
+    status: "live",
+    href: "/courses",
+    icon: "igcse",
+  },
+  {
+    id: "aslevel",
+    label: "AS · A Level",
+    labelLang: "en",
+    description: "케임브리지 심화 과정, 대학 입시 준비",
+    status: "live",
+    href: "/courses",
+    icon: "aslevel",
+  },
+  {
+    id: "cbse",
+    label: "CBSE",
+    labelLang: "en",
+    description: "인도 학생을 위한 CBSE 교육과정",
+    status: "live",
+    href: "/courses",
+    icon: "cbse",
   },
 ];
 
