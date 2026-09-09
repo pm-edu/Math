@@ -14,6 +14,8 @@
  * 사용법:
  *   npx tsx scripts/math/generate.ts --curriculumDetail IGCSE_0607 --countPerUnit 6 --dry-run
  *   npx tsx scripts/math/generate.ts --curriculumDetail IGCSE_0607 --countPerUnit 6
+ *   npx tsx scripts/math/generate.ts --curriculumDetail 중2 --unitName "삼각형과 사각형의 성질" --countPerUnit 20
+ *     (--unitName: 그 curriculumDetail 안에서 이름이 정확히 일치하는 단원 하나만 생성)
  *   npx tsx scripts/math/generate.ts --resumeBatchId msgbatch_xxx --curriculumDetail IGCSE_0607 --countPerUnit 6
  *     (이미 끝난 배치 결과를 재생성 없이 재사용 — 검증/삽입 단계에서 실패했을 때 복구용)
  *
@@ -34,7 +36,8 @@ import { buildMathUnitPrompt, type MathUnit } from "@/lib/math/server/unit-promp
 import { MathGeneratedBatchSchema, type MathGeneratedItem } from "@/lib/math/server/generation-schemas";
 
 const MODEL = "claude-sonnet-5";
-const MAX_TOKENS = 8000;
+const MAX_TOKENS = 8000; // countPerUnit이 작을 때(6~8개) 기준으로 잡은 기본값
+const MAX_TOKENS_PER_ITEM = 900; // countPerUnit이 크면 응답이 잘릴 수 있어 문항 수에 비례해 늘림
 const LETTERS = ["A", "B", "C", "D"] as const;
 
 // src/lib/graph-svg.ts와 같은 고정 팔레트 — Storage에 올려 <img>로 쓰는 SVG는 페이지 CSS 밖이라
@@ -61,7 +64,14 @@ function loadEnvLocal() {
 }
 loadEnvLocal();
 
-type Args = { curriculumDetail: string; countPerUnit: number; unitLimit?: number; resumeBatchId?: string; dryRun: boolean };
+type Args = {
+  curriculumDetail: string;
+  countPerUnit: number;
+  unitLimit?: number;
+  unitName?: string;
+  resumeBatchId?: string;
+  dryRun: boolean;
+};
 
 function parseArgs(argv: string[]): Args {
   const get = (name: string) => {
@@ -71,7 +81,7 @@ function parseArgs(argv: string[]): Args {
   const curriculumDetail = get("curriculumDetail");
   if (!curriculumDetail) {
     console.error(
-      "사용법: npx tsx scripts/math/generate.ts --curriculumDetail IGCSE_0607 [--countPerUnit 6] [--unitLimit N] [--resumeBatchId id] [--dry-run]"
+      "사용법: npx tsx scripts/math/generate.ts --curriculumDetail IGCSE_0607 [--countPerUnit 6] [--unitLimit N] [--unitName \"단원명\"] [--resumeBatchId id] [--dry-run]"
     );
     process.exit(1);
   }
@@ -80,6 +90,7 @@ function parseArgs(argv: string[]): Args {
     curriculumDetail,
     countPerUnit: Number(get("countPerUnit") ?? 6),
     unitLimit: unitLimitRaw ? Number(unitLimitRaw) : undefined,
+    unitName: get("unitName"),
     resumeBatchId: get("resumeBatchId"),
     dryRun: argv.includes("--dry-run"),
   };
@@ -152,11 +163,12 @@ interface ReadyRow {
 }
 
 async function submitAndWaitBatch(anthropic: Anthropic, units: MathUnit[], countPerUnit: number): Promise<string> {
+  const maxTokens = Math.max(MAX_TOKENS, countPerUnit * MAX_TOKENS_PER_ITEM);
   const requests: Anthropic.Messages.Batches.BatchCreateParams["requests"] = units.map((u) => ({
     custom_id: String(u.id),
     params: {
       model: MODEL,
-      max_tokens: MAX_TOKENS,
+      max_tokens: maxTokens,
       thinking: { type: "adaptive" },
       output_config: { effort: "low" },
       system: [{ type: "text", text: MATH_SYSTEM_PROMPT, cache_control: { type: "ephemeral", ttl: "1h" } }],
@@ -294,7 +306,15 @@ async function main() {
     console.error("단원을 찾을 수 없습니다:", unitsErr?.message ?? "(0건)");
     process.exit(1);
   }
-  const units = (args.unitLimit ? allUnits.slice(0, args.unitLimit) : allUnits) as MathUnit[];
+  let units = allUnits as MathUnit[];
+  if (args.unitName) {
+    units = units.filter((u) => u.unit_name === args.unitName);
+    if (units.length === 0) {
+      console.error(`--unitName "${args.unitName}"과 정확히 일치하는 단원이 없습니다.`);
+      process.exit(1);
+    }
+  }
+  if (args.unitLimit) units = units.slice(0, args.unitLimit);
   const unitById = new Map(units.map((u) => [String(u.id), u]));
 
   console.log(
