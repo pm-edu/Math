@@ -7,7 +7,12 @@ export default function MathTrackCard() {
   return (
     <div className="rounded-2xl bg-en-card border border-en-line shadow-[0_1px_2px_rgba(24,42,78,.05),0_8px_24px_rgba(24,42,78,.07)] pt-[26px] px-2 pb-2 flex flex-col">
       <div className="px-5 pb-[18px] border-b border-en-line/60">
-        <h3 className="text-[1.6875rem] font-extrabold tracking-[-.032em] text-en-ink">수학</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="text-[1.6875rem] font-extrabold tracking-[-.032em] text-en-ink">수학</h3>
+          <span className="inline-flex items-center h-[22px] px-[9px] rounded-[6px] text-[.75rem] font-bold bg-en-gold-soft text-en-gold-deep">
+            구독형
+          </span>
+        </div>
         <p className="mt-2.5 text-[.9375rem] text-en-ink-soft">
           개념부터 실전까지, 학년과 과정에 맞춘 커리큘럼으로 한 번에 잡습니다.
         </p>

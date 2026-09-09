@@ -27,11 +27,11 @@ export async function generateMetadata(): Promise<Metadata> {
     };
   }
 
-  const subject = await getSubject();
-  const subjectLabel = subject === "english" ? "영어" : "수학";
+  // 홈 화면이 두 도메인 모두 수학·영어를 같이 보여주므로(src/app/page.tsx 참고) 탭
+  // 제목도 과목별로 가르지 않고 통일한다(2026-09-09).
   return {
-    title: `${site.name} | 초중고 IB ${subjectLabel} 온라인 클래스`,
-    description: `동영상 강의와 학습자료를 함께 제공하는 초중고, IB ${subjectLabel} 온라인 클래스`,
+    title: `${site.name} | 수학 영어 학습사이트`,
+    description: "진단부터 문제풀이, 매주 리포트까지 — 수학과 영어를 함께 배우는 온라인 학습 사이트",
   };
 }
 
