@@ -24,6 +24,7 @@ export default function MyPage() {
     new Map()
   );
   const [openReviewFor, setOpenReviewFor] = useState<string | null>(null);
+  const [pendingExams, setPendingExams] = useState<{ id: string; title: string; time_limit_minutes: number | null }[]>([]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -35,7 +36,7 @@ export default function MyPage() {
         return;
       }
 
-      const [profileResult, purchaseResult, reviewResult] = await Promise.all([
+      const [profileResult, purchaseResult, reviewResult, assignmentResult, attemptResult] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", auth.user.id).maybeSingle(),
         supabase
           .from("purchases")
@@ -43,7 +44,26 @@ export default function MyPage() {
           .eq("user_id", auth.user.id)
           .order("purchased_at", { ascending: false }),
         supabase.from("reviews").select("id, course_id, rating, content").eq("user_id", auth.user.id),
+        supabase
+          .from("worksheet_assignments")
+          .select("worksheet:worksheets(id, title, is_exam, time_limit_minutes)")
+          .eq("user_id", auth.user.id),
+        supabase.from("worksheet_attempts").select("worksheet_id, submitted_at").eq("user_id", auth.user.id),
       ]);
+
+      // 배정된 문제지 중 "실전 시험"이면서 아직 제출(응시 완료)하지 않은 것만 골라
+      // 마이페이지 맨 위에 놓친 시험이 없게 눈에 띄게 보여준다.
+      const submittedIds = new Set(
+        (attemptResult.data ?? []).filter((a) => a.submitted_at).map((a) => a.worksheet_id)
+      );
+      type WsRow = { id: string; title: string; is_exam: boolean; time_limit_minutes: number | null };
+      const exams = (assignmentResult.data ?? [])
+        .flatMap((r) => {
+          const w = (r as { worksheet: WsRow | WsRow[] | null }).worksheet;
+          return Array.isArray(w) ? w : w ? [w] : [];
+        })
+        .filter((w) => w.is_exam && !submittedIds.has(w.id));
+      setPendingExams(exams);
 
       if (profileResult.error) {
         setError("프로필을 불러오지 못했습니다.");
@@ -117,6 +137,32 @@ export default function MyPage() {
             <p className="mt-10 text-sm text-red-600">{error}</p>
           ) : (
             <>
+              {pendingExams.length > 0 && (
+                <section className="mt-8 rounded-2xl border border-red-200 bg-red-50 p-6 shadow-sm">
+                  <p className="flex items-center gap-2 text-sm font-bold text-red-700">
+                    ⏱ 응시할 실전 시험이 있습니다
+                  </p>
+                  <ul className="mt-3 space-y-2">
+                    {pendingExams.map((w) => (
+                      <li key={w.id} className="flex items-center justify-between gap-3 rounded-xl bg-white px-4 py-3 shadow-sm">
+                        <div>
+                          <p className="text-sm font-bold text-en-ink">{w.title}</p>
+                          {w.time_limit_minutes && (
+                            <p className="text-xs text-en-ink-soft">제한시간 {w.time_limit_minutes}분 · 1회 응시</p>
+                          )}
+                        </div>
+                        <Link
+                          href={`/worksheets/${w.id}`}
+                          className="whitespace-nowrap rounded-[11px] bg-en-gold px-4 py-2 text-sm font-bold text-en-ink transition-colors hover:bg-en-gold-deep"
+                        >
+                          시작하기
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
               <section className="mt-8 rounded-2xl border border-en-line bg-en-card p-6 shadow-sm">
                 <p className="text-sm font-bold text-en-ink">{t("myInfo")}</p>
                 <dl className="mt-4 space-y-2 text-sm">

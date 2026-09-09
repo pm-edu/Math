@@ -24,7 +24,7 @@ export default function MyWorksheetsPage() {
       // 나에게 배포된 문제지 (RLS가 자동으로 걸러줌)
       const { data } = await supabase
         .from("worksheet_assignments")
-        .select("worksheet:worksheets(id, title, description, subject, created_at)")
+        .select("worksheet:worksheets(id, title, description, subject, is_exam, time_limit_minutes, created_at)")
         .order("assigned_at", { ascending: false });
 
       const list = (data ?? [])
@@ -66,7 +66,14 @@ export default function MyWorksheetsPage() {
                     href={`/worksheets/${w.id}`}
                     className="block rounded-2xl border border-en-line bg-en-card p-5 shadow-sm transition-shadow hover:shadow-md"
                   >
-                    <p className="text-sm font-bold text-en-ink">{w.title}</p>
+                    <p className="flex items-center gap-2 text-sm font-bold text-en-ink">
+                      {w.title}
+                      {w.is_exam && (
+                        <span className="rounded-full bg-en-gold-soft px-2.5 py-0.5 text-xs font-bold text-en-gold-deep">
+                          ⏱ 실전 시험{w.time_limit_minutes ? ` · ${w.time_limit_minutes}분` : ""}
+                        </span>
+                      )}
+                    </p>
                     {w.description && (
                       <p className="mt-1 text-sm text-en-ink-soft">{w.description}</p>
                     )}
