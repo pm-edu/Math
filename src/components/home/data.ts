@@ -9,7 +9,7 @@ export interface Program {
   description: string;
   status: ProgramStatus;
   href?: string; // live일 때만
-  icon: "toefl" | "vocab" | "sat" | "ielts" | "general";
+  icon: "toefl" | "vocab" | "sat" | "ielts" | "general" | "elementary" | "middle" | "high" | "ib";
 }
 
 export const PROGRAMS: Program[] = [
@@ -57,7 +57,47 @@ export const PROGRAMS: Program[] = [
   },
 ];
 
-export const MATH_CHIPS = ["초등", "중등", "고등", "IB"];
+// 영어 카드(EnglishTrackCard)와 같은 행 목록 형태로 보여주려고 Program 타입을 그대로 쓴다
+// (사용자 요청, 2026-09-09: "수학카드도 영어카드처럼"). 4개 전부 실제로 개설돼 있어 status는
+// live 고정 — 아직 레벨별 필터 페이지가 없어 전부 /courses로 보낸다(거기서 학교급 배지로 구분됨).
+export const MATH_PROGRAMS: Program[] = [
+  {
+    id: "elementary",
+    label: "초등",
+    labelLang: "ko",
+    description: "연산의 기초부터 차근차근 잡는 개념완성",
+    status: "live",
+    href: "/courses",
+    icon: "elementary",
+  },
+  {
+    id: "middle",
+    label: "중등",
+    labelLang: "ko",
+    description: "내신 대비 핵심 개념과 기출 유형",
+    status: "live",
+    href: "/courses",
+    icon: "middle",
+  },
+  {
+    id: "high",
+    label: "고등",
+    labelLang: "ko",
+    description: "수능·내신을 함께 잡는 심화 과정",
+    status: "live",
+    href: "/courses",
+    icon: "high",
+  },
+  {
+    id: "ib",
+    label: "IB",
+    labelLang: "en",
+    description: "AA/AI 대비 종합반, IA 가이드까지",
+    status: "live",
+    href: "/courses",
+    icon: "ib",
+  },
+];
 
 export const FLOW_STEPS: { no: string; title: string; body: string }[] = [
   { no: "1단계", title: "진단", body: "30분 진단으로 지금 위치와 약한 단원을 찾습니다." },

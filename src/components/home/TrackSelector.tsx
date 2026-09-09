@@ -1,8 +1,9 @@
 import MathTrackCard from "./MathTrackCard";
 import EnglishTrackCard from "./EnglishTrackCard";
 
-// 수학/영어 2단 래퍼. 지시서 §3: 그리드 비율 0.86fr:1.14fr(영어가 넓다 — 정보량이
-// 많아서), 940px 이하에서 1단으로 바뀐다.
+// 수학/영어 2단 래퍼. 두 카드가 이제 같은 행 목록 구조라(2026-09-09, MathTrackCard를
+// EnglishTrackCard와 통일) 폭도 동률로 바꿈(예전엔 영어가 정보량이 많아 0.86:1.14였음),
+// 940px 이하에서 1단으로 바뀐다.
 export default function TrackSelector() {
   return (
     <section className="py-[clamp(58px,7vw,92px)]">
@@ -16,7 +17,7 @@ export default function TrackSelector() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 min-[941px]:grid-cols-[0.86fr_1.14fr] gap-[22px] items-start">
+        <div className="grid grid-cols-1 min-[941px]:grid-cols-2 gap-[22px] items-start">
           <MathTrackCard />
           <EnglishTrackCard />
         </div>

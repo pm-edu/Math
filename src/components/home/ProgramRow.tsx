@@ -40,6 +40,41 @@ function ProgramIcon({ icon }: { icon: Program["icon"] }) {
           <path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5c-1.35 0-2.62-.32-3.73-.9L3 20l1.02-4.5A8.44 8.44 0 0 1 3 11.5 8.5 8.5 0 0 1 11.5 3h1A8.5 8.5 0 0 1 21 11.5Z" />
         </svg>
       );
+    case "elementary":
+      return (
+        <svg {...common} aria-hidden="true">
+          <path d="M12 20v-8" />
+          <path d="M12 12c0-4-3-6-7-6 0 4 3 6 7 6Z" />
+          <path d="M12 12c0-5 3-8 8-8 0 5-3 8-8 8Z" />
+        </svg>
+      );
+    case "middle":
+      return (
+        <svg {...common} aria-hidden="true">
+          <rect x="4" y="4" width="16" height="17" rx="2" />
+          <path d="M9 12.5l2 2 4-4.5" />
+        </svg>
+      );
+    case "high":
+      return (
+        <svg {...common} aria-hidden="true">
+          <rect x="5" y="2" width="14" height="20" rx="2" />
+          <path d="M8 5.5h8" />
+          <circle cx="8.5" cy="11.5" r=".9" fill="currentColor" stroke="none" />
+          <circle cx="12" cy="11.5" r=".9" fill="currentColor" stroke="none" />
+          <circle cx="15.5" cy="11.5" r=".9" fill="currentColor" stroke="none" />
+          <circle cx="8.5" cy="15.5" r=".9" fill="currentColor" stroke="none" />
+          <circle cx="12" cy="15.5" r=".9" fill="currentColor" stroke="none" />
+          <circle cx="15.5" cy="15.5" r=".9" fill="currentColor" stroke="none" />
+        </svg>
+      );
+    case "ib":
+      return (
+        <svg {...common} aria-hidden="true">
+          <circle cx="12" cy="8" r="5" />
+          <path d="M8.5 12.5 6 21l6-3 6 3-2.5-8.5" />
+        </svg>
+      );
   }
 }
 

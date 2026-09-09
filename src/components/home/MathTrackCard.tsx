@@ -1,40 +1,23 @@
-import Link from "next/link";
-import { MATH_CHIPS } from "./data";
+import { MATH_PROGRAMS } from "./data";
+import ProgramRow from "./ProgramRow";
 
+// 영어 카드(EnglishTrackCard)와 같은 셸 + 행 목록 구조. 예전엔 태그 칩 4개 + 버튼 하나로
+// 훨씬 단순했는데, 두 카드 스타일이 서로 달라 보인다는 지적(2026-09-09)으로 통일함.
 export default function MathTrackCard() {
   return (
-    <Link
-      href="/courses"
-      className="block rounded-2xl bg-en-gold-soft border border-en-gold/40 p-7 relative overflow-hidden transition-transform hover:-translate-y-0.5"
-    >
-      <span aria-hidden="true" className="absolute inset-y-0 left-0 w-1 bg-en-gold" />
-
-      <span className="w-[46px] h-[46px] rounded-[13px] bg-en-gold/15 text-en-gold-deep grid place-items-center">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
-          <path d="M4 19.5V5a2 2 0 0 1 2-2h13v18H6.5A2.5 2.5 0 0 1 4 19.5Z" />
-          <path d="M8 8h7M8 12h4" />
-        </svg>
-      </span>
-
-      <h3 className="mt-5 text-[1.6875rem] font-extrabold tracking-[-.032em] text-en-ink">수학</h3>
-      <p className="mt-3 text-[.9375rem] leading-[1.7] text-en-ink-soft max-w-[30ch]">
-        개념부터 실전까지, 학년과 과정에 맞춘 커리큘럼으로 한 번에 잡습니다.
-      </p>
-
-      <div className="mt-[22px] flex flex-wrap gap-2">
-        {MATH_CHIPS.map((chip) => (
-          <span key={chip} className="inline-flex items-center h-8 px-[13px] rounded-full bg-en-card border border-en-gold/40 text-[.8125rem] font-bold text-en-gold-deep">
-            {chip}
-          </span>
-        ))}
+    <div className="rounded-2xl bg-en-card border border-en-line shadow-[0_1px_2px_rgba(24,42,78,.05),0_8px_24px_rgba(24,42,78,.07)] pt-[26px] px-2 pb-2 flex flex-col">
+      <div className="px-5 pb-[18px] border-b border-en-line/60">
+        <h3 className="text-[1.6875rem] font-extrabold tracking-[-.032em] text-en-ink">수학</h3>
+        <p className="mt-2.5 text-[.9375rem] text-en-ink-soft">
+          개념부터 실전까지, 학년과 과정에 맞춘 커리큘럼으로 한 번에 잡습니다.
+        </p>
       </div>
 
-      <span className="mt-[26px] inline-flex items-center gap-1.5 rounded-[11px] bg-en-ink text-white h-12 px-[22px] text-[.9375rem] font-bold">
-        수학 강좌 보기
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M5 12h14M13 6l6 6-6 6" />
-        </svg>
-      </span>
-    </Link>
+      <div className="flex flex-col">
+        {MATH_PROGRAMS.map((program) => (
+          <ProgramRow key={program.id} program={program} />
+        ))}
+      </div>
+    </div>
   );
 }
