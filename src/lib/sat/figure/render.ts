@@ -2,7 +2,7 @@
 // 색은 CSS 변수만 쓴다(hex 금지). 모든 도형에 alt 텍스트를 스펙에서 자동 생성한다.
 
 import { compileExpr } from "./expr";
-import type { BarChartSpec, CircleSpec, CoordinatePlaneSpec, FigureSpec, ScatterSpec, TableSpec, TriangleSpec } from "./types";
+import type { BarChartSpec, CircleSpec, CoordinatePlaneSpec, FigureSpec, Point, QuadrilateralSpec, ScatterSpec, TableSpec, TriangleSpec } from "./types";
 
 const WIDTH = 480;
 const HEIGHT = 360;
@@ -227,6 +227,112 @@ function renderTriangle(spec: TriangleSpec): RenderedFigure {
   return { svg: svgRoot(parts.join("")), alt };
 }
 
+// ───────── quadrilateral ─────────
+// (사각형 — 2026-09-09 실사용 중 "삼각형과 사각형의 성질" 단원에서 AI가 꼭짓점 4개짜리
+// 도형을 "triangle" 스펙에 억지로 넣으려다 검증에 실패해서 추가함)
+
+function renderQuadrilateral(spec: QuadrilateralSpec): RenderedFigure {
+  const auxPts = [...(spec.extraPoints ?? []), ...(spec.extraSegments ?? []).flatMap((s) => [s.from, s.to])];
+  const xs = [...spec.vertices.map((v) => v.x), ...auxPts.map((p) => p.x)];
+  const ys = [...spec.vertices.map((v) => v.y), ...auxPts.map((p) => p.y)];
+  const xMin = Math.min(...xs);
+  const xMax = Math.max(...xs);
+  const yMin = Math.min(...ys);
+  const yMax = Math.max(...ys);
+  const spanX = xMax - xMin || 1;
+  const spanY = yMax - yMin || 1;
+  const innerW = WIDTH - PAD * 2;
+  const innerH = HEIGHT - PAD * 2;
+  const scale = Math.min(innerW / spanX, innerH / spanY);
+  const offsetX = PAD + (innerW - spanX * scale) / 2;
+  const offsetY = PAD + (innerH - spanY * scale) / 2;
+  const toPx = (x: number) => offsetX + (x - xMin) * scale;
+  const py = (y: number) => offsetY + (spanY * scale - (y - yMin) * scale); // y축 뒤집기(SVG는 아래로 증가)
+
+  const pts = spec.vertices.map((v) => `${fmt(toPx(v.x))},${fmt(py(v.y))}`).join(" ");
+  const parts: string[] = [`<polygon points="${pts}" fill="none" stroke="${COLOR.ink}" stroke-width="2"/>`];
+
+  const labels = spec.labels ?? ["A", "B", "C", "D"];
+  spec.vertices.forEach((v, i) => {
+    const lx = toPx(v.x);
+    const ly = py(v.y);
+    parts.push(`<circle cx="${fmt(lx)}" cy="${fmt(ly)}" r="3" fill="${COLOR.ink}"/>`);
+    parts.push(`<text x="${fmt(lx + 8)}" y="${fmt(ly - 4)}" fill="${COLOR.ink}" font-size="14" font-weight="bold">${escapeXml(labels[i])}</text>`);
+  });
+
+  if (spec.sideLabels) {
+    const [v0, v1, v2, v3] = spec.vertices;
+    const mid = (a: Point, b: Point) => ({ x: toPx((a.x + b.x) / 2), y: py((a.y + b.y) / 2) });
+    const sides: [string | undefined, Point, Point][] = [
+      [spec.sideLabels.ab, v0, v1],
+      [spec.sideLabels.bc, v1, v2],
+      [spec.sideLabels.cd, v2, v3],
+      [spec.sideLabels.da, v3, v0],
+    ];
+    for (const [text, a, b] of sides) {
+      if (!text) continue;
+      const m = mid(a, b);
+      parts.push(`<text x="${fmt(m.x)}" y="${fmt(m.y)}" fill="${COLOR.inkSoft}" font-size="12" text-anchor="middle">${escapeXml(text)}</text>`);
+    }
+  }
+
+  if (spec.rightAngleAt !== undefined) {
+    const v = spec.vertices[spec.rightAngleAt];
+    parts.push(`<rect x="${fmt(toPx(v.x) - 8)}" y="${fmt(py(v.y) - 8)}" width="8" height="8" fill="none" stroke="${COLOR.gold}" stroke-width="1.5"/>`);
+  }
+
+  for (const seg of spec.extraSegments ?? []) {
+    const x1 = toPx(seg.from.x);
+    const y1 = py(seg.from.y);
+    const x2 = toPx(seg.to.x);
+    const y2 = py(seg.to.y);
+    const dash = seg.dashed ? ` stroke-dasharray="4 3"` : "";
+    parts.push(`<line x1="${fmt(x1)}" y1="${fmt(y1)}" x2="${fmt(x2)}" y2="${fmt(y2)}" stroke="${COLOR.inkSoft}" stroke-width="1.5"${dash}/>`);
+  }
+
+  for (const p of spec.extraPoints ?? []) {
+    const px = toPx(p.x);
+    const pyPos = py(p.y);
+    parts.push(`<circle cx="${fmt(px)}" cy="${fmt(pyPos)}" r="3" fill="${COLOR.ink}"/>`);
+    if (p.label) {
+      parts.push(`<text x="${fmt(px + 8)}" y="${fmt(pyPos - 4)}" fill="${COLOR.ink}" font-size="14" font-weight="bold">${escapeXml(p.label)}</text>`);
+    }
+  }
+
+  // 각 크기 표시 — 인접한 두 변(이웃 꼭짓점) 방향의 이등분 방향으로 텍스트만 놓는다
+  // (삼각형과 달리 사각형은 "나머지 전부"가 아니라 양 옆 꼭짓점만 그 각을 이룬다).
+  const n = spec.vertices.length;
+  for (const al of spec.angleLabels ?? []) {
+    const v = spec.vertices[al.at];
+    const neighbors = [spec.vertices[(al.at + n - 1) % n], spec.vertices[(al.at + 1) % n]];
+    const vx = toPx(v.x);
+    const vy = py(v.y);
+    const dirs = neighbors.map((o) => {
+      const dx = toPx(o.x) - vx;
+      const dy = py(o.y) - vy;
+      const len = Math.hypot(dx, dy) || 1;
+      return { x: dx / len, y: dy / len };
+    });
+    const bisX = dirs[0].x + dirs[1].x;
+    const bisY = dirs[0].y + dirs[1].y;
+    const bisLen = Math.hypot(bisX, bisY) || 1;
+    const R = 26;
+    const lx = vx + (bisX / bisLen) * R;
+    const ly = vy + (bisY / bisLen) * R;
+    parts.push(`<text x="${fmt(lx)}" y="${fmt(ly)}" fill="${COLOR.gold}" font-size="12" text-anchor="middle">${escapeXml(al.text)}</text>`);
+  }
+
+  const alt =
+    `사각형 ${labels.join("")}` +
+    (spec.rightAngleAt !== undefined ? `, 직각은 ${labels[spec.rightAngleAt]}에 있음` : "") +
+    (spec.angleLabels?.length ? `, 각 표시: ${spec.angleLabels.map((a) => `${labels[a.at]}=${a.text}`).join(", ")}` : "") +
+    (spec.sideLabels ? `, 변 길이: ${Object.values(spec.sideLabels).filter(Boolean).join(", ")}` : "") +
+    (spec.extraPoints?.length ? `, 보조점: ${spec.extraPoints.map((p) => p.label ?? "?").join(", ")}` : "") +
+    ".";
+
+  return { svg: svgRoot(parts.join("")), alt };
+}
+
 // ───────── circle ─────────
 
 function renderCircle(spec: CircleSpec): RenderedFigure {
@@ -380,6 +486,8 @@ export function renderFigureToSvg(spec: FigureSpec, colors?: FigureColors): Rend
         return renderCoordinatePlane(spec);
       case "triangle":
         return renderTriangle(spec);
+      case "quadrilateral":
+        return renderQuadrilateral(spec);
       case "circle":
         return renderCircle(spec);
       case "bar_chart":

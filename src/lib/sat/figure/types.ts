@@ -27,6 +27,17 @@ export type TriangleSpec = {
   extraSegments?: { from: Point; to: Point; dashed?: boolean }[]; // 보조선(이등분선, 연장선 등)
 };
 
+export type QuadrilateralSpec = {
+  kind: "quadrilateral";
+  vertices: [Point, Point, Point, Point]; // 순서대로 이어짐(A→B→C→D→A)
+  labels?: [string, string, string, string];
+  sideLabels?: { ab?: string; bc?: string; cd?: string; da?: string };
+  rightAngleAt?: 0 | 1 | 2 | 3;
+  angleLabels?: { at: 0 | 1 | 2 | 3; text: string }[];
+  extraPoints?: Point[]; // 보조점(대각선 교점 등)
+  extraSegments?: { from: Point; to: Point; dashed?: boolean }[]; // 대각선 등
+};
+
 export type CircleSpec = {
   kind: "circle";
   center: Point;
@@ -59,4 +70,11 @@ export type TableSpec = {
   caption?: string;
 };
 
-export type FigureSpec = CoordinatePlaneSpec | TriangleSpec | CircleSpec | BarChartSpec | ScatterSpec | TableSpec;
+export type FigureSpec =
+  | CoordinatePlaneSpec
+  | TriangleSpec
+  | QuadrilateralSpec
+  | CircleSpec
+  | BarChartSpec
+  | ScatterSpec
+  | TableSpec;

@@ -33,7 +33,7 @@ import { renderFigureToSvg, type FigureColors } from "@/lib/sat/figure/render";
 import type { FigureSpec } from "@/lib/sat/figure/types";
 import { MATH_SYSTEM_PROMPT } from "@/lib/math/server/generation-system-prompt";
 import { buildMathUnitPrompt, type MathUnit } from "@/lib/math/server/unit-prompt";
-import { MathGeneratedBatchSchema, type MathGeneratedItem } from "@/lib/math/server/generation-schemas";
+import { MathGeneratedItemSchema, type MathGeneratedItem } from "@/lib/math/server/generation-schemas";
 
 const MODEL = "claude-sonnet-5";
 const MAX_TOKENS = 8000; // countPerUnit이 작을 때(6~8개) 기준으로 잡은 기본값
@@ -225,14 +225,22 @@ async function collectReadyRows(
       discarded += countPerUnit;
       continue;
     }
-    const parsed = MathGeneratedBatchSchema.safeParse(parsedJson);
-    if (!parsed.success) {
+    // 문항 하나씩 개별 검증한다 — 배치 전체를 하나의 zod 스키마로 한 번에 검증하면 30개 중
+    // 1개만 형식이 어긋나도(예: figure.kind 오류) 나머지 29개까지 통째로 버려진다
+    // (2026-09-09 실사용 중 30문항 배치가 전부 폐기되는 걸 발견해서 고침).
+    const rawItems = (parsedJson as { items?: unknown[] } | null)?.items;
+    if (!Array.isArray(rawItems)) {
       discarded += countPerUnit;
       continue;
     }
-    for (const item of parsed.data.items) {
+    for (const rawItem of rawItems) {
       generated++;
-      if (structurallyValid(item)) readyRows.push({ item, unit });
+      const parsedItem = MathGeneratedItemSchema.safeParse(rawItem);
+      if (!parsedItem.success) {
+        discarded++;
+        continue;
+      }
+      if (structurallyValid(parsedItem.data)) readyRows.push({ item: parsedItem.data, unit });
       else discarded++;
     }
   }
