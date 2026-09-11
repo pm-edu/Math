@@ -16,6 +16,9 @@
  *   npx tsx scripts/math/generate.ts --curriculumDetail IGCSE_0607 --countPerUnit 6
  *   npx tsx scripts/math/generate.ts --curriculumDetail 중2 --unitName "삼각형과 사각형의 성질" --countPerUnit 20
  *     (--unitName: 그 curriculumDetail 안에서 이름이 정확히 일치하는 단원 하나만 생성)
+ *   npx tsx scripts/math/generate.ts --curriculumDetail 중2 --countPerUnit 30 --skipDone
+ *     (--skipDone: 이미 problems가 1건이라도 있는 단원은 건너뜀 — 일부 단원만 먼저 만들어본 뒤
+ *      나머지를 이어서 돌릴 때 씀)
  *   npx tsx scripts/math/generate.ts --resumeBatchId msgbatch_xxx --curriculumDetail IGCSE_0607 --countPerUnit 6
  *     (이미 끝난 배치 결과를 재생성 없이 재사용 — 검증/삽입 단계에서 실패했을 때 복구용)
  *
@@ -71,6 +74,7 @@ type Args = {
   unitName?: string;
   resumeBatchId?: string;
   dryRun: boolean;
+  skipDone: boolean;
 };
 
 function parseArgs(argv: string[]): Args {
@@ -81,7 +85,7 @@ function parseArgs(argv: string[]): Args {
   const curriculumDetail = get("curriculumDetail");
   if (!curriculumDetail) {
     console.error(
-      "사용법: npx tsx scripts/math/generate.ts --curriculumDetail IGCSE_0607 [--countPerUnit 6] [--unitLimit N] [--unitName \"단원명\"] [--resumeBatchId id] [--dry-run]"
+      "사용법: npx tsx scripts/math/generate.ts --curriculumDetail IGCSE_0607 [--countPerUnit 6] [--unitLimit N] [--unitName \"단원명\"] [--skipDone] [--resumeBatchId id] [--dry-run]"
     );
     process.exit(1);
   }
@@ -93,6 +97,7 @@ function parseArgs(argv: string[]): Args {
     unitName: get("unitName"),
     resumeBatchId: get("resumeBatchId"),
     dryRun: argv.includes("--dry-run"),
+    skipDone: argv.includes("--skipDone"),
   };
 }
 
@@ -321,6 +326,17 @@ async function main() {
       console.error(`--unitName "${args.unitName}"과 정확히 일치하는 단원이 없습니다.`);
       process.exit(1);
     }
+  }
+  if (args.skipDone) {
+    const { data: existing } = await db
+      .from("problems")
+      .select("unit")
+      .eq("subject", "math")
+      .eq("curriculum_detail", args.curriculumDetail);
+    const doneUnits = new Set((existing ?? []).map((p) => p.unit));
+    const before = units.length;
+    units = units.filter((u) => !doneUnits.has(u.unit_name));
+    console.log(`--skipDone: 이미 문제가 있는 단원 ${before - units.length}개 제외`);
   }
   if (args.unitLimit) units = units.slice(0, args.unitLimit);
   const unitById = new Map(units.map((u) => [String(u.id), u]));
