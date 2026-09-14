@@ -102,11 +102,17 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
     // (2026-09-14 실사용 중 발견 — 화이트보드 영역이 높이 0이 돼버림) fixed inset-0로
     // 화면 자체를 명시적으로 꽉 채운다.
     <div className="fixed inset-0 bg-[var(--background)]">
-      <LiveKitRoom token={info.token} serverUrl={info.livekitUrl} connect video audio className="flex h-full flex-col">
+      <LiveKitRoom
+        token={info.token}
+        serverUrl={info.livekitUrl}
+        connect
+        video
+        audio
+        data-lk-theme="default"
+        className="flex h-full flex-col"
+      >
         <div className="shrink-0 border-b border-[var(--border-c)] bg-black/90">
-          <div className="h-44">
-            <VideoGrid />
-          </div>
+          <VideoGrid />
           <ControlBar variation="minimal" />
         </div>
         <div className="min-h-0 flex-1">
@@ -156,17 +162,20 @@ function VideoGrid() {
   }
 
   return (
-    <div ref={containerRef} className="relative h-full">
+    // 팝업(PIP)이 뜨면 브라우저가 자체 창에 영상을 그려주고, 이 안의 <video>는
+    // 어차피 새까맣게만 남는다 — 그 자리를 계속 차지하지 않도록 높이를 접는다.
+    // (닫기는 브라우저 PIP 창 자체의 컨트롤로 하면 되므로 버튼도 같이 감춘다.)
+    <div ref={containerRef} className={`relative overflow-hidden transition-[height] ${isPip ? "h-0" : "h-24"}`}>
       <GridLayout tracks={tracks} style={{ height: "100%" }}>
         <ParticipantTile />
       </GridLayout>
-      {pipSupported && (
+      {pipSupported && !isPip && (
         <button
           type="button"
           onClick={togglePip}
           className="absolute right-2 top-2 z-10 rounded bg-black/60 px-2 py-1 text-xs text-white hover:bg-black/80"
         >
-          {isPip ? "팝업 닫기" : "팝업으로 보기"}
+          팝업으로 보기
         </button>
       )}
     </div>
