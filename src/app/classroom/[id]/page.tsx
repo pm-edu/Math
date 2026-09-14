@@ -10,6 +10,7 @@ import {
   GridLayout,
   ParticipantTile,
   useTracks,
+  useDisconnectButton,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
 import { Track } from "livekit-client";
@@ -33,6 +34,28 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<TokenResponse | null>(null);
   const [whiteboardInitial, setWhiteboardInitial] = useState<unknown>(null);
+  const pageRef = useRef<HTMLDivElement>(null);
+  const [isPageFullscreen, setIsPageFullscreen] = useState(false);
+
+  useEffect(() => {
+    function onFsChange() {
+      setIsPageFullscreen(!!pageRef.current && document.fullscreenElement === pageRef.current);
+    }
+    document.addEventListener("fullscreenchange", onFsChange);
+    return () => document.removeEventListener("fullscreenchange", onFsChange);
+  }, []);
+
+  async function togglePageFullscreen() {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen();
+      return;
+    }
+    try {
+      await pageRef.current?.requestFullscreen();
+    } catch {
+      // 브라우저가 막았거나 지원하지 않음 — 조용히 무시.
+    }
+  }
 
   useEffect(() => {
     async function init() {
@@ -101,7 +124,14 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
     // h-screen(100vh)은 임베드된 프레임 등에서 실제 뷰포트와 다르게 계산되는 경우가 있어
     // (2026-09-14 실사용 중 발견 — 화이트보드 영역이 높이 0이 돼버림) fixed inset-0로
     // 화면 자체를 명시적으로 꽉 채운다.
-    <div className="fixed inset-0 bg-[var(--background)]">
+    <div ref={pageRef} className="fixed inset-0 bg-[var(--background)]">
+      <button
+        type="button"
+        onClick={togglePageFullscreen}
+        className="absolute left-3 top-3 z-20 rounded-full bg-black/60 px-3 py-1.5 text-xs text-white hover:bg-black/80"
+      >
+        {isPageFullscreen ? "강의실 전체화면 종료" : "강의실 전체화면"}
+      </button>
       <LiveKitRoom
         token={info.token}
         serverUrl={info.livekitUrl}
@@ -113,7 +143,12 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
       >
         <div className="shrink-0 border-b border-[var(--border-c)] bg-black/90">
           <VideoGrid />
-          <ControlBar variation="minimal" />
+          <div className="flex items-stretch">
+            <ControlBar variation="minimal" controls={{ leave: false }} className="flex-1" />
+            <div className="flex items-center pr-3">
+              <LeaveButton />
+            </div>
+          </div>
         </div>
         <div className="min-h-0 flex-1">
           <Whiteboard sessionId={id} initialData={whiteboardInitial} />
@@ -124,10 +159,33 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
   );
 }
 
+function LeaveButton() {
+  const { buttonProps } = useDisconnectButton({});
+
+  function handleClick() {
+    // 실수로 눌러 화상·음성 연결이 바로 끊기는 걸 막는다(판서는 이미 저장돼 있어 재입장 시
+    // 이어서 볼 수 있지만, 수업 도중 끊기면 되돌릴 수 없어서).
+    const ok = window.confirm("강의실에서 나가시겠습니까? 화상·음성 연결이 끊어집니다.");
+    if (ok) buttonProps.onClick();
+  }
+
+  return (
+    <button
+      type="button"
+      className="lk-button lk-disconnect-button"
+      onClick={handleClick}
+      disabled={buttonProps.disabled}
+    >
+      나가기
+    </button>
+  );
+}
+
 function VideoGrid() {
   const tracks = useTracks([Track.Source.Camera, Track.Source.ScreenShare]);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isPip, setIsPip] = useState(false);
+  const [isVideoFullscreen, setIsVideoFullscreen] = useState(false);
   // VideoGrid는 강의실 데이터 로드 후(마운트 시점에 이미 클라이언트)에만 렌더되므로
   // SSR 시 document가 없는 것과의 하이드레이션 불일치 걱정 없이 바로 계산해도 된다.
   const pipSupported = typeof document !== "undefined" && document.pictureInPictureEnabled;
@@ -147,6 +205,14 @@ function VideoGrid() {
     };
   }, []);
 
+  useEffect(() => {
+    function onFsChange() {
+      setIsVideoFullscreen(!!containerRef.current && document.fullscreenElement === containerRef.current);
+    }
+    document.addEventListener("fullscreenchange", onFsChange);
+    return () => document.removeEventListener("fullscreenchange", onFsChange);
+  }, []);
+
   async function togglePip() {
     if (document.pictureInPictureElement) {
       await document.exitPictureInPicture();
@@ -161,22 +227,48 @@ function VideoGrid() {
     }
   }
 
+  async function toggleVideoFullscreen() {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen();
+      return;
+    }
+    try {
+      await containerRef.current?.requestFullscreen();
+    } catch {
+      // 전체화면 요청 실패 — 지원하지 않는 브라우저인 경우 조용히 무시.
+    }
+  }
+
   return (
     // 팝업(PIP)이 뜨면 브라우저가 자체 창에 영상을 그려주고, 이 안의 <video>는
     // 어차피 새까맣게만 남는다 — 그 자리를 계속 차지하지 않도록 높이를 접는다.
     // (닫기는 브라우저 PIP 창 자체의 컨트롤로 하면 되므로 버튼도 같이 감춘다.)
-    <div ref={containerRef} className={`relative overflow-hidden transition-[height] ${isPip ? "h-0" : "h-24"}`}>
+    <div
+      ref={containerRef}
+      className={`relative overflow-hidden transition-[height] ${isPip ? "h-0" : isVideoFullscreen ? "h-full" : "h-24"}`}
+    >
       <GridLayout tracks={tracks} style={{ height: "100%" }}>
         <ParticipantTile />
       </GridLayout>
-      {pipSupported && !isPip && (
-        <button
-          type="button"
-          onClick={togglePip}
-          className="absolute right-2 top-2 z-10 rounded bg-black/60 px-2 py-1 text-xs text-white hover:bg-black/80"
-        >
-          팝업으로 보기
-        </button>
+      {!isPip && (
+        <div className="absolute right-2 top-2 z-10 flex gap-1">
+          <button
+            type="button"
+            onClick={toggleVideoFullscreen}
+            className="rounded bg-black/60 px-2 py-1 text-xs text-white hover:bg-black/80"
+          >
+            {isVideoFullscreen ? "영상 전체화면 종료" : "영상 전체화면"}
+          </button>
+          {pipSupported && (
+            <button
+              type="button"
+              onClick={togglePip}
+              className="rounded bg-black/60 px-2 py-1 text-xs text-white hover:bg-black/80"
+            >
+              팝업으로 보기
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
