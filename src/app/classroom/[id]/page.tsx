@@ -7,7 +7,6 @@ import {
   LiveKitRoom,
   RoomAudioRenderer,
   ControlBar,
-  GridLayout,
   ParticipantTile,
   useTracks,
   useDisconnectButton,
@@ -24,37 +23,47 @@ type TokenResponse = {
   room?: string;
   title?: string;
   isTeacher?: boolean;
+  teacherId?: string;
   livekitUrl?: string;
 };
 
 export default function ClassroomPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const [state, setState] = useState<"loading" | "ready" | "error">("loading");
+  const [state, setState] = useState<"loading" | "gate" | "ready" | "error">("loading");
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<TokenResponse | null>(null);
   const [whiteboardInitial, setWhiteboardInitial] = useState<unknown>(null);
-  const pageRef = useRef<HTMLDivElement>(null);
-  const [isPageFullscreen, setIsPageFullscreen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     function onFsChange() {
-      setIsPageFullscreen(!!pageRef.current && document.fullscreenElement === pageRef.current);
+      setIsFullscreen(!!document.fullscreenElement);
     }
     document.addEventListener("fullscreenchange", onFsChange);
     return () => document.removeEventListener("fullscreenchange", onFsChange);
   }, []);
 
-  async function togglePageFullscreen() {
+  async function toggleFullscreen() {
     if (document.fullscreenElement) {
       await document.exitFullscreen();
       return;
     }
     try {
-      await pageRef.current?.requestFullscreen();
+      await document.documentElement.requestFullscreen();
     } catch {
       // 브라우저가 막았거나 지원하지 않음 — 조용히 무시.
     }
+  }
+
+  // 학생은 "강의실 입장하기"를 누르는 그 클릭에서 바로 전체화면을 신청해야 브라우저가
+  // 허용한다(페이지 로드만으로는 사용자 제스처로 안 쳐줌) — 2026-09-14, "학생들은
+  // 브라우저 메뉴를 못 쓰게 하고 싶다"는 요청으로 입장 화면을 하나 더 둠.
+  function handleEnterAsStudent() {
+    // 전체화면 요청 결과를 기다리지 않고 바로 입장시킨다 — 브라우저가 거부하거나
+    // 응답이 늦어도(정책상 막힌 경우 등) 학생이 입장 자체를 못 하는 일은 없어야 한다.
+    document.documentElement.requestFullscreen().catch(() => {});
+    setState("ready");
   }
 
   useEffect(() => {
@@ -81,7 +90,7 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
         return;
       }
       setInfo(data);
-      setState("ready");
+      setState(data.isTeacher ? "ready" : "gate");
     }
     init();
   }, [id, router]);
@@ -105,6 +114,22 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
     );
   }
 
+  if (state === "gate") {
+    return (
+      <main className="fixed inset-0 flex flex-col items-center justify-center gap-4 bg-[var(--background)] px-6 text-center">
+        <p className="text-lg font-medium text-[var(--foreground)]">{info?.title}</p>
+        <p className="text-sm text-[var(--secondary)]">입장하면 전체 화면으로 전환됩니다.</p>
+        <button
+          type="button"
+          onClick={handleEnterAsStudent}
+          className="rounded-full bg-[var(--pink)] px-8 py-3 text-sm font-medium text-[var(--pink-dark)]"
+        >
+          강의실 입장하기
+        </button>
+      </main>
+    );
+  }
+
   if (!info?.livekitUrl) {
     // LiveKit 키가 아직 설정 안 된 상태 — 화이트보드만이라도 쓸 수 있게 한다.
     return (
@@ -124,13 +149,13 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
     // h-screen(100vh)은 임베드된 프레임 등에서 실제 뷰포트와 다르게 계산되는 경우가 있어
     // (2026-09-14 실사용 중 발견 — 화이트보드 영역이 높이 0이 돼버림) fixed inset-0로
     // 화면 자체를 명시적으로 꽉 채운다.
-    <div ref={pageRef} className="fixed inset-0 bg-[var(--background)]">
+    <div className="fixed inset-0 bg-[var(--background)]">
       <button
         type="button"
-        onClick={togglePageFullscreen}
+        onClick={toggleFullscreen}
         className="absolute left-3 top-3 z-20 rounded-full bg-black/60 px-3 py-1.5 text-xs text-white hover:bg-black/80"
       >
-        {isPageFullscreen ? "강의실 전체화면 종료" : "강의실 전체화면"}
+        {isFullscreen ? "강의실 전체화면 종료" : "강의실 전체화면"}
       </button>
       <LiveKitRoom
         token={info.token}
@@ -141,18 +166,16 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
         data-lk-theme="default"
         className="flex h-full flex-col"
       >
-        <div className="shrink-0 border-b border-[var(--border-c)] bg-black/90">
-          <VideoGrid pageRef={pageRef} />
-          <div className="flex items-stretch">
-            <ControlBar variation="minimal" controls={{ leave: false }} className="flex-1" />
-            <div className="flex items-center pr-3">
-              <LeaveButton />
-            </div>
+        <div className="flex shrink-0 items-stretch border-b border-[var(--border-c)] bg-black/90">
+          <ControlBar variation="minimal" controls={{ leave: false }} className="flex-1" />
+          <div className="flex items-center pr-3">
+            <LeaveButton />
           </div>
         </div>
         <div className="min-h-0 flex-1">
           <Whiteboard sessionId={id} initialData={whiteboardInitial} />
         </div>
+        <FloatingParticipants teacherId={info.teacherId ?? null} />
         <RoomAudioRenderer />
       </LiveKitRoom>
     </div>
@@ -181,64 +204,75 @@ function LeaveButton() {
   );
 }
 
-function VideoGrid({ pageRef }: { pageRef: React.RefObject<HTMLDivElement | null> }) {
+// 브라우저 기본 PIP는 영상 1개만 띄울 수 있어 참가자가 여럿이면 쓸 수 없다 — 대신 페이지
+// 안에 늘 떠 있는(전체화면 중에도 사라지지 않는) 작은 패널을 직접 그린다. 선생님을 자동으로
+// 맨 앞(크게)에 놓고, 나머지는 그 아래 작은 썸네일로 늘어놓는다. 드래그로 위치를 옮길 수
+// 있다(2026-09-14, "학생·선생 여러 명이 같이 보이고 드래그도 되면 좋겠다"는 요청).
+function FloatingParticipants({ teacherId }: { teacherId: string | null }) {
   const tracks = useTracks([Track.Source.Camera, Track.Source.ScreenShare]);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [isPip, setIsPip] = useState(false);
-  // VideoGrid는 강의실 데이터 로드 후(마운트 시점에 이미 클라이언트)에만 렌더되므로
-  // SSR 시 document가 없는 것과의 하이드레이션 불일치 걱정 없이 바로 계산해도 된다.
-  const pipSupported = typeof document !== "undefined" && document.pictureInPictureEnabled;
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+  const dragRef = useRef<{ startX: number; startY: number; startLeft: number; startTop: number } | null>(null);
 
   useEffect(() => {
-    function onEnter() {
-      setIsPip(true);
+    function onDrag(e: PointerEvent) {
+      const s = dragRef.current;
+      const panel = panelRef.current;
+      if (!s || !panel) return;
+      const rect = panel.getBoundingClientRect();
+      const left = Math.min(Math.max(0, s.startLeft + (e.clientX - s.startX)), window.innerWidth - rect.width);
+      const top = Math.min(Math.max(0, s.startTop + (e.clientY - s.startY)), window.innerHeight - rect.height);
+      setPos({ left, top });
     }
-    function onLeave() {
-      setIsPip(false);
+    function onDrop() {
+      dragRef.current = null;
     }
-    document.addEventListener("enterpictureinpicture", onEnter, true);
-    document.addEventListener("leavepictureinpicture", onLeave, true);
+    window.addEventListener("pointermove", onDrag);
+    window.addEventListener("pointerup", onDrop);
     return () => {
-      document.removeEventListener("enterpictureinpicture", onEnter, true);
-      document.removeEventListener("leavepictureinpicture", onLeave, true);
+      window.removeEventListener("pointermove", onDrag);
+      window.removeEventListener("pointerup", onDrop);
     };
   }, []);
 
-  // "팝업으로 보기" 먼저 누르고 나서 "강의실 전체화면"을 누르면 카메라는 계속 떠 있는 채로
-  // 브라우저 메뉴 없이 화면을 쓸 수 있다는 걸 실사용 중 확인함(2026-09-14) — 매번 두 번
-  // 누르게 하지 않고 한 번에 같이 하도록 묶는다.
-  async function enterImmersiveMode() {
-    const video = containerRef.current?.querySelector("video");
-    if (video && pipSupported) {
-      try {
-        await video.requestPictureInPicture();
-      } catch {
-        // 팝업(PIP) 요청 실패 — 지원 브라우저가 아니거나 아직 화면이 준비 안 된 경우, 조용히 무시.
-      }
-    }
-    try {
-      await pageRef.current?.requestFullscreen();
-    } catch {
-      // 전체화면 요청 실패 — 지원하지 않는 브라우저인 경우 조용히 무시.
-    }
+  function startDrag(e: React.PointerEvent) {
+    const rect = panelRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    dragRef.current = { startX: e.clientX, startY: e.clientY, startLeft: rect.left, startTop: rect.top };
   }
 
+  if (tracks.length === 0) return null;
+
+  const sorted = [...tracks].sort((a, b) => {
+    const aTeacher = a.participant.identity === teacherId;
+    const bTeacher = b.participant.identity === teacherId;
+    return aTeacher === bTeacher ? 0 : aTeacher ? -1 : 1;
+  });
+  const [featured, ...rest] = sorted;
+
   return (
-    // 팝업(PIP)이 뜨면 브라우저가 자체 창에 영상을 그려주고, 이 안의 <video>는
-    // 어차피 새까맣게만 남는다 — 그 자리를 계속 차지하지 않도록 높이를 접는다.
-    // (닫기는 브라우저 PIP 창 자체의 컨트롤로 하면 되므로 버튼도 같이 감춘다.)
-    <div ref={containerRef} className={`relative overflow-hidden transition-[height] ${isPip ? "h-0" : "h-24"}`}>
-      <GridLayout tracks={tracks} style={{ height: "100%" }}>
-        <ParticipantTile />
-      </GridLayout>
-      {!isPip && (
-        <button
-          type="button"
-          onClick={enterImmersiveMode}
-          className="absolute right-2 top-2 z-10 rounded bg-black/60 px-2 py-1 text-xs text-white hover:bg-black/80"
-        >
-          몰입 모드로 보기
-        </button>
+    <div
+      ref={panelRef}
+      style={pos ? { left: pos.left, top: pos.top, right: "auto", bottom: "auto" } : undefined}
+      className="fixed bottom-4 right-4 z-30 w-48 select-none rounded-lg bg-black/80 p-1.5 shadow-lg"
+    >
+      <div
+        onPointerDown={startDrag}
+        className="mb-1 cursor-move rounded bg-white/10 py-0.5 text-center text-[10px] tracking-widest text-white/70"
+      >
+        ⠿⠿⠿
+      </div>
+      <div className="overflow-hidden rounded" style={{ aspectRatio: "16 / 9" }}>
+        <ParticipantTile trackRef={featured} />
+      </div>
+      {rest.length > 0 && (
+        <div className="mt-1 flex gap-1 overflow-x-auto">
+          {rest.map((t) => (
+            <div key={`${t.participant.identity}-${t.source}`} className="h-10 w-16 shrink-0 overflow-hidden rounded">
+              <ParticipantTile trackRef={t} />
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

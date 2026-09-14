@@ -70,6 +70,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     room: session.livekit_room,
     title: session.title,
     isTeacher: auth.user.id === session.teacher_id,
+    teacherId: session.teacher_id,
     livekitUrl: process.env.NEXT_PUBLIC_LIVEKIT_URL ?? "",
   });
 }
