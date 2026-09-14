@@ -98,6 +98,11 @@ export default function AdminMailPage() {
 
   async function previewPdf(part: "problems" | "answers") {
     if (!worksheetId) return;
+    // 클릭 직후(비동기 fetch 전에) 곧바로 빈 창부터 열어야 한다 — fetch가 끝난 뒤에
+    // window.open을 부르면 "사용자가 직접 누른 동작"으로 안 쳐서 브라우저가 팝업을
+    // 조용히 차단한다(클릭해도 반응이 없는 것처럼 보이던 원인).
+    const win = window.open("", "_blank");
+    win?.document.write("불러오는 중...");
     setPreviewing(part);
     const supabase = createClient();
     const { data: session } = await supabase.auth.getSession();
@@ -108,10 +113,17 @@ export default function AdminMailPage() {
     setPreviewing(null);
     if (!res.ok) {
       setError("미리보기를 불러오지 못했습니다.");
+      win?.close();
       return;
     }
     const blob = await res.blob();
-    window.open(URL.createObjectURL(blob), "_blank");
+    const blobUrl = URL.createObjectURL(blob);
+    if (win) {
+      win.location.href = blobUrl;
+    } else {
+      // 그래도 차단됐으면(팝업 전체 차단 설정 등) 최소한 같은 탭에서라도 시도.
+      window.open(blobUrl, "_blank");
+    }
   }
 
   async function handleSend() {
