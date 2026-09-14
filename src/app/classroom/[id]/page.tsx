@@ -142,7 +142,7 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
         className="flex h-full flex-col"
       >
         <div className="shrink-0 border-b border-[var(--border-c)] bg-black/90">
-          <VideoGrid />
+          <VideoGrid pageRef={pageRef} />
           <div className="flex items-stretch">
             <ControlBar variation="minimal" controls={{ leave: false }} className="flex-1" />
             <div className="flex items-center pr-3">
@@ -181,11 +181,10 @@ function LeaveButton() {
   );
 }
 
-function VideoGrid() {
+function VideoGrid({ pageRef }: { pageRef: React.RefObject<HTMLDivElement | null> }) {
   const tracks = useTracks([Track.Source.Camera, Track.Source.ScreenShare]);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isPip, setIsPip] = useState(false);
-  const [isVideoFullscreen, setIsVideoFullscreen] = useState(false);
   // VideoGrid는 강의실 데이터 로드 후(마운트 시점에 이미 클라이언트)에만 렌더되므로
   // SSR 시 document가 없는 것과의 하이드레이션 불일치 걱정 없이 바로 계산해도 된다.
   const pipSupported = typeof document !== "undefined" && document.pictureInPictureEnabled;
@@ -205,35 +204,20 @@ function VideoGrid() {
     };
   }, []);
 
-  useEffect(() => {
-    function onFsChange() {
-      setIsVideoFullscreen(!!containerRef.current && document.fullscreenElement === containerRef.current);
-    }
-    document.addEventListener("fullscreenchange", onFsChange);
-    return () => document.removeEventListener("fullscreenchange", onFsChange);
-  }, []);
-
-  async function togglePip() {
-    if (document.pictureInPictureElement) {
-      await document.exitPictureInPicture();
-      return;
-    }
+  // "팝업으로 보기" 먼저 누르고 나서 "강의실 전체화면"을 누르면 카메라는 계속 떠 있는 채로
+  // 브라우저 메뉴 없이 화면을 쓸 수 있다는 걸 실사용 중 확인함(2026-09-14) — 매번 두 번
+  // 누르게 하지 않고 한 번에 같이 하도록 묶는다.
+  async function enterImmersiveMode() {
     const video = containerRef.current?.querySelector("video");
-    if (!video) return;
-    try {
-      await video.requestPictureInPicture();
-    } catch {
-      // 팝업(PIP) 요청 실패 — 지원 브라우저가 아니거나 아직 화면이 준비 안 된 경우, 조용히 무시.
-    }
-  }
-
-  async function toggleVideoFullscreen() {
-    if (document.fullscreenElement) {
-      await document.exitFullscreen();
-      return;
+    if (video && pipSupported) {
+      try {
+        await video.requestPictureInPicture();
+      } catch {
+        // 팝업(PIP) 요청 실패 — 지원 브라우저가 아니거나 아직 화면이 준비 안 된 경우, 조용히 무시.
+      }
     }
     try {
-      await containerRef.current?.requestFullscreen();
+      await pageRef.current?.requestFullscreen();
     } catch {
       // 전체화면 요청 실패 — 지원하지 않는 브라우저인 경우 조용히 무시.
     }
@@ -243,32 +227,18 @@ function VideoGrid() {
     // 팝업(PIP)이 뜨면 브라우저가 자체 창에 영상을 그려주고, 이 안의 <video>는
     // 어차피 새까맣게만 남는다 — 그 자리를 계속 차지하지 않도록 높이를 접는다.
     // (닫기는 브라우저 PIP 창 자체의 컨트롤로 하면 되므로 버튼도 같이 감춘다.)
-    <div
-      ref={containerRef}
-      className={`relative overflow-hidden transition-[height] ${isPip ? "h-0" : isVideoFullscreen ? "h-full" : "h-24"}`}
-    >
+    <div ref={containerRef} className={`relative overflow-hidden transition-[height] ${isPip ? "h-0" : "h-24"}`}>
       <GridLayout tracks={tracks} style={{ height: "100%" }}>
         <ParticipantTile />
       </GridLayout>
       {!isPip && (
-        <div className="absolute right-2 top-2 z-10 flex gap-1">
-          <button
-            type="button"
-            onClick={toggleVideoFullscreen}
-            className="rounded bg-black/60 px-2 py-1 text-xs text-white hover:bg-black/80"
-          >
-            {isVideoFullscreen ? "영상 전체화면 종료" : "영상 전체화면"}
-          </button>
-          {pipSupported && (
-            <button
-              type="button"
-              onClick={togglePip}
-              className="rounded bg-black/60 px-2 py-1 text-xs text-white hover:bg-black/80"
-            >
-              팝업으로 보기
-            </button>
-          )}
-        </div>
+        <button
+          type="button"
+          onClick={enterImmersiveMode}
+          className="absolute right-2 top-2 z-10 rounded bg-black/60 px-2 py-1 text-xs text-white hover:bg-black/80"
+        >
+          몰입 모드로 보기
+        </button>
       )}
     </div>
   );
