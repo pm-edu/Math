@@ -51,6 +51,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         { label: "반 관리 · 리포트", icon: "🏫", href: "/admin/classes", show: canGrades },
         { label: "출결 체크", icon: "✅", href: "/admin/attendance", show: canGrades },
         { label: "메일 · 자료 보내기", icon: "📧", href: "/admin/mail", show: canSite },
+        { label: "화상 강의실", icon: "🎥", href: "/admin/classroom", show: canMaterials },
       ],
     },
     {

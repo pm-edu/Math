@@ -25,6 +25,7 @@ export default function MyPage() {
   );
   const [openReviewFor, setOpenReviewFor] = useState<string | null>(null);
   const [pendingExams, setPendingExams] = useState<{ id: string; title: string; time_limit_minutes: number | null }[]>([]);
+  const [myClassrooms, setMyClassrooms] = useState<{ id: string; title: string; status: string }[]>([]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -36,7 +37,7 @@ export default function MyPage() {
         return;
       }
 
-      const [profileResult, purchaseResult, reviewResult, assignmentResult, attemptResult] = await Promise.all([
+      const [profileResult, purchaseResult, reviewResult, assignmentResult, attemptResult, classroomResult] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", auth.user.id).maybeSingle(),
         supabase
           .from("purchases")
@@ -49,7 +50,20 @@ export default function MyPage() {
           .select("worksheet:worksheets(id, title, is_exam, time_limit_minutes)")
           .eq("user_id", auth.user.id),
         supabase.from("worksheet_attempts").select("worksheet_id, submitted_at").eq("user_id", auth.user.id),
+        supabase
+          .from("classroom_participants")
+          .select("session:classroom_sessions(id, title, status)")
+          .eq("user_id", auth.user.id),
       ]);
+
+      type ClassroomRow = { id: string; title: string; status: string };
+      const classrooms = (classroomResult.data ?? [])
+        .flatMap((r) => {
+          const s = (r as { session: ClassroomRow | ClassroomRow[] | null }).session;
+          return Array.isArray(s) ? s : s ? [s] : [];
+        })
+        .filter((c) => c.status !== "ended");
+      setMyClassrooms(classrooms);
 
       // 배정된 문제지 중 "실전 시험"이면서 아직 제출(응시 완료)하지 않은 것만 골라
       // 마이페이지 맨 위에 놓친 시험이 없게 눈에 띄게 보여준다.
@@ -156,6 +170,25 @@ export default function MyPage() {
                           className="whitespace-nowrap rounded-[11px] bg-en-gold px-4 py-2 text-sm font-bold text-en-ink transition-colors hover:bg-en-gold-deep"
                         >
                           시작하기
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              {myClassrooms.length > 0 && (
+                <section className="mt-8 rounded-2xl border border-en-line bg-en-card p-6 shadow-sm">
+                  <p className="text-sm font-bold text-en-ink">🎥 내 화상 강의실</p>
+                  <ul className="mt-3 space-y-2">
+                    {myClassrooms.map((c) => (
+                      <li key={c.id} className="flex items-center justify-between gap-3 rounded-xl bg-white px-4 py-3 shadow-sm">
+                        <p className="text-sm font-bold text-en-ink">{c.title}</p>
+                        <Link
+                          href={`/classroom/${c.id}`}
+                          className="whitespace-nowrap rounded-[11px] bg-en-gold px-4 py-2 text-sm font-bold text-en-ink transition-colors hover:bg-en-gold-deep"
+                        >
+                          입장하기
                         </Link>
                       </li>
                     ))}
