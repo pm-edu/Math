@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -120,9 +120,55 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
 
 function VideoGrid() {
   const tracks = useTracks([Track.Source.Camera, Track.Source.ScreenShare]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isPip, setIsPip] = useState(false);
+  // VideoGrid는 강의실 데이터 로드 후(마운트 시점에 이미 클라이언트)에만 렌더되므로
+  // SSR 시 document가 없는 것과의 하이드레이션 불일치 걱정 없이 바로 계산해도 된다.
+  const pipSupported = typeof document !== "undefined" && document.pictureInPictureEnabled;
+
+  useEffect(() => {
+    function onEnter() {
+      setIsPip(true);
+    }
+    function onLeave() {
+      setIsPip(false);
+    }
+    document.addEventListener("enterpictureinpicture", onEnter, true);
+    document.addEventListener("leavepictureinpicture", onLeave, true);
+    return () => {
+      document.removeEventListener("enterpictureinpicture", onEnter, true);
+      document.removeEventListener("leavepictureinpicture", onLeave, true);
+    };
+  }, []);
+
+  async function togglePip() {
+    if (document.pictureInPictureElement) {
+      await document.exitPictureInPicture();
+      return;
+    }
+    const video = containerRef.current?.querySelector("video");
+    if (!video) return;
+    try {
+      await video.requestPictureInPicture();
+    } catch {
+      // 팝업(PIP) 요청 실패 — 지원 브라우저가 아니거나 아직 화면이 준비 안 된 경우, 조용히 무시.
+    }
+  }
+
   return (
-    <GridLayout tracks={tracks} style={{ height: "100%" }}>
-      <ParticipantTile />
-    </GridLayout>
+    <div ref={containerRef} className="relative h-full">
+      <GridLayout tracks={tracks} style={{ height: "100%" }}>
+        <ParticipantTile />
+      </GridLayout>
+      {pipSupported && (
+        <button
+          type="button"
+          onClick={togglePip}
+          className="absolute right-2 top-2 z-10 rounded bg-black/60 px-2 py-1 text-xs text-white hover:bg-black/80"
+        >
+          {isPip ? "팝업 닫기" : "팝업으로 보기"}
+        </button>
+      )}
+    </div>
   );
 }
