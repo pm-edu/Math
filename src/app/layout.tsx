@@ -5,6 +5,7 @@ import { site } from "@/lib/site";
 import { LanguageProvider, type Lang } from "@/lib/i18n";
 import { SubjectProvider } from "@/lib/subject";
 import { getSubject } from "@/lib/subject-server";
+import { PwaServiceWorker } from "@/components/PwaServiceWorker";
 import "./globals.css";
 
 // 영어 화면용 영문 폰트. CSS 변수로 노출해 lang=en 일 때만 쓴다.
@@ -46,6 +47,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang={initialLang} className={`h-full antialiased ${inter.variable} ${spaceGrotesk.variable}`}>
       <body className="min-h-full flex flex-col">
+        <PwaServiceWorker />
         <LanguageProvider initialLang={initialLang}>
           <SubjectProvider initialSubject={initialSubject}>{children}</SubjectProvider>
         </LanguageProvider>
