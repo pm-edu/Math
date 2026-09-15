@@ -44,6 +44,9 @@ export default async function CoursesPage() {
                 <p className="mt-4 text-base font-bold text-en-ink">
                   <Price krw={course.price} inr={course.price_inr} />
                 </p>
+                <p className="mt-3 text-sm font-semibold text-en-gold-deep">
+                  <T k="coursesEnrollHint" /> →
+                </p>
               </Link>
             ))}
           </div>

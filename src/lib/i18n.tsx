@@ -28,6 +28,7 @@ const DICT = {
     ko: "초 · 중 · 고 · IB 과정별 동영상 강의와 학습자료 패키지",
     en: "Video lessons and study materials from Elementary to IB",
   },
+  coursesEnrollHint: { ko: "자세히 보기 · 수강 신청", en: "View details & enroll" },
   includes: { ko: "구성", en: "What's included" },
   addToCart: { ko: "장바구니에 담기", en: "Add to cart" },
   enterClassroom: { ko: "강의실 들어가기", en: "Enter classroom" },

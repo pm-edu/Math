@@ -17,7 +17,20 @@ const PROGRAM_DESC: Record<StudentProgram, string> = {
   math: "초등부터 AS·A Level까지, 커리큘럼별 개념·문제풀이",
   sat: "Digital SAT 대비 문제 은행",
   toefl: "2026 개편 포맷 TOEFL 실전 연습",
+  english: "간격 반복으로 단어를 잊지 않게 관리하는 완전학습",
 };
+
+// "시작하기"가 어디로 갈지 — 고른 과목과 무관하게 무조건 /study(수학)로 보내던 걸
+// 고친다(2026-09-15 점검에서 발견: 수학을 안 골라도 수학 진단으로 튕겨감). 여러 개를
+// 골랐으면 math를 우선 보내고(기존 수학 온보딩 흐름이 이미 있어서), 그다음은 고른 과목의
+// 전용 화면으로, 아무 것도 안 맞으면 마이페이지로.
+function primaryDestination(selected: Set<StudentProgram>): string {
+  if (selected.has("math")) return "/study";
+  if (selected.has("toefl")) return "/toefl";
+  if (selected.has("sat")) return "/sat";
+  if (selected.has("english")) return "/english";
+  return "/mypage";
+}
 
 export default function SubjectOnboardingPage() {
   const router = useRouter();
@@ -78,7 +91,7 @@ export default function SubjectOnboardingPage() {
         </p>
         <button
           type="button"
-          onClick={() => router.push("/study")}
+          onClick={() => router.push(primaryDestination(selected))}
           className="mt-4 rounded-full bg-[var(--pink)] px-8 py-3 text-sm font-medium text-[var(--pink-dark)]"
         >
           시작하기
@@ -93,7 +106,7 @@ export default function SubjectOnboardingPage() {
         <h1 className="text-2xl font-bold text-[var(--foreground)]">관심 있는 과목을 골라주세요</h1>
         <p className="mt-2 text-sm text-[var(--secondary)]">여러 개를 고르셔도 됩니다. 나중에 바꿀 수 있어요.</p>
 
-        <div className="mt-8 grid gap-4 sm:grid-cols-3">
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {(Object.keys(PROGRAM_LABELS) as StudentProgram[]).map((program) => {
             const isSelected = selected.has(program);
             return (

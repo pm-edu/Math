@@ -12,6 +12,7 @@ import { isStaff } from "@/lib/roles";
 import { useLang, categoryLabel } from "@/lib/i18n";
 import { useSubject } from "@/lib/subject";
 import { InstallAppButton } from "@/components/InstallAppButton";
+import { fetchMyPrograms, type StudentProgram } from "@/lib/programs";
 
 export default function MyPage() {
   const router = useRouter();
@@ -27,6 +28,7 @@ export default function MyPage() {
   const [openReviewFor, setOpenReviewFor] = useState<string | null>(null);
   const [pendingExams, setPendingExams] = useState<{ id: string; title: string; time_limit_minutes: number | null }[]>([]);
   const [myClassrooms, setMyClassrooms] = useState<{ id: string; title: string; status: string }[]>([]);
+  const [programs, setPrograms] = useState<StudentProgram[]>([]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -65,6 +67,7 @@ export default function MyPage() {
         })
         .filter((c) => c.status !== "ended");
       setMyClassrooms(classrooms);
+      fetchMyPrograms(auth.user.id).then(setPrograms);
 
       // 배정된 문제지 중 "실전 시험"이면서 아직 제출(응시 완료)하지 않은 것만 골라
       // 마이페이지 맨 위에 놓친 시험이 없게 눈에 띄게 보여준다.
@@ -220,12 +223,14 @@ export default function MyPage() {
                   >
                     {t("myWorksheets")}
                   </Link>
-                  <Link
-                    href="/english"
-                    className="inline-block rounded-full bg-en-gold-soft px-5 py-2.5 text-sm font-bold text-en-gold-deep"
-                  >
-                    영어 학습
-                  </Link>
+                  {programs.includes("english") && (
+                    <Link
+                      href="/english"
+                      className="inline-block rounded-full bg-en-gold-soft px-5 py-2.5 text-sm font-bold text-en-gold-deep"
+                    >
+                      영어 학습
+                    </Link>
+                  )}
                   {isStaff(profile?.role) && (
                     <Link
                       href={subject === "math" ? "/admin/math" : "/admin"}
