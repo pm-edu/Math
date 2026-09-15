@@ -1,9 +1,18 @@
 import { MATH_PROGRAMS } from "./data";
 import ProgramRow from "./ProgramRow";
+import { getAllTrackAvailability, type TrackKey } from "@/lib/home/trackAvailability";
 
 // 영어 카드(EnglishTrackCard)와 같은 셸 + 행 목록 구조. 예전엔 태그 칩 4개 + 버튼 하나로
 // 훨씬 단순했는데, 두 카드 스타일이 서로 달라 보인다는 지적(2026-09-09)으로 통일함.
-export default function MathTrackCard() {
+// 서버 컴포넌트 — "서비스 중"/"준비 중" 뱃지를 data.ts 고정값이 아니라 실제 문제은행
+// 현황(trackAvailability)으로 매 요청마다 다시 계산한다(quirky-percolating-storm 계획).
+export default async function MathTrackCard() {
+  const availability = await getAllTrackAvailability();
+  const programs = MATH_PROGRAMS.map((program) => ({
+    ...program,
+    status: availability[program.id as TrackKey]?.status ?? "soon",
+  }));
+
   return (
     <div className="rounded-2xl bg-en-card border border-en-line shadow-[0_1px_2px_rgba(24,42,78,.05),0_8px_24px_rgba(24,42,78,.07)] pt-[26px] px-2 pb-2 flex flex-col">
       <div className="px-5 pb-[18px] border-b border-en-line/60">
@@ -19,7 +28,7 @@ export default function MathTrackCard() {
       </div>
 
       <div className="flex flex-col">
-        {MATH_PROGRAMS.map((program) => (
+        {programs.map((program) => (
           <ProgramRow key={program.id} program={program} />
         ))}
       </div>

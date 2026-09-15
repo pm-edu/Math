@@ -672,6 +672,18 @@ const DICT = {
   review_empty: { ko: "지금은 복습할 단원이 없어요.", en: "No units due for review right now." },
   review_startButton: { ko: "복습하기", en: "Review" },
   review_dueSince: { ko: "복습 예정", en: "Due" },
+
+  // 트랙 진입 페이지(/study/track/[key], quirky-percolating-storm 계획)
+  track_statusLive: { ko: "서비스 중", en: "Available now" },
+  track_statusSoon: { ko: "준비 중", en: "Coming soon" },
+  track_startCourse: { ko: "학습 시작하기", en: "Start learning" },
+  track_interestButton: { ko: "관심 등록", en: "Register interest" },
+  track_interestPending: { ko: "등록 중...", en: "Registering..." },
+  track_interestDone: { ko: "관심 등록 완료 — 준비되면 알려드릴게요.", en: "Registered — we'll let you know when it's ready." },
+  track_interestFailed: { ko: "등록에 실패했습니다. 다시 시도해주세요.", en: "Registration failed. Please try again." },
+  track_detailsTitle: { ko: "과정별 현황", en: "By curriculum" },
+  track_notFound: { ko: "존재하지 않는 과정입니다.", en: "This track doesn't exist." },
+  track_backHome: { ko: "홈으로", en: "Back to home" },
 } as const;
 
 // v_math_next_action.reason_ko는 DB 뷰에 한국어 리터럴로 고정돼 있다(컬럼명부터 _ko, 지시서

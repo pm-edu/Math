@@ -58,8 +58,10 @@ export const PROGRAMS: Program[] = [
 ];
 
 // 영어 카드(EnglishTrackCard)와 같은 행 목록 형태로 보여주려고 Program 타입을 그대로 쓴다
-// (사용자 요청, 2026-09-09: "수학카드도 영어카드처럼"). 4개 전부 실제로 개설돼 있어 status는
-// live 고정 — 아직 레벨별 필터 페이지가 없어 전부 /courses로 보낸다(거기서 학교급 배지로 구분됨).
+// (사용자 요청, 2026-09-09: "수학카드도 영어카드처럼"). href는 실제 문제은행 진입점
+// (/study/track/[key])으로 연결되고, status는 여기 값을 쓰지 않는다 — MathTrackCard가
+// trackAvailability(실제 verified 문항 수)로 매 요청마다 다시 계산해서 덮어쓴다
+// (quirky-percolating-storm 계획, 2026-09-15).
 export const MATH_PROGRAMS: Program[] = [
   {
     id: "elementary",
@@ -67,7 +69,7 @@ export const MATH_PROGRAMS: Program[] = [
     labelLang: "ko",
     description: "연산의 기초부터 차근차근 잡는 개념완성",
     status: "live",
-    href: "/courses",
+    href: "/study/track/elementary",
     icon: "elementary",
   },
   {
@@ -76,7 +78,7 @@ export const MATH_PROGRAMS: Program[] = [
     labelLang: "ko",
     description: "내신 대비 핵심 개념과 기출 유형",
     status: "live",
-    href: "/courses",
+    href: "/study/track/middle",
     icon: "middle",
   },
   {
@@ -85,7 +87,7 @@ export const MATH_PROGRAMS: Program[] = [
     labelLang: "ko",
     description: "수능·내신을 함께 잡는 심화 과정",
     status: "live",
-    href: "/courses",
+    href: "/study/track/high",
     icon: "high",
   },
   {
@@ -94,7 +96,7 @@ export const MATH_PROGRAMS: Program[] = [
     labelLang: "en",
     description: "AA/AI 대비 종합반, IA 가이드까지",
     status: "live",
-    href: "/courses",
+    href: "/study/track/ib",
     icon: "ib",
   },
   {
@@ -103,7 +105,7 @@ export const MATH_PROGRAMS: Program[] = [
     labelLang: "en",
     description: "케임브리지 0607 과정, 학년별 커리큘럼",
     status: "live",
-    href: "/courses",
+    href: "/study/track/igcse",
     icon: "igcse",
   },
   {
@@ -112,7 +114,7 @@ export const MATH_PROGRAMS: Program[] = [
     labelLang: "en",
     description: "케임브리지 심화 과정, 대학 입시 준비",
     status: "live",
-    href: "/courses",
+    href: "/study/track/aslevel",
     icon: "aslevel",
   },
   {
@@ -121,7 +123,7 @@ export const MATH_PROGRAMS: Program[] = [
     labelLang: "en",
     description: "인도 학생을 위한 CBSE 교육과정",
     status: "live",
-    href: "/courses",
+    href: "/study/track/cbse",
     icon: "cbse",
   },
 ];
