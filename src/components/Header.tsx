@@ -122,7 +122,7 @@ export default function Header() {
               {t("admin")}
             </Link>
           )}
-          {loggedIn && (
+          {programs.includes("math") && (
             <Link
               href="/study"
               className="hidden text-sm text-[var(--secondary)] transition-colors hover:text-[var(--foreground)] md:inline"
@@ -198,7 +198,7 @@ export default function Header() {
                 SAT Prep
               </Link>
             )}
-            {loggedIn && (
+            {programs.includes("math") && (
               <Link
                 href="/study"
                 onClick={() => setMobileOpen(false)}
