@@ -30,9 +30,9 @@ function detailValuesForTrack(track: TrackKey): string[] {
   return all; // ib/igcse/aslevel/cbse는 그룹 전체가 트랙 하나
 }
 
-// 과정 하나가 "지금 바로 공부할 만큼" 문항이 있는지 가르는 컷오프. 결제·접근권 판정이 아니라
-// 순수 안내용 뱃지라 엄밀한 근거는 없음 — 5개(대수)는 "준비 중", 280개 이상(중2/중3)은
-// "서비스 중"으로 갈리도록 잡은 값. 실제 데이터가 애매한 경계로 바뀌면 같이 조정할 것.
+// 과정 하나가 "지금 바로 공부할 만큼" 문항이 있는지 가르는 컷오프(아래 쿼리로 이미 진단·세션이
+// 실제로 쓸 수 있는 문항만 센 값 기준). 결제·접근권 판정이 아니라 순수 안내용 뱃지라 정확한
+// 근거는 없는 여유값 — 지금 유일하게 조건을 만족하는 IGCSE_0607(346개)은 압도적으로 넘김.
 const MIN_VERIFIED_PROBLEMS = 20;
 
 export interface DetailAvailability {
@@ -49,11 +49,18 @@ export interface TrackAvailability {
 
 export async function getAllTrackAvailability(): Promise<Record<TrackKey, TrackAvailability>> {
   const supabase = createServiceClient();
+  // verified=true만으론 부족하다 — 실제 진단/세션(src/lib/math/server/diagnostic.ts의
+  // pickItemForUnit)이 쓸 수 있으려면 unit_id가 있고 is_auto_gradable=true(자동채점 가능한
+  // mcq/numeric)이어야 한다. 중2/중3의 검수된 문항 수백 개는 [[math-figure-bulk-generation-project]]
+  // 파이프라인(이미지 기반 문제지 배포용)으로 만들어져 이 조건을 전혀 만족 안 함 — 2026-09-15
+  // 발견, verified만 세던 이전 버전은 "학습 시작하기"가 죽은 링크가 되는 버그였음.
   const { data, error } = await supabase
     .from("problems")
     .select("curriculum_detail")
     .eq("subject", "math")
-    .eq("verified", true);
+    .eq("verified", true)
+    .eq("is_auto_gradable", true)
+    .not("unit_id", "is", null);
 
   const counts = new Map<string, number>();
   if (!error && data) {

@@ -60,9 +60,9 @@ export default function TrackPageBody({
                 >
                   {detail.status === "live" ? t("track_statusLive") : t("track_statusSoon")}
                 </span>
-                {detail.value === "IGCSE_0607" && (
+                {detail.status === "live" && (
                   <Link
-                    href="/study/onboarding"
+                    href={`/study/onboarding?curriculum=${encodeURIComponent(detail.value)}`}
                     className="text-sm font-medium text-[var(--pink-dark)] hover:underline"
                   >
                     {t("track_startCourse")}

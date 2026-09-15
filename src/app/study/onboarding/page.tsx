@@ -4,17 +4,28 @@
 // 1) 커리큘럼 선택 → 2) 진단(적응형, 건너뛰기 가능) → 3) 결과로 시작 unit 확정+상위 unit
 // 면제(math_placements) → 4) 첫 세션으로 바로 진입. 요금제·설정 화면을 중간에 끼우지 않는다.
 //
-// D-PG-1(1차 커리큘럼=IGCSE 0607)이 확정값이고 지금 실제로 문항·선수관계가 갖춰진 커리큘럼도
-// 이것뿐이라, "커리큘럼 선택"은 지금은 IGCSE_0607 하나만 보여준다(src/lib/math/server/
-// diagnostic.ts 상단 주석과 같은 이유).
+// "커리큘럼 선택"은 여기 자체 드롭다운이 아니라 트랙 페이지(/study/track/[key],
+// quirky-percolating-storm 계획)에서 이미 고른 값을 ?curriculum= 쿼리로 받는다 — 진단
+// 로직(src/lib/math/server/diagnostic.ts)은 처음부터 curriculumDetail을 그대로 받는
+// 범용 구조였고, 실제로 문항·선수관계가 갖춰진 게 IGCSE_0607뿐이던 시절의 하드코딩만
+// 남아있던 것(2026-09-15, 중2·중3 선수관계 시드 후 제거).
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { QuestionCard } from "@/components/math/QuestionCard";
 import { useLang } from "@/lib/i18n";
+import { CURRICULUM_DETAILS } from "@/lib/curriculum";
 
-const CURRICULUM_DETAIL = "IGCSE_0607";
+const DEFAULT_CURRICULUM_DETAIL = "IGCSE_0607";
+
+function curriculumLabel(detail: string): string {
+  for (const list of Object.values(CURRICULUM_DETAILS)) {
+    const found = list.find((d) => d.value === detail);
+    if (found) return found.label;
+  }
+  return detail;
+}
 
 interface DiagnosticItem {
   problemId: string;
@@ -32,7 +43,9 @@ interface Placement {
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { t } = useLang();
+  const curriculumDetail = searchParams.get("curriculum") || DEFAULT_CURRICULUM_DETAIL;
 
   const [step, setStep] = useState<"intro" | "diagnostic" | "finishing">("intro");
   const [token, setToken] = useState<string | null>(null);
@@ -86,7 +99,7 @@ export default function OnboardingPage() {
     try {
       const data = await authFetch("/api/math/diagnostic", {
         method: "POST",
-        body: JSON.stringify({ curriculumDetail: CURRICULUM_DETAIL }),
+        body: JSON.stringify({ curriculumDetail }),
       });
       setSessionId(data.sessionId);
       setItem(data.item);
@@ -106,7 +119,7 @@ export default function OnboardingPage() {
     try {
       const data = await authFetch("/api/math/diagnostic/skip", {
         method: "POST",
-        body: JSON.stringify({ curriculumDetail: CURRICULUM_DETAIL }),
+        body: JSON.stringify({ curriculumDetail }),
       });
       goToUnit(data.startUnitId);
     } catch (e) {
@@ -162,7 +175,7 @@ export default function OnboardingPage() {
         {step === "intro" && (
           <section className="rounded-2xl border border-[var(--border-c)] bg-white p-8 text-center">
             <p className="text-xs font-medium text-[var(--secondary)]">{t("onboarding_curriculumLabel")}</p>
-            <p className="mt-1 text-lg font-medium text-[var(--foreground)]">IGCSE 0607</p>
+            <p className="mt-1 text-lg font-medium text-[var(--foreground)]">{curriculumLabel(curriculumDetail)}</p>
 
             <h1 className="mt-6 text-xl font-medium text-[var(--foreground)]">{t("onboarding_title")}</h1>
             <p className="mt-2 text-sm text-[var(--secondary)]">{t("onboarding_diagnosticIntro")}</p>
