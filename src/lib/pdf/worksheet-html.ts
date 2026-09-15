@@ -61,7 +61,7 @@ const FORMAT_LABEL: Record<string, string> = {
 
 const BASE_CSS = `
   * { box-sizing: border-box; }
-  body { margin: 0; font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; color: #1F2A44; font-size: 12px; }
+  body { margin: 0; font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; color: #1F2A44; font-size: 12px; }
   .page { padding: 6mm 4mm; }
   .head { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #182A4E; padding-bottom: 10px; margin-bottom: 14px; }
   .brand { font-weight: 800; color: #182A4E; font-size: 15px; }
@@ -100,6 +100,7 @@ function wrapDocument(css: string, bodyHtml: string): string {
 <head>
 <meta charset="utf-8" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.18.4/dist/katex.min.css" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;800&display=swap" />
 <style>${BASE_CSS}${css}</style>
 </head>
 <body>${bodyHtml}</body>
