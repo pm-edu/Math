@@ -12,6 +12,8 @@
     "test:ui": "vitest --ui",
     "toefl:generate": "npx tsx scripts/toefl-generate.ts",
     "toefl:generate-audio": "npx tsx scripts/toefl-generate-demo-audio.ts",
+    "test:signup-security": "npx tsx scripts/test-signup-security.ts",
+    "test:signup-e2e": "npx playwright test tests/signup.e2e.ts",
     "db:generate-types": "npx supabase gen types typescript --project-id ddaibbppzuvflmuoyuvf --schema public > src/lib/database.types.ts"
   },
   "dependencies": {
@@ -36,6 +38,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
