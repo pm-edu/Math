@@ -3,28 +3,20 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getTrackAvailability, TRACK_KEYS, type TrackKey } from "@/lib/home/trackAvailability";
-import DetailPageBody, { type UnitPreview } from "./DetailPageBody";
+import DetailPageBody, { type UnitTopic } from "./DetailPageBody";
 
 // 서브메뉴(학년/과정) 페이지 — 트랙 페이지에서 학년/과정을 고르면 여기로 온다. 즉석 학습 진입이
-// 아니라 단원 목록 + 단원별 샘플 문제 미리보기 + "신청" 버튼만 보여준다(quirky-percolating-storm
-// 계획의 2차 방향 전환, 2026-09-15). 단원 매칭은 problems.unit_id(FK)가 아니라 problems.unit
+// 아니라 단원(토픽) 목록 + "신청" 버튼만 보여준다(quirky-percolating-storm 계획의 2차 방향 전환,
+// 2026-09-15). 단원별 샘플은 화면에 텍스트로 늘어놓지 않고 PDF로 제공한다(2026-09-15 사용자
+// 피드백: "지금처럼 보여지는 문제는 어수선하다" — 기존 실전시험 PDF 시스템 재사용, DetailPageBody의
+// PDF 버튼이 /api/study/sample-pdf를 호출). 단원 매칭은 problems.unit_id(FK)가 아니라 problems.unit
 // (자유텍스트) ↔ curriculum_units.unit_name 텍스트 일치로 한다 — 중2/중3 문항은 unit_id가 전혀
 // 없어서([[math-figure-bulk-generation-project]] 파이프라인 산출물) 이 방법이어야 전부 커버된다.
-// IGCSE_0607도 unit 텍스트가 항상 unit_name과 일치해서 같은 로직으로 문제없이 동작함(확인됨).
-
-const SAMPLE_PER_UNIT = 2;
 
 interface UnitRow {
   id: string;
   unit_name: string;
   sort_order: number;
-}
-
-interface ProblemRow {
-  id: string;
-  unit: string | null;
-  content_text: string | null;
-  image_url: string | null;
 }
 
 export default async function TrackDetailPage({ params }: { params: Promise<{ key: string; detail: string }> }) {
@@ -38,42 +30,30 @@ export default async function TrackDetailPage({ params }: { params: Promise<{ ke
   if (!detailInfo) notFound();
 
   const db = createServiceClient();
-  const [{ data: units }, { data: problems }] = await Promise.all([
+  const [{ data: units }, { data: problemUnits }] = await Promise.all([
     db
       .from("curriculum_units")
       .select("id, unit_name, sort_order")
       .eq("curriculum_detail", detail)
       .not("unit_name", "ilike", "%코스워크%")
       .order("sort_order") as unknown as Promise<{ data: UnitRow[] | null }>,
-    db
-      .from("problems")
-      .select("id, unit, content_text, image_url")
-      .eq("curriculum_detail", detail)
-      .eq("verified", true) as unknown as Promise<{ data: ProblemRow[] | null }>,
+    db.from("problems").select("unit").eq("curriculum_detail", detail).eq("verified", true) as unknown as Promise<{
+      data: { unit: string | null }[] | null;
+    }>,
   ]);
 
-  const byUnitName = new Map<string, ProblemRow[]>();
-  for (const p of problems ?? []) {
-    if (!p.unit) continue;
-    const list = byUnitName.get(p.unit) ?? [];
-    if (list.length < SAMPLE_PER_UNIT) list.push(p);
-    byUnitName.set(p.unit, list);
-  }
+  const unitsWithContent = new Set((problemUnits ?? []).map((p) => p.unit).filter((v): v is string => !!v));
 
-  const unitPreviews: UnitPreview[] = (units ?? []).map((u) => ({
+  const topics: UnitTopic[] = (units ?? []).map((u) => ({
     unitName: u.unit_name,
-    samples: (byUnitName.get(u.unit_name) ?? []).map((p) => ({
-      id: p.id,
-      contentText: p.content_text,
-      imageUrl: p.image_url,
-    })),
+    hasSample: unitsWithContent.has(u.unit_name),
   }));
 
   return (
     <>
       <Header />
       <main className="mx-auto max-w-2xl px-6 py-16">
-        <DetailPageBody trackKey={trackKey} detail={detail} detailLabel={detailInfo.label} units={unitPreviews} />
+        <DetailPageBody trackKey={trackKey} detail={detail} detailLabel={detailInfo.label} topics={topics} />
       </main>
       <Footer />
     </>

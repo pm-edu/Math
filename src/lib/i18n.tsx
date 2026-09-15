@@ -684,7 +684,10 @@ const DICT = {
   },
   track_interestFailed: { ko: "신청에 실패했습니다. 다시 시도해주세요.", en: "Application failed. Please try again." },
   track_detailsTitle: { ko: "과정별 현황", en: "By curriculum" },
-  track_sampleTitle: { ko: "단원별 샘플 문제", en: "Sample problems by unit" },
+  track_topicsTitle: { ko: "토픽", en: "Topics" },
+  track_pdfView: { ko: "PDF 샘플 보기", en: "View PDF sample" },
+  track_pdfLoading: { ko: "만드는 중...", en: "Preparing..." },
+  track_pdfFailed: { ko: "불러오지 못했습니다.", en: "Couldn't load." },
   track_noSample: { ko: "샘플 준비 중입니다.", en: "Samples coming soon." },
 } as const;
 

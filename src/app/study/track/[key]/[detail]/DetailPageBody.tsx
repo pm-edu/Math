@@ -1,33 +1,59 @@
 "use client";
 
-import { MathText } from "@/components/ProblemBody";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useLang } from "@/lib/i18n";
+import { createClient } from "@/lib/supabase/client";
 import TrackInterestButton from "@/components/study/TrackInterestButton";
 import type { TrackKey } from "@/lib/home/trackAvailability";
 
-export interface SampleProblem {
-  id: string;
-  contentText: string | null;
-  imageUrl: string | null;
-}
-
-export interface UnitPreview {
+export interface UnitTopic {
   unitName: string;
-  samples: SampleProblem[];
+  hasSample: boolean;
 }
 
 export default function DetailPageBody({
   trackKey,
   detail,
   detailLabel,
-  units,
+  topics,
 }: {
   trackKey: TrackKey;
   detail: string;
   detailLabel: string;
-  units: UnitPreview[];
+  topics: UnitTopic[];
 }) {
   const { t } = useLang();
+  const router = useRouter();
+  const [loadingUnit, setLoadingUnit] = useState<string | null>(null);
+  const [errorUnit, setErrorUnit] = useState<string | null>(null);
+
+  async function openSamplePdf(unitName: string) {
+    setErrorUnit(null);
+    setLoadingUnit(unitName);
+    const supabase = createClient();
+    const { data } = await supabase.auth.getSession();
+    if (!data.session) {
+      router.push(`/login?next=${encodeURIComponent(`/study/track/${trackKey}/${detail}`)}`);
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `/api/study/sample-pdf?curriculumDetail=${encodeURIComponent(detail)}&unit=${encodeURIComponent(unitName)}`,
+        { headers: { Authorization: `Bearer ${data.session.access_token}` } }
+      );
+      if (!res.ok) throw new Error("failed");
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      window.open(blobUrl, "_blank");
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 30_000);
+    } catch {
+      setErrorUnit(unitName);
+    } finally {
+      setLoadingUnit(null);
+    }
+  }
 
   return (
     <>
@@ -39,31 +65,32 @@ export default function DetailPageBody({
       </section>
 
       <section className="mt-6">
-        <p className="px-1 text-xs font-medium text-[var(--secondary)]">{t("track_sampleTitle")}</p>
-        <div className="mt-3 flex flex-col gap-4">
-          {units.map((unit) => (
-            <div key={unit.unitName} className="rounded-2xl border border-[var(--border-c)] bg-white p-6">
-              <h2 className="text-sm font-medium text-[var(--foreground)]">{unit.unitName}</h2>
-              {unit.samples.length === 0 ? (
-                <p className="mt-3 text-sm text-[var(--secondary)]">{t("track_noSample")}</p>
-              ) : (
-                <div className="mt-3 flex flex-col gap-4">
-                  {unit.samples.map((sample) => (
-                    <div key={sample.id} className="rounded-xl bg-[var(--background)] p-4">
-                      {sample.contentText && (
-                        <MathText text={sample.contentText} className="text-sm text-[var(--foreground)]" />
-                      )}
-                      {sample.imageUrl && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={sample.imageUrl} alt="" className="mt-2 max-w-full rounded-lg" />
-                      )}
-                    </div>
-                  ))}
+        <p className="px-1 text-xs font-medium text-[var(--secondary)]">{t("track_topicsTitle")}</p>
+        <ul className="mt-3 flex flex-col gap-3">
+          {topics.map((topic) => (
+            <li
+              key={topic.unitName}
+              className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--border-c)] bg-white px-5 py-4"
+            >
+              <span className="text-sm font-medium text-[var(--foreground)]">{topic.unitName}</span>
+              {topic.hasSample ? (
+                <div className="flex items-center gap-3">
+                  {errorUnit === topic.unitName && <span className="text-xs text-red-600">{t("track_pdfFailed")}</span>}
+                  <button
+                    type="button"
+                    onClick={() => openSamplePdf(topic.unitName)}
+                    disabled={loadingUnit === topic.unitName}
+                    className="rounded-full border border-[var(--pink)] px-4 py-1.5 text-xs font-medium text-[var(--pink-dark)] disabled:opacity-50"
+                  >
+                    {loadingUnit === topic.unitName ? t("track_pdfLoading") : t("track_pdfView")}
+                  </button>
                 </div>
+              ) : (
+                <span className="text-xs text-[var(--secondary)]">{t("track_noSample")}</span>
               )}
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       </section>
     </>
   );
