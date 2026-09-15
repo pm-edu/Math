@@ -55,7 +55,14 @@ export async function GET(req: Request) {
   };
 
   const html = buildProblemsHtml(worksheet, problems as Problem[]);
-  const buffer = await htmlToPdfBuffer(html);
+  let buffer: Buffer;
+  try {
+    buffer = await htmlToPdfBuffer(html);
+  } catch (e) {
+    // TODO(2026-09-15): 원인 파악 중 임시로 에러 메시지를 그대로 노출함 — 원인 확인되면 일반
+    // 메시지로 되돌릴 것.
+    return json(502, `PDF 생성 실패: ${(e as Error).message}`);
+  }
   const filename = `${unit.replace(/[^\w가-힣0-9-]+/g, "_")}_샘플.pdf`;
 
   return new Response(new Uint8Array(buffer), {
