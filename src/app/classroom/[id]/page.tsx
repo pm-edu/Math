@@ -15,6 +15,7 @@ import "@livekit/components-styles";
 import { Track } from "livekit-client";
 import { createClient } from "@/lib/supabase/client";
 import { Whiteboard } from "@/components/classroom/Whiteboard";
+import { InstallAppButton } from "@/components/InstallAppButton";
 
 type TokenResponse = {
   ok: boolean;
@@ -150,13 +151,16 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
     // (2026-09-14 실사용 중 발견 — 화이트보드 영역이 높이 0이 돼버림) fixed inset-0로
     // 화면 자체를 명시적으로 꽉 채운다.
     <div className="fixed inset-0 bg-[var(--background)]">
-      <button
-        type="button"
-        onClick={toggleFullscreen}
-        className="absolute left-3 top-3 z-20 rounded-full bg-black/60 px-3 py-1.5 text-xs text-white hover:bg-black/80"
-      >
-        {isFullscreen ? "강의실 전체화면 종료" : "강의실 전체화면"}
-      </button>
+      <div className="absolute left-3 top-3 z-20 flex gap-2">
+        <button
+          type="button"
+          onClick={toggleFullscreen}
+          className="rounded-full bg-black/60 px-3 py-1.5 text-xs text-white hover:bg-black/80"
+        >
+          {isFullscreen ? "강의실 전체화면 종료" : "강의실 전체화면"}
+        </button>
+        <InstallAppButton className="rounded-full bg-black/60 px-3 py-1.5 text-xs text-white hover:bg-black/80" />
+      </div>
       <LiveKitRoom
         token={info.token}
         serverUrl={info.livekitUrl}

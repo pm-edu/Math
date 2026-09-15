@@ -11,6 +11,7 @@ import type { Profile, PurchasedCourse } from "@/lib/profile";
 import { isStaff } from "@/lib/roles";
 import { useLang, categoryLabel } from "@/lib/i18n";
 import { useSubject } from "@/lib/subject";
+import { InstallAppButton } from "@/components/InstallAppButton";
 
 export default function MyPage() {
   const router = useRouter();
@@ -136,12 +137,15 @@ export default function MyPage() {
           <div className="flex items-center justify-between">
             <h1 className="text-3xl font-bold text-en-ink">{t("mypage")}</h1>
             {!loading && (
-              <button
-                onClick={handleLogout}
-                className="text-sm text-en-ink-soft underline hover:text-en-ink"
-              >
-                {t("logout")}
-              </button>
+              <div className="flex items-center gap-4">
+                <InstallAppButton className="text-sm text-en-ink-soft underline hover:text-en-ink" />
+                <button
+                  onClick={handleLogout}
+                  className="text-sm text-en-ink-soft underline hover:text-en-ink"
+                >
+                  {t("logout")}
+                </button>
+              </div>
             )}
           </div>
 
