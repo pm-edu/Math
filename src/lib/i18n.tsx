@@ -98,13 +98,39 @@ const DICT = {
   haveAccount: { ko: "이미 계정이 있으신가요?", en: "Already have an account?" },
   loggingIn: { ko: "로그인 중...", en: "Logging in..." },
   signingUp: { ko: "가입 중...", en: "Signing up..." },
-  pwPlaceholder: { ko: "6자 이상 입력해주세요", en: "At least 6 characters" },
+  pwPlaceholder: { ko: "영문+숫자 포함 8자 이상", en: "At least 8 characters, letters + numbers" },
   signupDone: { ko: "가입 확인 이메일을 보냈어요", en: "Check your inbox" },
   signupDoneSub: {
     ko: "메일함에서 인증 링크를 확인한 뒤 로그인해주세요.",
     en: "Click the verification link in your email, then log in.",
   },
   goLogin: { ko: "로그인하러 가기", en: "Go to login" },
+  phone: { ko: "전화번호", en: "Phone number" },
+  phoneInvalid: {
+    ko: "전화번호 형식을 확인해주세요 (예: 010-1234-5678, +91 98765 43210).",
+    en: "Check the phone number format (e.g. 010-1234-5678, +91 98765 43210).",
+  },
+  curriculum: { ko: "커리큘럼", en: "Curriculum" },
+  selectPlaceholder: { ko: "선택해주세요", en: "Please select" },
+  passwordConfirm: { ko: "비밀번호 확인", en: "Confirm password" },
+  passwordMismatch: { ko: "비밀번호가 일치하지 않습니다.", en: "Passwords don't match." },
+  termsCheckLabel: { ko: "이용약관에 동의합니다.", en: "I agree to the Terms of Service." },
+  privacyCheckLabel: { ko: "개인정보처리방침에 동의합니다.", en: "I agree to the Privacy Policy." },
+  termsRequired: {
+    ko: "이용약관과 개인정보처리방침에 모두 동의해야 가입할 수 있습니다.",
+    en: "You must agree to both the Terms and Privacy Policy to sign up.",
+  },
+  minorNotice: {
+    ko: "만 14세 미만은 보호자(법정대리인)의 동의가 필요합니다. 가입 후 학원으로 보호자 연락처를 알려주세요.",
+    en: "Users under 14 need a parent/guardian's consent. Please share a guardian contact after signing up.",
+  },
+  emailNotConfirmedTitle: { ko: "이메일 인증이 필요합니다", en: "Email verification required" },
+  emailNotConfirmedSub: {
+    ko: "가입하신 메일함에서 인증 링크를 눌러주세요. 메일을 못 받으셨다면 아래에서 다시 보낼 수 있습니다.",
+    en: "Click the verification link in your inbox. If you didn't get it, you can resend it below.",
+  },
+  resendConfirmEmail: { ko: "인증 메일 다시 보내기", en: "Resend verification email" },
+  resendConfirmEmailDone: { ko: "인증 메일을 다시 보냈어요.", en: "Verification email resent." },
 
   // 후기
   reviewsTitle: { ko: "수강 후기", en: "Student Reviews" },
