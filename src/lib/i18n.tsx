@@ -676,14 +676,16 @@ const DICT = {
   // 트랙 진입 페이지(/study/track/[key], quirky-percolating-storm 계획)
   track_statusLive: { ko: "서비스 중", en: "Available now" },
   track_statusSoon: { ko: "준비 중", en: "Coming soon" },
-  track_startCourse: { ko: "학습 시작하기", en: "Start learning" },
-  track_interestButton: { ko: "관심 등록", en: "Register interest" },
-  track_interestPending: { ko: "등록 중...", en: "Registering..." },
-  track_interestDone: { ko: "관심 등록 완료 — 준비되면 알려드릴게요.", en: "Registered — we'll let you know when it's ready." },
-  track_interestFailed: { ko: "등록에 실패했습니다. 다시 시도해주세요.", en: "Registration failed. Please try again." },
+  track_interestButton: { ko: "신청하기", en: "Apply" },
+  track_interestPending: { ko: "신청 중...", en: "Applying..." },
+  track_interestDone: {
+    ko: "신청이 접수됐습니다 — 승인되면 마이페이지에서 확인하실 수 있어요.",
+    en: "Application received — you'll see it in My Page once approved.",
+  },
+  track_interestFailed: { ko: "신청에 실패했습니다. 다시 시도해주세요.", en: "Application failed. Please try again." },
   track_detailsTitle: { ko: "과정별 현황", en: "By curriculum" },
-  track_notFound: { ko: "존재하지 않는 과정입니다.", en: "This track doesn't exist." },
-  track_backHome: { ko: "홈으로", en: "Back to home" },
+  track_sampleTitle: { ko: "단원별 샘플 문제", en: "Sample problems by unit" },
+  track_noSample: { ko: "샘플 준비 중입니다.", en: "Samples coming soon." },
 } as const;
 
 // v_math_next_action.reason_ko는 DB 뷰에 한국어 리터럴로 고정돼 있다(컬럼명부터 _ko, 지시서

@@ -8,7 +8,7 @@ export type TrackKey = "elementary" | "middle" | "high" | "ib" | "igcse" | "asle
 
 export const TRACK_KEYS: TrackKey[] = ["elementary", "middle", "high", "ib", "igcse", "aslevel", "cbse"];
 
-const TRACK_GROUP: Record<TrackKey, CurriculumGroup> = {
+export const TRACK_GROUP: Record<TrackKey, CurriculumGroup> = {
   elementary: "KR",
   middle: "KR",
   high: "KR",
@@ -21,7 +21,7 @@ const TRACK_GROUP: Record<TrackKey, CurriculumGroup> = {
 const KR_ELEMENTARY = ["초1", "초2", "초3", "초4", "초5", "초6"];
 const KR_MIDDLE = ["중1", "중2", "중3"];
 
-function detailValuesForTrack(track: TrackKey): string[] {
+export function detailValuesForTrack(track: TrackKey): string[] {
   const group = TRACK_GROUP[track];
   const all = CURRICULUM_DETAILS[group].map((d) => d.value);
   if (track === "elementary") return all.filter((v) => KR_ELEMENTARY.includes(v));

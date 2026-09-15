@@ -347,6 +347,12 @@ export default function AdminPage() {
                   수강 신청
                 </Link>
                 <Link
+                  href="/admin/curriculum-interest"
+                  className="rounded-full bg-[var(--pink)] px-5 py-2.5 text-sm font-medium text-[var(--pink-dark)]"
+                >
+                  과정 신청 승인
+                </Link>
+                <Link
                   href="/admin/categories"
                   className="rounded-full bg-[var(--mint)] px-5 py-2.5 text-sm font-medium text-[var(--mint-dark)]"
                 >
