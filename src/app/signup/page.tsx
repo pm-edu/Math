@@ -37,7 +37,7 @@ function isPasswordValid(pw: string) {
 }
 
 export default function SignupPage() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const params = useSearchParams();
   const isToefl = params.get("toefl") === "1";
   const isSat = params.get("sat") === "1";
@@ -93,7 +93,7 @@ export default function SignupPage() {
 
     if (error) {
       setLoading(false);
-      setError(authErrorMessage(error, "회원가입에 실패했습니다. 다시 시도해주세요."));
+      setError(authErrorMessage(error, lang, t("signupFailedFallback")));
       return;
     }
 

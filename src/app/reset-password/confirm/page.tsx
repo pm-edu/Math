@@ -70,7 +70,7 @@ export default function ResetPasswordConfirmPage() {
     setLoading(false);
 
     if (error) {
-      setError(authErrorMessage(error, "비밀번호 변경에 실패했습니다."));
+      setError(authErrorMessage(error, "ko", "비밀번호 변경에 실패했습니다."));
       return;
     }
     setStage("done");

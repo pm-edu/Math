@@ -17,7 +17,7 @@ import { useLang } from "@/lib/i18n";
 // 헤더만 보여주고, 로그인 성공 후에도 수학 홈("/") 대신 각자의 랜딩으로 돌려보낸다.
 // (2026-09-15, RUN_SIGNUP.md: 수학 쪽(비isolated)은 --en-* 대신 --pink/--mint/--background.)
 export default function LoginPage() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const params = useSearchParams();
   const isToefl = params.get("toefl") === "1";
   const isSat = params.get("sat") === "1";
@@ -45,7 +45,7 @@ export default function LoginPage() {
         setNeedsConfirm(true);
         return;
       }
-      setError(authErrorMessage(error, "이메일 또는 비밀번호가 올바르지 않습니다."));
+      setError(authErrorMessage(error, lang, t("loginFailedFallback")));
       return;
     }
 

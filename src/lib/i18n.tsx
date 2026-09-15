@@ -98,6 +98,8 @@ const DICT = {
   noAccount: { ko: "계정이 없으신가요?", en: "Don't have an account?" },
   haveAccount: { ko: "이미 계정이 있으신가요?", en: "Already have an account?" },
   loggingIn: { ko: "로그인 중...", en: "Logging in..." },
+  loginFailedFallback: { ko: "이메일 또는 비밀번호가 올바르지 않습니다.", en: "Incorrect email or password." },
+  signupFailedFallback: { ko: "회원가입에 실패했습니다. 다시 시도해주세요.", en: "Sign-up failed. Please try again." },
   signingUp: { ko: "가입 중...", en: "Signing up..." },
   pwPlaceholder: { ko: "영문+숫자 포함 8자 이상", en: "At least 8 characters, letters + numbers" },
   signupDone: { ko: "가입 확인 이메일을 보냈어요", en: "Check your inbox" },
