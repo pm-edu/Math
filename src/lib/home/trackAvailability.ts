@@ -35,6 +35,11 @@ export function detailValuesForTrack(track: TrackKey): string[] {
 // 근거는 없는 여유값 — 지금 유일하게 조건을 만족하는 IGCSE_0607(346개)은 압도적으로 넘김.
 const MIN_VERIFIED_PROBLEMS = 20;
 
+// 데이터상으론 이미 조건을 넘겨도 사람이 판단해서 임시로 "준비 중" 처리해야 하는 과정.
+// IGCSE_0607: 국제 커리큘럼인데 검증된 문항 346개가 전부 한글로 생성돼 있어(영문이어야 함) 학생에게
+// 그대로 노출하면 안 됨 — 영문 전환 작업 끝나면 이 목록에서 빼면 된다(2026-09-16, 사용자 지시).
+const LANGUAGE_BLOCKED_DETAILS = new Set(["IGCSE_0607"]);
+
 export interface DetailAvailability {
   value: string;
   label: string;
@@ -79,7 +84,7 @@ export async function getAllTrackAvailability(): Promise<Record<TrackKey, TrackA
         value,
         label: curriculumDetailLabel(group, value),
         problemCount,
-        status: problemCount >= MIN_VERIFIED_PROBLEMS ? "live" : "soon",
+        status: problemCount >= MIN_VERIFIED_PROBLEMS && !LANGUAGE_BLOCKED_DETAILS.has(value) ? "live" : "soon",
       };
     });
     result[track] = { status: details.some((d) => d.status === "live") ? "live" : "soon", details };
