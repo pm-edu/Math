@@ -23,7 +23,12 @@ export async function POST(req: Request) {
     const result = await createSession(auth.userId, parsed.data.unitId, parsed.data.kind);
     return Response.json({ ok: true, ...result });
   } catch (e) {
-    return jsonError(409, (e as Error).message);
+    const message = (e as Error).message;
+    // requireEntitlement(entitlement.ts)가 던지는 메시지 형식 — 접근권 없음은 다른 409(예:
+    // "이미 진행 중인 세션이 있습니다")와 구분해서 403으로 내려줘야 클라이언트가 /study/notice로
+    // 보낼지, 그냥 에러 문구만 보여줄지 나눌 수 있다.
+    if (message.startsWith("권한이 없습니다")) return jsonError(403, message);
+    return jsonError(409, message);
   }
 }
 

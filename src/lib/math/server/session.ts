@@ -80,7 +80,7 @@ export async function createSession(
   unitId: string,
   kind: SessionKind
 ): Promise<{ sessionId: number; items: SessionItemView[] }> {
-  await requireEntitlement(userId, "math.session.start");
+  await requireEntitlement(userId, "math.subscription");
   const db = serviceClient();
 
   const { data: activeSession } = await db

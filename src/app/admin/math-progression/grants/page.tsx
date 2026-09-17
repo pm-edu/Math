@@ -12,13 +12,9 @@ import { createClient } from "@/lib/supabase/client";
 import { canManageMaterials } from "@/lib/roles";
 import type { FeatureKey } from "@/lib/access/entitlement";
 
-const FEATURE_KEYS: FeatureKey[] = [
-  "math.session.start",
-  "math.solution.view",
-  "math.worksheet.download",
-  "math.report.detail",
-  "math.path.full",
-];
+// 2026-09-17: entitlement 키를 2개로 통일(RUN_MATH_SITE.md 2단계 B) — 예전 5개 세분화 키는
+// 실제로 쓴 곳이 math.session.start 하나뿐이라 정리됨.
+const FEATURE_KEYS: FeatureKey[] = ["math.subscription", "math.lecture"];
 
 interface GrantRow {
   id: number;
@@ -40,7 +36,7 @@ export default function MathGrantsAdminPage() {
   const [grants, setGrants] = useState<GrantRow[]>([]);
 
   const [studentEmail, setStudentEmail] = useState("");
-  const [featureKey, setFeatureKey] = useState<FeatureKey>("math.session.start");
+  const [featureKey, setFeatureKey] = useState<FeatureKey>("math.subscription");
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);

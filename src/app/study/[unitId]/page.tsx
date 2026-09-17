@@ -101,6 +101,12 @@ export default function StudySessionPage() {
             body: JSON.stringify({ unitId: params.unitId, kind }),
           });
           const createData = await createRes.json();
+          if (createRes.status === 403) {
+            // 접근권 없음(RUN_MATH_SITE.md 2-6) — "이미 진행 중" 같은 다른 409와 달리 재시도로
+            // 해결될 문제가 아니라 안내 화면으로 보낸다.
+            router.replace("/study/notice");
+            return;
+          }
           if (!createRes.ok || !createData.ok) {
             // 이미 진행 중인 세션이 있어서 거부된 경우, 그 사이 다른 요청이 만든 세션일 수
             // 있으니 이 unit 기준으로 한 번 더 조회해 본다(레이스 자연 복구).
