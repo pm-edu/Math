@@ -6,7 +6,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/client";
@@ -41,11 +40,12 @@ export default function StudyPage() {
         return;
       }
 
-      // 아직 커리큘럼 배치(진단/건너뛰기)를 안 거친 신규 학생은 대시보드보다 온보딩이 먼저다
-      // (PG4). math_placements에 본인 행이 없으면 온보딩으로 보낸다.
-      const { data: placement } = await supabase.from("math_placements").select("user_id").maybeSingle();
-      if (!placement) {
-        router.replace("/study/onboarding");
+      // 온보딩은 /onboarding/subjects 하나뿐이다(RUN_MATH_SITE.md 2.5단계 확정 — math_placements
+      // 기반 옛 게이트는 동결). curriculum_group이 비어있으면(가입 시 필수라 신규 학생은 거의
+      // 없음, 과거 가입자만 해당) 거기로 보낸다.
+      const { data: profile } = await supabase.from("profiles").select("curriculum_group").eq("id", auth.user.id).maybeSingle();
+      if (!profile?.curriculum_group) {
+        router.replace("/onboarding/subjects");
         return;
       }
 
@@ -107,18 +107,6 @@ export default function StudyPage() {
                 </p>
               </div>
             </div>
-
-            <details className="rounded-2xl border border-[var(--border-c)] bg-white p-5 text-sm">
-              <summary className="cursor-pointer text-[var(--secondary)]">···</summary>
-              <div className="mt-3 flex flex-col gap-2">
-                <Link href="/study/path" className="text-[var(--foreground)] hover:underline">
-                  {t("study_pathLink")}
-                </Link>
-                <Link href="/study/review" className="text-[var(--foreground)] hover:underline">
-                  {t("study_reviewLink")}
-                </Link>
-              </div>
-            </details>
           </div>
         )}
       </main>
@@ -145,19 +133,13 @@ function TodayCard({
     );
   }
 
-  const buttonLabel = nextAction.action_type === "resume_session" ? t("study_resumeButton") : t("study_startButton");
-
+  // "시작하기/이어서 풀기" 버튼은 /study/[unitId](옛 진단·세션 설계, RUN_MATH_SITE.md 2.5단계로
+  // 분리·동결됨)로 가던 것이라 제거했다 — 실제 학습 시작 버튼은 4·5단계(과정/문제지)에서 다시 얹는다.
   return (
     <section className="rounded-2xl border border-[var(--border-c)] bg-white p-8">
       <p className="text-xs font-medium text-[var(--secondary)]">{t("study_todayTitle")}</p>
       <h1 className="mt-2 text-2xl font-medium text-[var(--foreground)]">{nextAction.unit_name}</h1>
       <p className="mt-1 text-sm text-[var(--secondary)]">{nextActionReasonLabel(nextAction.reason_ko, lang)}</p>
-      <Link
-        href={`/study/${nextAction.unit_id}?kind=${nextAction.session_kind}`}
-        className="mt-6 inline-block rounded-full bg-[var(--pink)] px-8 py-3 text-sm font-medium text-[var(--pink-dark)]"
-      >
-        {buttonLabel}
-      </Link>
     </section>
   );
 }
