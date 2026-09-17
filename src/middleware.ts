@@ -36,8 +36,31 @@ const SAT_ALLOWED_PREFIXES = [
   "/reset-password",
 ];
 
+// math.pmedu4u.com도 같은 방식으로 독립시킨다(RUN_MATH_SITE.md 1단계). 신규 학생/관리 화면
+// (/study, /admin/study)뿐 아니라, 그 관리 네비게이션이 계속 링크하는 기존 화면
+// (/admin/problems 등 4개, 1-3에 명시됨)도 막히면 안 되므로 같이 허용한다.
+const MATH_ALLOWED_PREFIXES = [
+  "/study",
+  "/api/study",
+  "/api/math",
+  "/admin/study",
+  "/admin/problems",
+  "/admin/worksheets",
+  "/api/admin/worksheets",
+  "/admin/classes",
+  "/admin/attendance",
+  "/login",
+  "/signup",
+  "/reset-password",
+  "/report",
+];
+
 export function middleware(request: NextRequest) {
-  const hostname = request.headers.get("host") || "";
+  // 로컬 개발·Vercel 프리뷰에는 실제 서브도메인이 없어서(기존 ?subject= 오버라이드와 같은 이유,
+  // 위 주석 참고) math. 분기를 시뮬레이션할 방법이 저장소에 아직 없었다 — 이 dev 전용 환경변수로
+  // 대신한다. 프로덕션에서는 보통 설정 안 하므로 실제 호스트 그대로 쓰인다.
+  const forceHost = process.env.NEXT_PUBLIC_FORCE_HOST;
+  const hostname = forceHost ? `${forceHost}.pmedu4u.com` : request.headers.get("host") || "";
   const { pathname } = request.nextUrl;
   const queryOverride = request.nextUrl.searchParams.get("subject");
   const subject: Subject =
@@ -53,6 +76,15 @@ export function middleware(request: NextRequest) {
 
   if (hostname.startsWith("sat.") && !SAT_ALLOWED_PREFIXES.some((p) => pathname.startsWith(p))) {
     return NextResponse.redirect(new URL("/sat", request.url));
+  }
+
+  if (hostname.startsWith("math.")) {
+    if (pathname === "/admin" || pathname === "/admin/") {
+      return NextResponse.redirect(new URL("/admin/study", request.url));
+    }
+    if (!MATH_ALLOWED_PREFIXES.some((p) => pathname.startsWith(p))) {
+      return NextResponse.redirect(new URL("/study", request.url));
+    }
   }
 
   const response = NextResponse.next();

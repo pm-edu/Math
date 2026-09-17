@@ -32,6 +32,14 @@ export default function Header() {
     setCameFromSat(document.referrer.includes("/sat"));
   }, []);
 
+  // math.pmedu4u.com은 독립된 사이트처럼 보여야 한다(RUN_MATH_SITE.md 1-2) — 허브 메뉴(TOEFL/SAT)와
+  // /courses 링크를 숨기고 훨씬 단순한 헤더를 쓴다. cameFromToefl과 같은 이유로 클라이언트에서만
+  // 판정 가능(호스트 정보라 서버 첫 렌더에는 없음).
+  const [isMathHost, setIsMathHost] = useState(false);
+  useEffect(() => {
+    setIsMathHost(window.location.hostname.startsWith("math."));
+  }, []);
+
   useEffect(() => {
     const supabase = createClient();
 
@@ -68,6 +76,61 @@ export default function Header() {
   async function handleLogout() {
     await createClient().auth.signOut();
     window.location.href = "/";
+  }
+
+  if (isMathHost) {
+    return (
+      <header className="sticky top-0 z-50 border-b border-[var(--border-c)] bg-[var(--background)]/90 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center gap-6 px-6 py-4">
+          <Link href="/study" className="text-lg font-medium text-[var(--foreground)]">
+            {site.name}
+          </Link>
+          <div className="ml-auto flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setLang(lang === "ko" ? "en" : "ko")}
+              aria-label={lang === "ko" ? "Switch to English" : "한국어로 전환"}
+              className="rounded-full border border-[var(--border-c)] bg-white px-3 py-1.5 text-xs font-medium text-[var(--secondary)] transition-colors hover:text-[var(--foreground)]"
+            >
+              {lang === "ko" ? "EN" : "한국어"}
+            </button>
+            {isAdmin && (
+              <Link
+                href="/admin/study"
+                className="rounded-full border border-[var(--border-c)] bg-white px-4 py-1.5 text-sm text-[var(--foreground)] transition-colors hover:bg-[var(--mint)]/40"
+              >
+                {t("admin")}
+              </Link>
+            )}
+            {loggedIn !== null && (
+              <Link
+                href={loggedIn ? "/study" : "/login"}
+                className="text-sm text-[var(--secondary)] hover:text-[var(--foreground)]"
+              >
+                {loggedIn ? t("study_navLabel") : t("login")}
+              </Link>
+            )}
+            {loggedIn === false && (
+              <Link
+                href="/signup"
+                className="rounded-full bg-[var(--pink)] px-4 py-1.5 text-sm font-medium text-[var(--pink-dark)]"
+              >
+                {t("signup")}
+              </Link>
+            )}
+            {loggedIn && (
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="text-sm text-[var(--secondary)] hover:text-[var(--foreground)]"
+              >
+                {t("logout")}
+              </button>
+            )}
+          </div>
+        </div>
+      </header>
+    );
   }
 
   return (
