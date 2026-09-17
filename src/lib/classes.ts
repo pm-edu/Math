@@ -152,3 +152,14 @@ export async function loadStudentReports(userIds: string[]): Promise<Map<string,
 
   return result;
 }
+
+// 반 단위 문제지 배포(RUN_MATH_SITE.md 3-3) — worksheet_assignments에 user_id 대신 class_id를
+// 채운 행 하나로 반원 전체에게 배포한다(개별 배정은 기존 화면 그대로, 여긴 서버 함수만).
+// RLS는 기존 "admins manage assignments"(is_admin()) 정책이 그대로 커버한다.
+export async function assignWorksheetToClass(worksheetId: string, classId: string): Promise<{ error: string | null }> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("worksheet_assignments")
+    .upsert({ worksheet_id: worksheetId, class_id: classId, user_id: null }, { onConflict: "worksheet_id,class_id" });
+  return { error: error?.message ?? null };
+}

@@ -49,6 +49,20 @@ export async function getOrCreateSession(
     .single();
 
   if (error || !data) return { id: null, error: error?.message ?? "수업 회차를 만들지 못했습니다." };
+
+  // 새 회차를 만들면 그 반의 반원 전체를 참석 대상으로 자동 채운다(RUN_MATH_SITE.md 3-2) —
+  // 기존 "수동으로 추가/삭제" 기능(class_session_students 직접 편집)은 그대로 둔다, 이건 그냥
+  // 새 회차의 기본값을 채우는 것뿐이라 중복 삽입이어도 안전하게 무시된다.
+  const { data: classmates } = await supabase.from("profiles").select("id").eq("class_id", classId);
+  if (classmates && classmates.length > 0) {
+    await supabase
+      .from("class_session_students")
+      .upsert(
+        classmates.map((s) => ({ class_session_id: data.id, student_id: s.id })),
+        { onConflict: "class_session_id,student_id", ignoreDuplicates: true }
+      );
+  }
+
   return { id: data.id, error: null };
 }
 
