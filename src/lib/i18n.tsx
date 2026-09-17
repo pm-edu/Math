@@ -619,6 +619,7 @@ const DICT = {
   study_loading: { ko: "불러오는 중...", en: "Loading..." },
   study_errorLoad: { ko: "학습 정보를 불러오지 못했습니다.", en: "Couldn't load your study info." },
   study_todayTitle: { ko: "오늘의 학습", en: "Today's study" },
+  study_newScreenComingSoon: { ko: "새 학습 화면을 준비 중입니다. 곧 열립니다.", en: "A new study screen is on the way. Opening soon." },
   study_startButton: { ko: "시작하기", en: "Start" },
   study_resumeButton: { ko: "이어서 풀기", en: "Resume" },
   study_doneTitle: { ko: "모든 단원을 마쳤어요", en: "You've completed every unit" },

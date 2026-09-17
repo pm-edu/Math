@@ -58,10 +58,11 @@ export const PROGRAMS: Program[] = [
 ];
 
 // 영어 카드(EnglishTrackCard)와 같은 행 목록 형태로 보여주려고 Program 타입을 그대로 쓴다
-// (사용자 요청, 2026-09-09: "수학카드도 영어카드처럼"). href는 실제 문제은행 진입점
-// (/study/track/[key])으로 연결되고, status는 여기 값을 쓰지 않는다 — MathTrackCard가
-// trackAvailability(실제 verified 문항 수)로 매 요청마다 다시 계산해서 덮어쓴다
-// (quirky-percolating-storm 계획, 2026-09-15).
+// (사용자 요청, 2026-09-09: "수학카드도 영어카드처럼"). status는 여기 값을 쓰지 않는다 —
+// MathTrackCard가 trackAvailability(실제 verified 문항 수)로 매 요청마다 다시 계산해서
+// 덮어쓴다(quirky-percolating-storm 계획, 2026-09-15).
+// href는 전부 /study — 예전엔 과정별 서브메뉴(/study/track/[key])로 갔지만 그 라우트는
+// RUN_MATH_SITE.md 2.5단계로 동결됐다. 과정 기준 재연결은 5단계에서 다시 한다.
 export const MATH_PROGRAMS: Program[] = [
   {
     id: "elementary",
@@ -69,7 +70,7 @@ export const MATH_PROGRAMS: Program[] = [
     labelLang: "ko",
     description: "연산의 기초부터 차근차근 잡는 개념완성",
     status: "live",
-    href: "/study/track/elementary",
+    href: "/study",
     icon: "elementary",
   },
   {
@@ -78,7 +79,7 @@ export const MATH_PROGRAMS: Program[] = [
     labelLang: "ko",
     description: "내신 대비 핵심 개념과 기출 유형",
     status: "live",
-    href: "/study/track/middle",
+    href: "/study",
     icon: "middle",
   },
   {
@@ -87,7 +88,7 @@ export const MATH_PROGRAMS: Program[] = [
     labelLang: "ko",
     description: "수능·내신을 함께 잡는 심화 과정",
     status: "live",
-    href: "/study/track/high",
+    href: "/study",
     icon: "high",
   },
   {
@@ -96,7 +97,7 @@ export const MATH_PROGRAMS: Program[] = [
     labelLang: "en",
     description: "AA/AI 대비 종합반, IA 가이드까지",
     status: "live",
-    href: "/study/track/ib",
+    href: "/study",
     icon: "ib",
   },
   {
@@ -105,7 +106,7 @@ export const MATH_PROGRAMS: Program[] = [
     labelLang: "en",
     description: "케임브리지 0607 과정, 학년별 커리큘럼",
     status: "live",
-    href: "/study/track/igcse",
+    href: "/study",
     icon: "igcse",
   },
   {
@@ -114,7 +115,7 @@ export const MATH_PROGRAMS: Program[] = [
     labelLang: "en",
     description: "케임브리지 심화 과정, 대학 입시 준비",
     status: "live",
-    href: "/study/track/aslevel",
+    href: "/study",
     icon: "aslevel",
   },
   {
@@ -123,7 +124,7 @@ export const MATH_PROGRAMS: Program[] = [
     labelLang: "en",
     description: "인도 학생을 위한 CBSE 교육과정",
     status: "live",
-    href: "/study/track/cbse",
+    href: "/study",
     icon: "cbse",
   },
 ];

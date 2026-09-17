@@ -9,24 +9,13 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/client";
-import { useLang, nextActionReasonLabel } from "@/lib/i18n";
-
-interface NextAction {
-  action_type: "resume_session" | "review" | "practice" | "done";
-  unit_id: string | null;
-  unit_name: string | null;
-  session_kind: string;
-  item_count: number;
-  reason_ko: string;
-}
+import { useLang } from "@/lib/i18n";
 
 export default function StudyPage() {
   const router = useRouter();
-  const { t, lang } = useLang();
+  const { t } = useLang();
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [nextAction, setNextAction] = useState<NextAction | null>(null);
   const [streakDays, setStreakDays] = useState(0);
   const [weekly, setWeekly] = useState({ sessions: 0, items: 0 });
 
@@ -50,17 +39,11 @@ export default function StudyPage() {
       }
 
       const weekAgo = new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10);
-      const [actionResult, streakResult, weeklyResult] = await Promise.all([
-        supabase.from("v_math_next_action").select("*").maybeSingle(),
+      const [streakResult, weeklyResult] = await Promise.all([
         supabase.from("v_math_streak").select("current_streak_days").maybeSingle(),
         supabase.from("math_daily_activity").select("sessions_done, items_done").gte("date", weekAgo),
       ]);
 
-      if (actionResult.error) {
-        setError(t("study_errorLoad"));
-      } else {
-        setNextAction(actionResult.data as NextAction | null);
-      }
       setStreakDays(streakResult.data?.current_streak_days ?? 0);
       const weeklyRows = weeklyResult.data ?? [];
       setWeekly({
@@ -71,9 +54,6 @@ export default function StudyPage() {
     }
 
     load();
-    // t는 lang이 바뀌면 새 함수가 되지만, 에러 문구 갱신 때문에 재조회할 필요는 없다 —
-    // 의존성에 넣으면 언어 전환마다 불필요한 재조회가 일어난다.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
   return (
@@ -82,11 +62,9 @@ export default function StudyPage() {
       <main className="mx-auto max-w-2xl px-6 py-16">
         {loading ? (
           <p className="text-sm text-[var(--secondary)]">{t("study_loading")}</p>
-        ) : error ? (
-          <p className="text-sm text-red-600">{error}</p>
         ) : (
           <div className="space-y-6">
-            <TodayCard nextAction={nextAction} lang={lang} t={t} />
+            <TodayCard />
 
             <div className="grid grid-cols-2 gap-4">
               <div className="rounded-2xl border border-[var(--border-c)] bg-white p-5">
@@ -115,31 +93,14 @@ export default function StudyPage() {
   );
 }
 
-function TodayCard({
-  nextAction,
-  lang,
-  t,
-}: {
-  nextAction: NextAction | null;
-  lang: "ko" | "en";
-  t: (key: Parameters<ReturnType<typeof useLang>["t"]>[0]) => string;
-}) {
-  if (!nextAction || nextAction.action_type === "done") {
-    return (
-      <section className="rounded-2xl border border-[var(--border-c)] bg-[var(--mint)]/40 p-8 text-center">
-        <p className="text-lg font-medium text-[var(--mint-dark)]">{t("study_doneTitle")}</p>
-        <p className="mt-2 text-sm text-[var(--foreground)]">{t("study_doneBody")}</p>
-      </section>
-    );
-  }
-
-  // "시작하기/이어서 풀기" 버튼은 /study/[unitId](옛 진단·세션 설계, RUN_MATH_SITE.md 2.5단계로
-  // 분리·동결됨)로 가던 것이라 제거했다 — 실제 학습 시작 버튼은 4·5단계(과정/문제지)에서 다시 얹는다.
+// RUN_MATH_SITE.md 3단계 전 임시 처리 — v_math_next_action 기반 카드는 옛 진단·세션 설계라
+// 동결됐다(2.5단계). 4·5단계에서 과정(math_tracks)·문제지 기반으로 다시 만들 때까지 버튼 없는
+// 안내 한 줄만 보여준다.
+function TodayCard() {
+  const { t } = useLang();
   return (
-    <section className="rounded-2xl border border-[var(--border-c)] bg-white p-8">
-      <p className="text-xs font-medium text-[var(--secondary)]">{t("study_todayTitle")}</p>
-      <h1 className="mt-2 text-2xl font-medium text-[var(--foreground)]">{nextAction.unit_name}</h1>
-      <p className="mt-1 text-sm text-[var(--secondary)]">{nextActionReasonLabel(nextAction.reason_ko, lang)}</p>
+    <section className="rounded-2xl border border-[var(--border-c)] bg-white p-8 text-center">
+      <p className="text-sm text-[var(--secondary)]">{t("study_newScreenComingSoon")}</p>
     </section>
   );
 }
