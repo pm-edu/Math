@@ -47,35 +47,22 @@ export default function StudyPage() {
       }
 
       // curriculum_group이 비어있으면(가입 시 필수라 신규 학생은 거의 없음, 과거 가입자만
-      // 해당) 채워야 한다. math.pmedu4u.com에서는 카톡/왓츠앱으로 연락하거나 관리자가
-      // 수동 배정할 필요 없이, 로그인 즉시 "한국 교육과정 + KR 기본" 과정으로 자동
-      // 배정한다(2026-09-18 지시 — "한국수학에 집중" + "배정은 웹사이트 내에서").
-      // self_onboard_kr_track()은 본인(auth.uid())만, curriculum_group/track_id가 둘 다
-      // 비어있을 때만 1회 동작하는 security definer 함수라 여러 번 불러도 안전하다.
-      // 루트 도메인은 여전히 기존 /onboarding/subjects(4과목 관심 표시)로 보낸다 — 안 건드림.
-      let { data: profile } = await supabase
+      // 해당) 채워야 한다. 규칙(2026-09-18 확정): 학생이 과정을 고르면(선택) → 관리자가
+      // /admin/study/students에서 직접 배정 → 학생은 /mypage에서 배정 여부를 확인한 뒤
+      // /study로 들어온다. 자동배정은 이 규칙에 안 맞아 되돌렸다(잠깐 self_onboard_kr_track()
+      // 으로 즉시 자동배정했었으나 관리자 단계를 건너뛰어서 폐기 — 그 함수는 DB에서도 삭제).
+      // 온보딩 화면은 호스트별로 다르다 — 루트 도메인은 기존 /onboarding/subjects(4과목
+      // 관심 표시), math.pmedu4u.com은 /study/onboarding(교육과정 중 하나를 골라
+      // curriculum_group만 저장 — track 배정은 안 함, 그건 관리자 몫).
+      const { data: profile } = await supabase
         .from("profiles")
         .select("curriculum_group, track_id")
         .eq("id", auth.user.id)
         .maybeSingle();
       if (!profile?.curriculum_group) {
         const isMathHost = window.location.hostname.startsWith("math.");
-        if (!isMathHost) {
-          router.replace("/onboarding/subjects");
-          return;
-        }
-        await supabase.rpc("self_onboard_kr_track");
-        const refetch = await supabase
-          .from("profiles")
-          .select("curriculum_group, track_id")
-          .eq("id", auth.user.id)
-          .maybeSingle();
-        profile = refetch.data;
-        if (!profile?.curriculum_group) {
-          // KR 기본 트랙 자체가 없는 등 자동배정이 실패한 비정상 상태 — 기존 선택 화면으로.
-          router.replace("/study/onboarding");
-          return;
-        }
+        router.replace(isMathHost ? "/study/onboarding" : "/onboarding/subjects");
+        return;
       }
       setHasTrack(!!profile.track_id);
 
@@ -169,6 +156,12 @@ function TodayCard({
             {t(curriculumPreparing ? "study_curriculumPreparingTitle" : "study_noticeTitle")}
           </p>
           <p className="mt-2 text-sm text-[var(--secondary)]">{t("study_noticeBody")}</p>
+          <Link
+            href="/mypage"
+            className="mt-4 inline-block rounded-full border border-[var(--border-c)] px-5 py-2 text-sm font-medium text-[var(--foreground)]"
+          >
+            {t("study_goToMyPage")}
+          </Link>
         </section>
       );
     }

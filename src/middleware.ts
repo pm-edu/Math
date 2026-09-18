@@ -58,6 +58,9 @@ const MATH_ALLOWED_PREFIXES = [
   "/reset-password",
   "/report",
   "/onboarding",
+  // 규칙(2026-09-18): 학생이 과정을 고르면 관리자가 배정하고, 학생은 /mypage에서 배정
+  // 여부를 확인한 뒤 /study로 들어온다 — /mypage가 막혀 있으면 이 확인 단계 자체가 불가능.
+  "/mypage",
 ];
 
 export function middleware(request: NextRequest) {

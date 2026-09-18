@@ -638,7 +638,11 @@ const DICT = {
   // 문제지 기반 대시보드(/study, RUN_MATH_SITE.md 5-1) — v_math_next_action 카드
   study_noticeTitle: { ko: "과정이 아직 배정되지 않았어요", en: "You haven't been assigned a track yet" },
   study_curriculumPreparingTitle: { ko: "이 과정은 준비 중이에요", en: "This curriculum is coming soon" },
-  study_noticeBody: { ko: "선생님께 문의하시면 배정해드립니다.", en: "Please contact your teacher to get one assigned." },
+  study_goToMyPage: { ko: "마이페이지에서 확인하기", en: "Check on My Page" },
+  study_noticeBody: {
+    ko: "선생님이 배정하면 마이페이지에서 확인할 수 있어요.",
+    en: "Once your teacher assigns one, you can check it on My Page.",
+  },
   study_allDoneTitle: { ko: "모두 완료했어요", en: "You're all caught up" },
   study_solveButton: { ko: "문제 풀기", en: "Solve" },
   study_recentResultsTitle: { ko: "최근 결과", en: "Recent results" },
