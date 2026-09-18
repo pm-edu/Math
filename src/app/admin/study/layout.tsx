@@ -1,21 +1,23 @@
 "use client";
 
 // 수학 사이트(math.pmedu4u.com) 전용 관리 화면 공통 레이아웃(RUN_MATH_SITE.md 1-3).
-// 권한 확인은 여기서 canManageMaterials()로 한 번만 하고, 통과한 경우에만 네비게이션 + 자식 화면을
-// 그린다(/admin/math/layout.tsx와 같은 패턴). 진짜 차단은 각 화면이 쿼리하는 테이블의 RLS.
-// 5단계에서 화면별 권한이 갈리면(학생 명단=canManageStudents, 현황=canViewGrades) 그때 좁힌다 —
-// 지금은 플레이스홀더 단계라 하나로 묶는다.
+// 권한 확인은 여기서 한 번(직원 전원 = isStaff, 세 화면 권한의 합집합) 하고, 통과한 경우에만
+// 네비게이션 + 자식 화면을 그린다(/admin/math/layout.tsx와 같은 패턴). 실제 화면별 권한 차이
+// (5단계: 학생 명단=canManageStudents, 문제지·과정=canManageMaterials, 현황=canViewGrades)는
+// 각 페이지 자신이 한 번 더 좁혀서 확인한다 — 이 레이아웃은 "직원인가"만 본다.
+// 진짜 차단은 각 화면이 쿼리하는 테이블의 RLS.
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { canManageMaterials } from "@/lib/roles";
+import { isStaff } from "@/lib/roles";
 
 const NAV = [
   { href: "/admin/study/students", label: "반 · 학생" },
   { href: "/admin/study/worksheets", label: "문제지 · 과정" },
   { href: "/admin/study/overview", label: "현황" },
+  { href: "/admin/study/grants", label: "접근권" },
 ] as const;
 
 const EXISTING_SCREENS = [
@@ -39,7 +41,7 @@ export default function AdminStudyLayout({ children }: { children: React.ReactNo
         return;
       }
       const { data } = await supabase.from("profiles").select("role").eq("id", auth.user.id).maybeSingle();
-      setAllowed(canManageMaterials(data?.role));
+      setAllowed(isStaff(data?.role));
     }
     init();
   }, [router]);
