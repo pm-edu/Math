@@ -635,6 +635,22 @@ const DICT = {
   study_pathLink: { ko: "커리큘럼 맵 보기", en: "View curriculum map" },
   study_reviewLink: { ko: "복습 큐 보기", en: "View review queue" },
 
+  // 문제지 기반 대시보드(/study, RUN_MATH_SITE.md 5-1) — v_math_next_action 카드
+  study_noticeTitle: { ko: "과정이 아직 배정되지 않았어요", en: "You haven't been assigned a track yet" },
+  study_noticeBody: { ko: "선생님께 문의하시면 배정해드립니다.", en: "Please contact your teacher to get one assigned." },
+  study_allDoneTitle: { ko: "모두 완료했어요", en: "You're all caught up" },
+  study_solveButton: { ko: "문제 풀기", en: "Solve" },
+  study_recentResultsTitle: { ko: "최근 결과", en: "Recent results" },
+  study_noRecentResults: { ko: "아직 푼 문제지가 없어요.", en: "No worksheets solved yet." },
+
+  // 문제지 풀이·결과 화면(/study/w/[worksheetId], 5-1)
+  study_worksheetProgress: { ko: "진행", en: "Progress" },
+  study_finishButton: { ko: "다 풀었어요, 결과 보기", en: "I'm done, see results" },
+  study_passedBanner: { ko: "통과했어요! 다음 문제지가 열렸어요.", en: "You passed! The next worksheet is open." },
+  study_notPassedBanner: { ko: "80%에 못 미쳤어요. 틀린 문제를 다시 풀어보세요.", en: "Below 80% — try the wrong ones again." },
+  study_retryWrongButton: { ko: "틀린 문제 다시 풀기", en: "Retry wrong answers" },
+  study_goNextWorksheet: { ko: "다음 문제지로", en: "Go to next worksheet" },
+
   // 세션 실행·결과 화면(/study/[unitId], PG3)
   study_exit: { ko: "나가기", en: "Exit" },
   study_noItems: { ko: "풀 수 있는 문항이 없습니다.", en: "No items available." },
