@@ -55,11 +55,12 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       ],
     },
     {
-      title: "구독 커리큘럼",
+      title: "수학 학습(과정)",
       items: [
-        { label: "진행 현황", icon: "🧭", href: "/admin/math-progression", show: canGrades },
-        { label: "선수관계 편집", icon: "🔗", href: "/admin/math-progression/prereqs", show: canSite },
-        { label: "수강권 부여", icon: "🎟️", href: "/admin/math-progression/grants", show: canSite },
+        { label: "반 · 학생 · 과정", icon: "🧭", href: "/admin/study/students", show: canGrades },
+        { label: "문제지 · 과정 편성", icon: "📄", href: "/admin/study/worksheets", show: canMaterials },
+        { label: "현황", icon: "📊", href: "/admin/study/overview", show: canGrades },
+        { label: "접근권 부여", icon: "🎟️", href: "/admin/study/grants", show: canSite },
       ],
     },
     {
