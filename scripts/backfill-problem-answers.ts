@@ -87,18 +87,35 @@ function classifyAnswer(
   return { format: "free", autoGradable: false, spec: null };
 }
 
+// PostgREST 기본 상한이 1000행이라 페이지네이션 없이 조회하면 조용히 잘린다(4단계 감사 스크립트
+// 때 실제로 겪은 것과 같은 버그 — math 문항이 1429건인데 이 파일은 원래 1000건까지만 읽고
+// 있었다, 2026-09-17 발견해 수정). 전량을 확실히 다 읽을 때까지 .range()로 반복한다.
+async function fetchAllProblems(db: SupabaseClient): Promise<ProblemRow[]> {
+  const pageSize = 1000;
+  const all: ProblemRow[] = [];
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await db
+      .from("problems")
+      .select("id, answer, choices, curriculum_group, curriculum_detail, unit, verified")
+      .eq("subject", "math")
+      .order("id")
+      .range(from, from + pageSize - 1);
+    if (error) {
+      console.error("problems 조회 실패:", error.message);
+      process.exit(1);
+    }
+    if (!data || data.length === 0) break;
+    all.push(...(data as ProblemRow[]));
+    if (data.length < pageSize) break;
+  }
+  return all;
+}
+
 async function main() {
   const apply = process.argv.includes("--apply");
   const db = serviceClient();
 
-  const { data: problems, error: pErr } = await db
-    .from("problems")
-    .select("id, answer, choices, curriculum_group, curriculum_detail, unit, verified")
-    .eq("subject", "math");
-  if (pErr || !problems) {
-    console.error("problems 조회 실패:", pErr?.message);
-    process.exit(1);
-  }
+  const problems = await fetchAllProblems(db);
 
   const { data: units, error: uErr } = await db
     .from("curriculum_units")
