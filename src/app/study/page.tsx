@@ -47,20 +47,35 @@ export default function StudyPage() {
       }
 
       // curriculum_group이 비어있으면(가입 시 필수라 신규 학생은 거의 없음, 과거 가입자만
-      // 해당) 온보딩으로 보낸다. 온보딩 화면은 호스트별로 다르다 — 루트 도메인은 기존
-      // /onboarding/subjects(4과목 관심 표시, curriculum_group은 안 채움), math.pmedu4u.com은
-      // /study/onboarding(교육과정 5개 중 하나를 골라 curriculum_group 자체를 채움). math
-      // 호스트에서 옛 화면으로 보내면 curriculum_group이 계속 안 채워져 /study로 못 돌아오는
-      // 막다른 길이 된다(2026-09-18 실사용 중 발견).
-      const { data: profile } = await supabase
+      // 해당) 채워야 한다. math.pmedu4u.com에서는 카톡/왓츠앱으로 연락하거나 관리자가
+      // 수동 배정할 필요 없이, 로그인 즉시 "한국 교육과정 + KR 기본" 과정으로 자동
+      // 배정한다(2026-09-18 지시 — "한국수학에 집중" + "배정은 웹사이트 내에서").
+      // self_onboard_kr_track()은 본인(auth.uid())만, curriculum_group/track_id가 둘 다
+      // 비어있을 때만 1회 동작하는 security definer 함수라 여러 번 불러도 안전하다.
+      // 루트 도메인은 여전히 기존 /onboarding/subjects(4과목 관심 표시)로 보낸다 — 안 건드림.
+      let { data: profile } = await supabase
         .from("profiles")
         .select("curriculum_group, track_id")
         .eq("id", auth.user.id)
         .maybeSingle();
       if (!profile?.curriculum_group) {
         const isMathHost = window.location.hostname.startsWith("math.");
-        router.replace(isMathHost ? "/study/onboarding" : "/onboarding/subjects");
-        return;
+        if (!isMathHost) {
+          router.replace("/onboarding/subjects");
+          return;
+        }
+        await supabase.rpc("self_onboard_kr_track");
+        const refetch = await supabase
+          .from("profiles")
+          .select("curriculum_group, track_id")
+          .eq("id", auth.user.id)
+          .maybeSingle();
+        profile = refetch.data;
+        if (!profile?.curriculum_group) {
+          // KR 기본 트랙 자체가 없는 등 자동배정이 실패한 비정상 상태 — 기존 선택 화면으로.
+          router.replace("/study/onboarding");
+          return;
+        }
       }
       setHasTrack(!!profile.track_id);
 
@@ -154,10 +169,6 @@ function TodayCard({
             {t(curriculumPreparing ? "study_curriculumPreparingTitle" : "study_noticeTitle")}
           </p>
           <p className="mt-2 text-sm text-[var(--secondary)]">{t("study_noticeBody")}</p>
-          <div className="mt-4 space-y-1 text-xs text-[var(--secondary)]">
-            <p>WhatsApp: +91 99580 64728</p>
-            <p>KakaoTalk ID: 2014pmedu</p>
-          </div>
         </section>
       );
     }

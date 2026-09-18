@@ -15,12 +15,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
+// 지금 실제로 문항·과정이 준비된 커리큘럼만 보여준다(KR/IGCSE — RUN_MATH_SITE.md 5단계
+// seed-tracks.ts 기준 8문항 이상 단원이 있는 그룹). IB/CBSE/AS·A Level은 아직 트랙이 없어서
+// 골라도 "준비 중" 막다른 길이라 혼란만 준다(2026-09-18 지적) — 콘텐츠 생기면 다시 추가.
 const CURRICULUM_OPTIONS: { value: string; label: string }[] = [
   { value: "KR", label: "한국 교육과정" },
-  { value: "IB", label: "IB" },
   { value: "IGCSE", label: "IGCSE" },
-  { value: "CBSE", label: "CBSE" },
-  { value: "AS_A_Level", label: "AS·A Level" },
 ];
 
 export default function StudyOnboardingPage() {
