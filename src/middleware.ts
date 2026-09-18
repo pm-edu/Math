@@ -39,6 +39,10 @@ const SAT_ALLOWED_PREFIXES = [
 // math.pmedu4u.com도 같은 방식으로 독립시킨다(RUN_MATH_SITE.md 1단계). 신규 학생/관리 화면
 // (/study, /admin/study)뿐 아니라, 그 관리 네비게이션이 계속 링크하는 기존 화면
 // (/admin/problems 등 4개, 1-3에 명시됨)도 막히면 안 되므로 같이 허용한다.
+// /onboarding(관심 과목 선택, RUN_SIGNUP.md S4)도 빠지면 안 된다 — /study가
+// curriculum_group 없는 계정(가입 미완료 학생, 또는 학생 온보딩을 거친 적 없는 관리자
+// 계정)을 여기로 보내는데, 허용 목록에 없으면 미들웨어가 다시 /study로 돌려보내 무한
+// 리다이렉트 루프가 생긴다(2026-09-18 실사용 중 발견 — "메인페이지에서 불러오기가 안 된다").
 const MATH_ALLOWED_PREFIXES = [
   "/study",
   "/api/study",
@@ -53,6 +57,7 @@ const MATH_ALLOWED_PREFIXES = [
   "/signup",
   "/reset-password",
   "/report",
+  "/onboarding",
 ];
 
 export function middleware(request: NextRequest) {
