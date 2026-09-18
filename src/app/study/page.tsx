@@ -32,6 +32,7 @@ export default function StudyPage() {
 
   const [loading, setLoading] = useState(true);
   const [hasTrack, setHasTrack] = useState(false);
+  const [curriculumPreparing, setCurriculumPreparing] = useState(false);
   const [action, setAction] = useState<NextAction | null>(null);
   const [recent, setRecent] = useState<RecentResult[]>([]);
 
@@ -45,19 +46,38 @@ export default function StudyPage() {
         return;
       }
 
-      // 온보딩은 /onboarding/subjects 하나뿐이다(RUN_MATH_SITE.md 2.5단계 확정 — math_placements
-      // 기반 옛 게이트는 동결). curriculum_group이 비어있으면(가입 시 필수라 신규 학생은 거의
-      // 없음, 과거 가입자만 해당) 거기로 보낸다.
+      // curriculum_group이 비어있으면(가입 시 필수라 신규 학생은 거의 없음, 과거 가입자만
+      // 해당) 온보딩으로 보낸다. 온보딩 화면은 호스트별로 다르다 — 루트 도메인은 기존
+      // /onboarding/subjects(4과목 관심 표시, curriculum_group은 안 채움), math.pmedu4u.com은
+      // /study/onboarding(교육과정 5개 중 하나를 골라 curriculum_group 자체를 채움). math
+      // 호스트에서 옛 화면으로 보내면 curriculum_group이 계속 안 채워져 /study로 못 돌아오는
+      // 막다른 길이 된다(2026-09-18 실사용 중 발견).
       const { data: profile } = await supabase
         .from("profiles")
         .select("curriculum_group, track_id")
         .eq("id", auth.user.id)
         .maybeSingle();
       if (!profile?.curriculum_group) {
-        router.replace("/onboarding/subjects");
+        const isMathHost = window.location.hostname.startsWith("math.");
+        router.replace(isMathHost ? "/study/onboarding" : "/onboarding/subjects");
         return;
       }
       setHasTrack(!!profile.track_id);
+
+      // 과정(track)이 배정 안 된 이유가 "관리자가 아직 안 정했다"인지 "이 커리큘럼엔 아직
+      // 과정 자체가 없다"(IB/CBSE/AS·A Level처럼 8문항 이상인 단원이 없어 seed-tracks.ts가
+      // 못 만든 경우)인지 구분해서 다른 안내를 보여준다.
+      let preparing = false;
+      if (!profile.track_id) {
+        const { data: tracks } = await supabase
+          .from("math_tracks")
+          .select("id")
+          .eq("curriculum_group", profile.curriculum_group)
+          .eq("is_active", true)
+          .limit(1);
+        preparing = (tracks?.length ?? 0) === 0;
+      }
+      setCurriculumPreparing(preparing);
 
       const [actionResult, recentResult] = await Promise.all([
         supabase.from("v_math_next_action").select("*").eq("user_id", auth.user.id).maybeSingle(),
@@ -85,7 +105,7 @@ export default function StudyPage() {
           <p className="text-sm text-[var(--secondary)]">{t("study_loading")}</p>
         ) : (
           <div className="space-y-6">
-            <TodayCard action={action} hasTrack={hasTrack} />
+            <TodayCard action={action} hasTrack={hasTrack} curriculumPreparing={curriculumPreparing} />
 
             <div>
               <h2 className="text-sm font-medium text-[var(--foreground)]">{t("study_recentResultsTitle")}</h2>
@@ -115,14 +135,24 @@ export default function StudyPage() {
   );
 }
 
-function TodayCard({ action, hasTrack }: { action: NextAction | null; hasTrack: boolean }) {
+function TodayCard({
+  action,
+  hasTrack,
+  curriculumPreparing,
+}: {
+  action: NextAction | null;
+  hasTrack: boolean;
+  curriculumPreparing: boolean;
+}) {
   const { t } = useLang();
 
   if (!action || action.action_type === "done") {
     if (!hasTrack) {
       return (
         <section className="rounded-2xl border border-[var(--border-c)] bg-white p-8 text-center">
-          <p className="text-sm font-medium text-[var(--foreground)]">{t("study_noticeTitle")}</p>
+          <p className="text-sm font-medium text-[var(--foreground)]">
+            {t(curriculumPreparing ? "study_curriculumPreparingTitle" : "study_noticeTitle")}
+          </p>
           <p className="mt-2 text-sm text-[var(--secondary)]">{t("study_noticeBody")}</p>
           <div className="mt-4 space-y-1 text-xs text-[var(--secondary)]">
             <p>WhatsApp: +91 99580 64728</p>
