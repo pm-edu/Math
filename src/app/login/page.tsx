@@ -52,17 +52,42 @@ export default function LoginPage() {
     // 2026-09-15 이후 새 가입 흐름으로 처음 로그인하는 학생(약관 동의는 마쳤지만 아직 관심
     // 과목을 한 번도 고르지 않은 경우)만 온보딩으로 보낸다. terms_agreed_at은 기존
     // 가입자에겐 없는 값이라, 그걸 신규 가입 여부 표시로 그대로 쓴다(컬럼을 따로 더 안 만듦).
-    // math.pmedu4u.com은 "완전히 다른 사이트처럼" 보여야 한다(2026-09-22 지시) — 다른
-    // 과목(SAT/TOEFL/영어단어) 카드가 섞여 보이는 /onboarding/subjects로 보내지 않고,
-    // math 전용 커리큘럼 선택 화면(/study/onboarding)으로 바로 보낸다.
+    // 각 서브도메인은 "완전히 다른 사이트처럼" 보여야 한다(2026-09-22 지시: "과목선택은
+    // 각사이트에서") — 그 서브도메인에 왔다는 것 자체가 과목 선택이니, 다른 과목 카드가
+    // 섞여 보이는 /onboarding/subjects로 보내지 않는다. math는 커리큘럼까지 더 골라야 해서
+    // 전용 화면(/study/onboarding)으로, toefl/sat/english는 고를 게 더 없으니 관심만
+    // 자동 기록하고 바로 그 과목 홈으로. 루트 도메인(pmedu4u.com)에서만 기존 4과목 카드.
     if (data.user) {
       const [{ data: profile }, { count }] = await Promise.all([
         supabase.from("profiles").select("terms_agreed_at").eq("id", data.user.id).maybeSingle(),
         supabase.from("student_programs").select("id", { count: "exact", head: true }).eq("student_id", data.user.id),
       ]);
       if (profile?.terms_agreed_at && !count) {
-        const isMathHost = window.location.hostname.startsWith("math.");
-        window.location.href = isMathHost ? "/study/onboarding" : "/onboarding/subjects";
+        const hostname = window.location.hostname;
+        if (hostname.startsWith("math.")) {
+          window.location.href = "/study/onboarding";
+          return;
+        }
+        const directProgram = hostname.startsWith("toefl.")
+          ? "toefl"
+          : hostname.startsWith("sat.")
+            ? "sat"
+            : hostname.startsWith("english.")
+              ? "english"
+              : null;
+        if (directProgram) {
+          const token = data.session?.access_token;
+          if (token) {
+            await fetch("/api/study/programs", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+              body: JSON.stringify({ programs: [directProgram] }),
+            }).catch(() => {});
+          }
+          window.location.href = `/${directProgram}`;
+          return;
+        }
+        window.location.href = "/onboarding/subjects";
         return;
       }
     }
