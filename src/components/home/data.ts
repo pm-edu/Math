@@ -19,7 +19,7 @@ export const PROGRAMS: Program[] = [
     labelLang: "en",
     description: "2026 개편 포맷 그대로. 12유형 연습과 적응형 모의고사",
     status: "live",
-    href: "/toefl",
+    href: "https://toefl.pmedu4u.com/toefl",
     icon: "toefl",
   },
   {
@@ -28,7 +28,7 @@ export const PROGRAMS: Program[] = [
     labelLang: "ko",
     description: "간격 반복으로 외운 단어를 잊지 않게 관리합니다",
     status: "live",
-    href: "/english",
+    href: "https://english.pmedu4u.com/english",
     icon: "vocab",
   },
   {
@@ -61,8 +61,11 @@ export const PROGRAMS: Program[] = [
 // (사용자 요청, 2026-09-09: "수학카드도 영어카드처럼"). status는 여기 값을 쓰지 않는다 —
 // MathTrackCard가 trackAvailability(실제 verified 문항 수)로 매 요청마다 다시 계산해서
 // 덮어쓴다(quirky-percolating-storm 계획, 2026-09-15).
-// href는 전부 /study — 예전엔 과정별 서브메뉴(/study/track/[key])로 갔지만 그 라우트는
-// RUN_MATH_SITE.md 2.5단계로 동결됐다. 과정 기준 재연결은 5단계에서 다시 한다.
+// href는 전부 math.pmedu4u.com/study(절대 URL) — 이 카드는 루트 도메인(pmedu4u.com)에서만
+// 렌더된다(math 호스트는 "/"가 미들웨어에서 바로 /study로 리다이렉트돼 이 페이지 자체를 안 보여줌).
+// 클릭하면 math.pmedu4u.com으로 넘어가야 "독립 사이트처럼" 보인다는 사용자 지시(2026-09-22:
+// "배우던 학생도 메인페이지에서 선택을 해야한다") — 로그인 세션은 .pmedu4u.com 공유 쿠키라
+// (src/lib/cookie-domain.ts) 재로그인 없이 넘어간다.
 export const MATH_PROGRAMS: Program[] = [
   {
     id: "elementary",
@@ -70,7 +73,7 @@ export const MATH_PROGRAMS: Program[] = [
     labelLang: "ko",
     description: "연산의 기초부터 차근차근 잡는 개념완성",
     status: "live",
-    href: "/study",
+    href: "https://math.pmedu4u.com/study",
     icon: "elementary",
   },
   {
@@ -79,7 +82,7 @@ export const MATH_PROGRAMS: Program[] = [
     labelLang: "ko",
     description: "내신 대비 핵심 개념과 기출 유형",
     status: "live",
-    href: "/study",
+    href: "https://math.pmedu4u.com/study",
     icon: "middle",
   },
   {
@@ -88,7 +91,7 @@ export const MATH_PROGRAMS: Program[] = [
     labelLang: "ko",
     description: "수능·내신을 함께 잡는 심화 과정",
     status: "live",
-    href: "/study",
+    href: "https://math.pmedu4u.com/study",
     icon: "high",
   },
   {
@@ -97,7 +100,7 @@ export const MATH_PROGRAMS: Program[] = [
     labelLang: "en",
     description: "AA/AI 대비 종합반, IA 가이드까지",
     status: "live",
-    href: "/study",
+    href: "https://math.pmedu4u.com/study",
     icon: "ib",
   },
   {
@@ -106,7 +109,7 @@ export const MATH_PROGRAMS: Program[] = [
     labelLang: "en",
     description: "케임브리지 0607 과정, 학년별 커리큘럼",
     status: "live",
-    href: "/study",
+    href: "https://math.pmedu4u.com/study",
     icon: "igcse",
   },
   {
@@ -115,7 +118,7 @@ export const MATH_PROGRAMS: Program[] = [
     labelLang: "en",
     description: "케임브리지 심화 과정, 대학 입시 준비",
     status: "live",
-    href: "/study",
+    href: "https://math.pmedu4u.com/study",
     icon: "aslevel",
   },
   {
@@ -124,7 +127,7 @@ export const MATH_PROGRAMS: Program[] = [
     labelLang: "en",
     description: "인도 학생을 위한 CBSE 교육과정",
     status: "live",
-    href: "/study",
+    href: "https://math.pmedu4u.com/study",
     icon: "cbse",
   },
 ];
