@@ -15,17 +15,21 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-// 지금 실제로 문항·과정이 준비된 커리큘럼만 보여준다(KR/IGCSE — RUN_MATH_SITE.md 5단계
-// seed-tracks.ts 기준 8문항 이상 단원이 있는 그룹). IB/CBSE/AS·A Level은 아직 트랙이 없어서
-// 골라도 "준비 중" 막다른 길이라 혼란만 준다(2026-09-18 지적) — 콘텐츠 생기면 다시 추가.
-const CURRICULUM_OPTIONS: { value: string; label: string }[] = [
-  { value: "KR", label: "한국 교육과정" },
+// 구조는 /onboarding/subjects(루트 도메인 관심 과목 화면)의 커리큘럼 선택과 동일하게
+// 맞춘다(2026-09-22 지시 — math.pmedu4u.com도 완전히 다른 사이트처럼 보여야 함): "한국
+// 교육과정"(단일) / "INTERNATIONAL"(펼치면 IB/IGCSE/CBSE/AS·A Level, 각각 체크박스).
+// IB/CBSE/AS·A Level은 아직 트랙이 없어서 골라도 /study에서 "준비 중" 안내만 뜬다.
+const INTERNATIONAL_OPTIONS: { value: string; label: string }[] = [
+  { value: "IB", label: "IB" },
   { value: "IGCSE", label: "IGCSE" },
+  { value: "CBSE", label: "CBSE" },
+  { value: "AS_A_Level", label: "AS·A Level" },
 ];
 
 export default function StudyOnboardingPage() {
   const router = useRouter();
   const [selected, setSelected] = useState<string | null>(null);
+  const [internationalOpen, setInternationalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -70,23 +74,58 @@ export default function StudyOnboardingPage() {
         <h1 className="text-2xl font-bold text-[var(--foreground)]">어느 과정을 공부하나요?</h1>
         <p className="mt-2 text-sm text-[var(--secondary)]">나중에 선생님을 통해 바꿀 수 있어요.</p>
 
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {CURRICULUM_OPTIONS.map((c) => {
-            const isSelected = selected === c.value;
-            return (
-              <button
-                key={c.value}
-                type="button"
-                onClick={() => setSelected(c.value)}
-                className={`rounded-2xl border p-6 text-left transition-colors ${
-                  isSelected ? "border-[var(--pink)] bg-[var(--mint)]" : "border-[var(--border-c)] bg-white"
-                }`}
-              >
-                <p className="text-lg font-bold text-[var(--foreground)]">{c.label}</p>
-              </button>
-            );
-          })}
+        <div className="mx-auto mt-8 grid max-w-md gap-4 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => {
+              setSelected("KR");
+              setInternationalOpen(false);
+            }}
+            className={`rounded-2xl border p-6 transition-colors ${
+              selected === "KR" ? "border-[var(--pink)] bg-[var(--mint)]" : "border-[var(--border-c)] bg-white"
+            }`}
+          >
+            <label className="flex items-center gap-2">
+              <input type="checkbox" checked={selected === "KR"} readOnly className="h-4 w-4 accent-[var(--pink)]" />
+              <span className="text-lg font-bold text-[var(--foreground)]">한국 교육과정</span>
+            </label>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setInternationalOpen((o) => !o)}
+            className={`rounded-2xl border p-6 transition-colors ${
+              internationalOpen || INTERNATIONAL_OPTIONS.some((o) => o.value === selected)
+                ? "border-[var(--pink)] bg-[var(--mint)]"
+                : "border-[var(--border-c)] bg-white"
+            }`}
+          >
+            <span className="text-lg font-bold text-[var(--foreground)]">INTERNATIONAL</span>
+          </button>
         </div>
+
+        {internationalOpen && (
+          <div className="mx-auto mt-4 grid max-w-md gap-3 sm:grid-cols-2">
+            {INTERNATIONAL_OPTIONS.map((c) => {
+              const isSelected = selected === c.value;
+              return (
+                <button
+                  key={c.value}
+                  type="button"
+                  onClick={() => setSelected(c.value)}
+                  className={`rounded-xl border p-4 transition-colors ${
+                    isSelected ? "border-[var(--pink)] bg-[var(--mint)]" : "border-[var(--border-c)] bg-white"
+                  }`}
+                >
+                  <label className="flex items-center gap-2">
+                    <input type="checkbox" checked={isSelected} readOnly className="h-4 w-4 accent-[var(--pink)]" />
+                    <span className="text-sm font-bold text-[var(--foreground)]">{c.label}</span>
+                  </label>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
 

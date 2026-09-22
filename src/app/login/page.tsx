@@ -52,13 +52,17 @@ export default function LoginPage() {
     // 2026-09-15 이후 새 가입 흐름으로 처음 로그인하는 학생(약관 동의는 마쳤지만 아직 관심
     // 과목을 한 번도 고르지 않은 경우)만 온보딩으로 보낸다. terms_agreed_at은 기존
     // 가입자에겐 없는 값이라, 그걸 신규 가입 여부 표시로 그대로 쓴다(컬럼을 따로 더 안 만듦).
+    // math.pmedu4u.com은 "완전히 다른 사이트처럼" 보여야 한다(2026-09-22 지시) — 다른
+    // 과목(SAT/TOEFL/영어단어) 카드가 섞여 보이는 /onboarding/subjects로 보내지 않고,
+    // math 전용 커리큘럼 선택 화면(/study/onboarding)으로 바로 보낸다.
     if (data.user) {
       const [{ data: profile }, { count }] = await Promise.all([
         supabase.from("profiles").select("terms_agreed_at").eq("id", data.user.id).maybeSingle(),
         supabase.from("student_programs").select("id", { count: "exact", head: true }).eq("student_id", data.user.id),
       ]);
       if (profile?.terms_agreed_at && !count) {
-        window.location.href = "/onboarding/subjects";
+        const isMathHost = window.location.hostname.startsWith("math.");
+        window.location.href = isMathHost ? "/study/onboarding" : "/onboarding/subjects";
         return;
       }
     }
