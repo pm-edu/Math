@@ -20,13 +20,16 @@ const PROGRAM_DESC: Record<StudentProgram, string> = {
   english: "간격 반복으로 단어를 잊지 않게 관리하는 완전학습",
 };
 
-// 지금 실제로 문항·과정이 준비된 커리큘럼만 보여준다(KR/IGCSE — src/app/study/onboarding/page.tsx
-// 와 같은 목록, IB/CBSE/AS·A Level은 아직 트랙이 없어 "준비 중" 막다른 길만 줌).
 // "수학"을 고르면 여기서 바로 커리큘럼까지 같이 받는다(2026-09-22 지시 — 관심 과목 고르고
 // 나서 또 /study/onboarding으로 한 번 더 거치는 게 불필요한 단계라 한 화면으로 합침).
-const CURRICULUM_OPTIONS: { value: string; label: string }[] = [
-  { value: "KR", label: "한국 교육과정" },
+// 구조: "한국 교육과정"(단일) / "INTERNATIONAL"(펼치면 IB/IGCSE/CBSE/AS·A Level, 각각 체크박스).
+// IB/CBSE/AS·A Level은 아직 트랙이 없어 골라도 /study에서 "준비 중" 안내만 뜨지만, 사용자
+// 지시로 선택지 자체는 다 보여준다(2026-09-22).
+const INTERNATIONAL_OPTIONS: { value: string; label: string }[] = [
+  { value: "IB", label: "IB" },
   { value: "IGCSE", label: "IGCSE" },
+  { value: "CBSE", label: "CBSE" },
+  { value: "AS_A_Level", label: "AS·A Level" },
 ];
 
 // "시작하기"가 어디로 갈지 — 고른 과목과 무관하게 무조건 /study(수학)로 보내던 걸
@@ -46,6 +49,7 @@ export default function SubjectOnboardingPage() {
   const [token, setToken] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<StudentProgram>>(new Set());
   const [curriculumGroup, setCurriculumGroup] = useState<string | null>(null);
+  const [internationalOpen, setInternationalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
@@ -67,7 +71,10 @@ export default function SubjectOnboardingPage() {
       const next = new Set(prev);
       if (next.has(program)) {
         next.delete(program);
-        if (program === "math") setCurriculumGroup(null);
+        if (program === "math") {
+          setCurriculumGroup(null);
+          setInternationalOpen(false);
+        }
       } else {
         next.add(program);
       }
@@ -163,25 +170,60 @@ export default function SubjectOnboardingPage() {
         </div>
 
         {needsCurriculum && (
-          <div className="mt-8">
-            <h2 className="text-sm font-medium text-[var(--foreground)]">수학은 어느 교육과정으로 공부하나요?</h2>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              {CURRICULUM_OPTIONS.map((c) => {
-                const isSelected = curriculumGroup === c.value;
-                return (
-                  <button
-                    key={c.value}
-                    type="button"
-                    onClick={() => setCurriculumGroup(c.value)}
-                    className={`rounded-2xl border p-4 text-left transition-colors ${
-                      isSelected ? "border-[var(--pink)] bg-[var(--mint)]" : "border-[var(--border-c)] bg-white"
-                    }`}
-                  >
-                    <p className="text-sm font-bold text-[var(--foreground)]">{c.label}</p>
-                  </button>
-                );
-              })}
+          <div className="mt-8 text-left">
+            <h2 className="text-center text-sm font-medium text-[var(--foreground)]">수학은 어느 교육과정으로 공부하나요?</h2>
+            <div className="mx-auto mt-3 grid max-w-md gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setCurriculumGroup("KR");
+                  setInternationalOpen(false);
+                }}
+                className={`rounded-2xl border p-4 transition-colors ${
+                  curriculumGroup === "KR" ? "border-[var(--pink)] bg-[var(--mint)]" : "border-[var(--border-c)] bg-white"
+                }`}
+              >
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" checked={curriculumGroup === "KR"} readOnly className="h-4 w-4 accent-[var(--pink)]" />
+                  <span className="text-sm font-bold text-[var(--foreground)]">한국 교육과정</span>
+                </label>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setInternationalOpen((o) => !o)}
+                className={`rounded-2xl border p-4 transition-colors ${
+                  internationalOpen || INTERNATIONAL_OPTIONS.some((o) => o.value === curriculumGroup)
+                    ? "border-[var(--pink)] bg-[var(--mint)]"
+                    : "border-[var(--border-c)] bg-white"
+                }`}
+              >
+                <span className="text-sm font-bold text-[var(--foreground)]">INTERNATIONAL</span>
+              </button>
             </div>
+
+            {internationalOpen && (
+              <div className="mx-auto mt-3 grid max-w-md gap-2 sm:grid-cols-2">
+                {INTERNATIONAL_OPTIONS.map((c) => {
+                  const isSelected = curriculumGroup === c.value;
+                  return (
+                    <button
+                      key={c.value}
+                      type="button"
+                      onClick={() => setCurriculumGroup(c.value)}
+                      className={`rounded-xl border p-3 transition-colors ${
+                        isSelected ? "border-[var(--pink)] bg-[var(--mint)]" : "border-[var(--border-c)] bg-white"
+                      }`}
+                    >
+                      <label className="flex items-center gap-2">
+                        <input type="checkbox" checked={isSelected} readOnly className="h-4 w-4 accent-[var(--pink)]" />
+                        <span className="text-sm font-bold text-[var(--foreground)]">{c.label}</span>
+                      </label>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
