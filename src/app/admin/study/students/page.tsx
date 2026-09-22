@@ -13,6 +13,7 @@ interface StudentRow {
   email: string | null;
   class_id: string | null;
   track_id: string | null;
+  curriculum_group: string | null;
 }
 
 interface TrackOption {
@@ -33,7 +34,11 @@ export default function AdminStudyStudentsPage() {
   async function load() {
     const supabase = createClient();
     const [studentsResult, tracksResult] = await Promise.all([
-      supabase.from("profiles").select("id, name, email, class_id, track_id").eq("role", "student").order("name"),
+      supabase
+        .from("profiles")
+        .select("id, name, email, class_id, track_id, curriculum_group")
+        .eq("role", "student")
+        .order("name"),
       supabase.from("math_tracks").select("id, name").order("name"),
     ]);
     setStudents((studentsResult.data as StudentRow[]) ?? []);
@@ -124,16 +129,32 @@ export default function AdminStudyStudentsPage() {
             </tr>
           </thead>
           <tbody>
-            {students.map((s) => (
-              <tr key={s.id} className="border-b border-[var(--border-c)] last:border-0">
-                <td className="p-3">
-                  <input type="checkbox" checked={selected.has(s.id)} onChange={() => toggle(s.id)} className="h-4 w-4 accent-[var(--pink)]" />
-                </td>
-                <td className="p-3 text-[var(--foreground)]">{s.name}</td>
-                <td className="p-3 text-[var(--secondary)]">{s.email}</td>
-                <td className="p-3 text-[var(--secondary)]">{trackName(s.track_id)}</td>
-              </tr>
-            ))}
+            {students.map((s) => {
+              const hasChosenCurriculum = !!s.curriculum_group;
+              return (
+                <tr key={s.id} className="border-b border-[var(--border-c)] last:border-0">
+                  <td className="p-3">
+                    <input
+                      type="checkbox"
+                      checked={selected.has(s.id)}
+                      onChange={() => toggle(s.id)}
+                      disabled={!hasChosenCurriculum}
+                      title={hasChosenCurriculum ? undefined : "학생이 아직 과정(커리큘럼)을 선택하지 않아 배정할 수 없어요."}
+                      className="h-4 w-4 accent-[var(--pink)] disabled:cursor-not-allowed disabled:opacity-40"
+                    />
+                  </td>
+                  <td className="p-3 text-[var(--foreground)]">{s.name}</td>
+                  <td className="p-3 text-[var(--secondary)]">{s.email}</td>
+                  <td className="p-3 text-[var(--secondary)]">
+                    {hasChosenCurriculum ? (
+                      trackName(s.track_id)
+                    ) : (
+                      <span className="text-amber-600">과정 미선택(학생 대기)</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
