@@ -36,8 +36,16 @@ const INTERNATIONAL_OPTIONS: { value: string; label: string }[] = [
 // 고친다(2026-09-15 점검에서 발견: 수학을 안 골라도 수학 진단으로 튕겨감). 여러 개를
 // 골랐으면 math를 우선 보내고(기존 수학 온보딩 흐름이 이미 있어서), 그다음은 고른 과목의
 // 전용 화면으로, 아무 것도 안 맞으면 마이페이지로.
+//
+// 루트 도메인(pmedu4u.com)에서 "수학"을 고르면 math.pmedu4u.com으로 아예 넘긴다
+// (2026-09-22 지시 — "수학을 선택하면 수학사이트로 가든지"). 이미 math. 호스트에
+// 있으면 그냥 /study(상대경로)로. 로그인 세션은 .pmedu4u.com 공유 쿠키라
+// (src/lib/cookie-domain.ts) 다시 로그인할 필요 없이 바로 넘어간다.
 function primaryDestination(selected: Set<StudentProgram>): string {
-  if (selected.has("math")) return "/study";
+  if (selected.has("math")) {
+    const isMathHost = typeof window !== "undefined" && window.location.hostname.startsWith("math.");
+    return isMathHost ? "/study" : "https://math.pmedu4u.com/study";
+  }
   if (selected.has("toefl")) return "/toefl";
   if (selected.has("sat")) return "/sat";
   if (selected.has("english")) return "/english";
@@ -135,7 +143,11 @@ export default function SubjectOnboardingPage() {
         </p>
         <button
           type="button"
-          onClick={() => router.push(primaryDestination(selected))}
+          onClick={() => {
+            const dest = primaryDestination(selected);
+            if (dest.startsWith("http")) window.location.href = dest;
+            else router.push(dest);
+          }}
           className="mt-4 rounded-full bg-[var(--pink)] px-8 py-3 text-sm font-medium text-[var(--pink-dark)]"
         >
           시작하기
