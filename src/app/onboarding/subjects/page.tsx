@@ -20,6 +20,15 @@ const PROGRAM_DESC: Record<StudentProgram, string> = {
   english: "간격 반복으로 단어를 잊지 않게 관리하는 완전학습",
 };
 
+// 지금 실제로 문항·과정이 준비된 커리큘럼만 보여준다(KR/IGCSE — src/app/study/onboarding/page.tsx
+// 와 같은 목록, IB/CBSE/AS·A Level은 아직 트랙이 없어 "준비 중" 막다른 길만 줌).
+// "수학"을 고르면 여기서 바로 커리큘럼까지 같이 받는다(2026-09-22 지시 — 관심 과목 고르고
+// 나서 또 /study/onboarding으로 한 번 더 거치는 게 불필요한 단계라 한 화면으로 합침).
+const CURRICULUM_OPTIONS: { value: string; label: string }[] = [
+  { value: "KR", label: "한국 교육과정" },
+  { value: "IGCSE", label: "IGCSE" },
+];
+
 // "시작하기"가 어디로 갈지 — 고른 과목과 무관하게 무조건 /study(수학)로 보내던 걸
 // 고친다(2026-09-15 점검에서 발견: 수학을 안 골라도 수학 진단으로 튕겨감). 여러 개를
 // 골랐으면 math를 우선 보내고(기존 수학 온보딩 흐름이 이미 있어서), 그다음은 고른 과목의
@@ -36,6 +45,7 @@ export default function SubjectOnboardingPage() {
   const router = useRouter();
   const [token, setToken] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<StudentProgram>>(new Set());
+  const [curriculumGroup, setCurriculumGroup] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
@@ -55,19 +65,46 @@ export default function SubjectOnboardingPage() {
   function toggle(program: StudentProgram) {
     setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(program)) next.delete(program);
-      else next.add(program);
+      if (next.has(program)) {
+        next.delete(program);
+        if (program === "math") setCurriculumGroup(null);
+      } else {
+        next.add(program);
+      }
       return next;
     });
   }
+
+  const needsCurriculum = selected.has("math");
 
   async function handleSubmit() {
     if (selected.size === 0) {
       setError("관심 있는 과목을 하나 이상 골라주세요.");
       return;
     }
+    if (needsCurriculum && !curriculumGroup) {
+      setError("어느 교육과정으로 수학을 공부하는지 골라주세요.");
+      return;
+    }
     setLoading(true);
     setError(null);
+
+    if (needsCurriculum && curriculumGroup) {
+      const supabase = createClient();
+      const { data: auth } = await supabase.auth.getUser();
+      if (auth.user) {
+        const { error: updateError } = await supabase
+          .from("profiles")
+          .update({ curriculum_group: curriculumGroup })
+          .eq("id", auth.user.id);
+        if (updateError) {
+          setLoading(false);
+          setError("커리큘럼 저장에 실패했습니다. 다시 시도해주세요.");
+          return;
+        }
+      }
+    }
+
     const res = await fetch("/api/study/programs", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -125,12 +162,35 @@ export default function SubjectOnboardingPage() {
           })}
         </div>
 
+        {needsCurriculum && (
+          <div className="mt-8">
+            <h2 className="text-sm font-medium text-[var(--foreground)]">수학은 어느 교육과정으로 공부하나요?</h2>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              {CURRICULUM_OPTIONS.map((c) => {
+                const isSelected = curriculumGroup === c.value;
+                return (
+                  <button
+                    key={c.value}
+                    type="button"
+                    onClick={() => setCurriculumGroup(c.value)}
+                    className={`rounded-2xl border p-4 text-left transition-colors ${
+                      isSelected ? "border-[var(--pink)] bg-[var(--mint)]" : "border-[var(--border-c)] bg-white"
+                    }`}
+                  >
+                    <p className="text-sm font-bold text-[var(--foreground)]">{c.label}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
 
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={loading || !token}
+          disabled={loading || !token || (needsCurriculum && !curriculumGroup)}
           className="mt-8 rounded-full bg-[var(--pink)] px-10 py-3 text-sm font-medium text-[var(--pink-dark)] disabled:opacity-50"
         >
           {loading ? "저장 중..." : "선택 완료"}
