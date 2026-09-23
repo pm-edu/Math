@@ -110,6 +110,11 @@ export default function Header() {
                 {loggedIn ? t("study_navLabel") : t("login")}
               </Link>
             )}
+            {loggedIn && (
+              <Link href="/mypage" className="text-sm text-[var(--secondary)] hover:text-[var(--foreground)]">
+                {t("mypage")}
+              </Link>
+            )}
             {loggedIn === false && (
               <Link
                 href="/signup"
