@@ -30,6 +30,15 @@ export default function MyPage() {
   const [myClassrooms, setMyClassrooms] = useState<{ id: string; title: string; status: string }[]>([]);
   const [programs, setPrograms] = useState<StudentProgram[]>([]);
 
+  // math.pmedu4u.com에서는 강좌 구매 마켓·실전시험·화상강의실 섹션을 숨긴다(2026-09-23
+  // 지시 — "학생이 로그인해서 나오는 화면이 이상하다") — 전부 옛 종합 사이트 기능이라
+  // 수학 전용 계정 입장에서는 혼란만 준다. 데이터는 그대로 불러오되(다른 기능에 영향 없게)
+  // 렌더만 건너뛴다 — Header/Footer와 같은 판정 방식.
+  const [isMathHost, setIsMathHost] = useState(false);
+  useEffect(() => {
+    setIsMathHost(window.location.hostname.startsWith("math."));
+  }, []);
+
   useEffect(() => {
     const supabase = createClient();
 
@@ -158,7 +167,7 @@ export default function MyPage() {
             <p className="mt-10 text-sm text-red-600">{error}</p>
           ) : (
             <>
-              {pendingExams.length > 0 && (
+              {!isMathHost && pendingExams.length > 0 && (
                 <section className="mt-8 rounded-2xl border border-red-200 bg-red-50 p-6 shadow-sm">
                   <p className="flex items-center gap-2 text-sm font-bold text-red-700">
                     ⏱ 응시할 실전 시험이 있습니다
@@ -184,7 +193,7 @@ export default function MyPage() {
                 </section>
               )}
 
-              {myClassrooms.length > 0 && (
+              {!isMathHost && myClassrooms.length > 0 && (
                 <section className="mt-8 rounded-2xl border border-en-line bg-en-card p-6 shadow-sm">
                   <p className="text-sm font-bold text-en-ink">🎥 내 화상 강의실</p>
                   <ul className="mt-3 space-y-2">
@@ -242,6 +251,7 @@ export default function MyPage() {
                 </div>
               </section>
 
+              {!isMathHost && (
               <section className="mt-10">
                 <h2 className="text-lg font-bold text-en-ink">{t("myCourses")}</h2>
 
@@ -317,6 +327,7 @@ export default function MyPage() {
                   </ul>
                 )}
               </section>
+              )}
 
               <section className="mt-14 border-t border-en-line pt-8">
                 <h2 className="text-sm font-medium text-en-ink-soft">
