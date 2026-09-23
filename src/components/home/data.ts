@@ -61,11 +61,13 @@ export const PROGRAMS: Program[] = [
 // (사용자 요청, 2026-09-09: "수학카드도 영어카드처럼"). status는 여기 값을 쓰지 않는다 —
 // MathTrackCard가 trackAvailability(실제 verified 문항 수)로 매 요청마다 다시 계산해서
 // 덮어쓴다(quirky-percolating-storm 계획, 2026-09-15).
-// href는 전부 math.pmedu4u.com/study(절대 URL) — 이 카드는 루트 도메인(pmedu4u.com)에서만
+// href는 전부 math.pmedu4u.com(절대 URL) — 이 카드는 루트 도메인(pmedu4u.com)에서만
 // 렌더된다(math 호스트는 "/"가 미들웨어에서 바로 /study로 리다이렉트돼 이 페이지 자체를 안 보여줌).
 // 클릭하면 math.pmedu4u.com으로 넘어가야 "독립 사이트처럼" 보인다는 사용자 지시(2026-09-22:
 // "배우던 학생도 메인페이지에서 선택을 해야한다") — 로그인 세션은 .pmedu4u.com 공유 쿠키라
-// (src/lib/cookie-domain.ts) 재로그인 없이 넘어간다.
+// (src/lib/cookie-domain.ts) 재로그인 없이 넘어간다. "중등"만 실제 콘텐츠가 있어서
+// 과정 개요 페이지(/study/track/kr-middle, 2026-09-23 신설)로, 나머지는 아직 "준비 중"
+// (trackAvailability가 status를 덮어써서 href 자체가 안 쓰임).
 export const MATH_PROGRAMS: Program[] = [
   {
     id: "elementary",
@@ -82,7 +84,7 @@ export const MATH_PROGRAMS: Program[] = [
     labelLang: "ko",
     description: "내신 대비 핵심 개념과 기출 유형",
     status: "live",
-    href: "https://math.pmedu4u.com/study",
+    href: "https://math.pmedu4u.com/study/track/kr-middle",
     icon: "middle",
   },
   {
