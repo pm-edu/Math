@@ -24,16 +24,11 @@ export default async function Hero() {
             <span className="block">공부는 한 곳에서.</span>
           </h1>
           <p className="mt-5 max-w-[38ch] text-[1.0625rem] leading-[1.72] text-white/70">
-            IGCSE·A-Level·IB 수학부터 2026 개편 TOEFL까지. 진단으로 시작해 매주 리포트로 확인하는 온라인 클래스입니다.
+            IGCSE·A-Level·IB 수학부터 영어 시험 대비까지, 학년과 과정에 맞춰 공부하는 온라인 클래스입니다.
           </p>
 
+          {/* 2026-10-02 응급처치: "무료 진단 시작하기"(/sample) 버튼 숨김 — 진단·리포트 약속을 지금은 못 지켜서. */}
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link
-              href="/sample"
-              className="inline-flex items-center justify-center h-12 px-[22px] rounded-[11px] bg-en-gold text-en-ink text-[.9375rem] font-bold transition-colors hover:bg-en-gold-deep"
-            >
-              무료 진단 시작하기
-            </Link>
             <Link
               href="#tracks"
               className="inline-flex items-center justify-center h-12 px-[22px] rounded-[11px] border border-white/[.28] text-white text-[.9375rem] font-bold transition-colors hover:border-en-gold-soft hover:text-en-gold-soft"

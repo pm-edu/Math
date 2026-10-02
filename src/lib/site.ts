@@ -15,7 +15,7 @@ export type NavItem = { key: "browse" | "reviews" | "contact"; href: string };
 
 const NAV: NavItem[] = [
   { key: "browse", href: "/courses" },
-  { key: "reviews", href: "/reviews" },
+  // 2026-10-02 응급처치: /reviews는 홈으로 보내므로(next.config.ts redirects) 메뉴에서도 뺀다.
   { key: "contact", href: "/contact" },
 ];
 

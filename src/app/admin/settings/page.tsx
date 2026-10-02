@@ -10,7 +10,7 @@ import { HERO_REPORT_KEY } from "@/lib/home-report";
 import type { ReportPreviewProps } from "@/components/home/ReportPreview";
 
 const DEFAULT_REPORT: ReportPreviewProps = {
-  studentName: "김서연",
+  studentName: "예시 학생",
   className: "TOEFL 준비반",
   band: 4.5,
   scaledScore: 92,

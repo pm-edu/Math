@@ -8,10 +8,12 @@ import { getAllTrackAvailability, type TrackKey } from "@/lib/home/trackAvailabi
 // 현황(trackAvailability)으로 매 요청마다 다시 계산한다(quirky-percolating-storm 계획).
 export default async function MathTrackCard() {
   const availability = await getAllTrackAvailability();
+  // 2026-10-02 응급처치: "준비 중" 행은 숨기고 TrackSelector 아래 한 줄 안내로 대신한다.
+  // 판정은 그대로 실제 문제은행 기준이라, 문항이 쌓여 live가 되면 자동으로 다시 나타난다.
   const programs = MATH_PROGRAMS.map((program) => ({
     ...program,
     status: availability[program.id as TrackKey]?.status ?? "soon",
-  }));
+  })).filter((program) => program.status === "live");
 
   return (
     <div className="rounded-2xl bg-en-card border border-en-line shadow-[0_1px_2px_rgba(24,42,78,.05),0_8px_24px_rgba(24,42,78,.07)] pt-[26px] px-2 pb-2 flex flex-col">
