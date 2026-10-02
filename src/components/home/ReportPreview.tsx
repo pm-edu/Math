@@ -10,7 +10,7 @@ export interface ReportPreviewProps {
 }
 
 const DEFAULT_PROPS: ReportPreviewProps = {
-  studentName: "김서연",
+  studentName: "예시 학생",
   className: "TOEFL 준비반",
   band: 4.5,
   scaledScore: 92,
@@ -23,7 +23,13 @@ const DEFAULT_PROPS: ReportPreviewProps = {
 };
 
 export default function ReportPreview(props: Partial<ReportPreviewProps> = {}) {
-  const { studentName, className, band, scaledScore, units, focusUnit } = { ...DEFAULT_PROPS, ...props };
+  // 2026-10-02 응급처치: 실제 학생처럼 보이는 이름이 나가지 않도록, 관리자 설정(site_settings
+  // hero_report_preview)에 다른 이름이 저장돼 있어도 학생 이름은 항상 기본값("예시 학생")으로 고정한다.
+  const { studentName, className, band, scaledScore, units, focusUnit } = {
+    ...DEFAULT_PROPS,
+    ...props,
+    studentName: DEFAULT_PROPS.studentName,
+  };
   const bandPct = Math.min(100, Math.max(0, (band / 6) * 100));
 
   return (

@@ -32,6 +32,13 @@ const DICT = {
   includes: { ko: "구성", en: "What's included" },
   addToCart: { ko: "장바구니에 담기", en: "Add to cart" },
   enterClassroom: { ko: "강의실 들어가기", en: "Enter classroom" },
+  // 강좌 페이지 임시 안내(2026-10-02 응급처치 — 새 사이트로 옮기기 전까지 목록·가격·신청을 숨김)
+  courses_renewingTitle: { ko: "새 단장 중입니다", en: "We're renovating" },
+  courses_renewingBody: {
+    ko: "강좌 페이지를 새로 준비하고 있습니다. 수업 문의는 문의하기로 남겨 주세요.",
+    en: "Our course pages are being rebuilt. For class inquiries, please reach us via Contact.",
+  },
+  courses_contactCta: { ko: "문의하기", en: "Contact us" },
 
   // 수강신청
   enroll: { ko: "수강 신청하기", en: "Enroll" },

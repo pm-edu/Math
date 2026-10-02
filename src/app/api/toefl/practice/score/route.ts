@@ -13,6 +13,9 @@ import { scorePracticeItem } from "@/lib/toefl/server/practice";
 // user_id)은 게스트가 못 쓰므로, 연습은 애초에 영구 저장을 안 해서 이 문제를 피해간다.
 
 const AUDIO_TASK_TYPES = new Set(["listen_and_repeat", "take_an_interview"]);
+// Gemini를 호출하는(유료) 유형. 게스트의 guestId는 브라우저가 만든 값이라 바꾸기만 하면 하루 제한을
+// 우회할 수 있어서, 이 유형들만 로그인 필수로 막는다 — 객관식 등 나머지는 게스트도 그대로(2026-10-02 결정).
+const AI_SCORED_TASK_TYPES = new Set(["write_an_email", "academic_discussion", "listen_and_repeat", "take_an_interview"]);
 const uuidSchema = z.string().uuid();
 // 유형별 연습은 무제한이었는데, 유형당 하루 20문항으로 제한한다(2026-09-02 사용자 결정).
 // 게스트도 guest_id로 똑같이 센다 — 로그인 사용자만 봐주면 게스트 쪽으로 우회하는 게 되므로.
@@ -62,6 +65,13 @@ export async function POST(req: Request) {
     .eq("verified", true)
     .maybeSingle();
   if (!item) return Response.json({ ok: false, message: "문항을 찾을 수 없습니다." }, { status: 404 });
+
+  if (!userId && AI_SCORED_TASK_TYPES.has(item.task_type)) {
+    return Response.json(
+      { ok: false, message: "AI 채점 문항은 로그인 후 이용할 수 있습니다. / Please log in to use AI-scored practice.", loginRequired: true },
+      { status: 401 }
+    );
+  }
 
   const isAudioType = AUDIO_TASK_TYPES.has(item.task_type);
   if (isAudioType && !audioBuffer) {

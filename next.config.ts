@@ -18,6 +18,15 @@ const nextConfig: NextConfig = {
     "/api/send-mail": CHROMIUM_TRACE_INCLUDE,
     "/api/admin/worksheets/[id]/pdf": CHROMIUM_TRACE_INCLUDE,
   },
+  // 2026-10-02 응급처치: 준비가 안 된 샘플(/sample)과 후기(/reviews) 화면은 홈으로 보낸다.
+  // 페이지 파일은 그대로 두고 여기서만 막는다(임시 이동이라 permanent: false). source가 정확히
+  // 이 주소만 잡으므로 /toefl/sample 등 다른 경로에는 영향이 없다.
+  async redirects() {
+    return [
+      { source: "/sample", destination: "/", permanent: false },
+      { source: "/reviews", destination: "/", permanent: false },
+    ];
+  },
 };
 
 export default nextConfig;

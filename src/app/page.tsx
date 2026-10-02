@@ -2,7 +2,6 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Hero from "@/components/home/Hero";
 import TrackSelector from "@/components/home/TrackSelector";
-import FlowSteps from "@/components/home/FlowSteps";
 import CurriculumChips from "@/components/home/CurriculumChips";
 import CtaBand from "@/components/home/CtaBand";
 import { pretendardHome } from "@/lib/home-fonts";
@@ -25,7 +24,8 @@ export default function Home() {
         <div id="tracks">
           <TrackSelector />
         </div>
-        <FlowSteps />
+        {/* 2026-10-02 응급처치: "한 학기가 이렇게 굴러갑니다" 4단계 섹션(FlowSteps)은 진단·매주 리포트
+            약속이 들어 있어 숨김. 컴포넌트 파일은 그대로 둔다. */}
         <CurriculumChips />
         <CtaBand />
       </main>

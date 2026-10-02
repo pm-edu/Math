@@ -21,6 +21,9 @@ export default function TrackSelector() {
           <MathTrackCard />
           <EnglishTrackCard />
         </div>
+
+        {/* 2026-10-02 응급처치: 두 카드에서 숨긴 "준비 중" 행 9개를 이 한 줄로 대신한다. */}
+        <p className="mt-6 text-center text-[.9375rem] text-en-ink-soft">더 많은 과정을 준비 중입니다</p>
       </div>
     </section>
   );

@@ -12,7 +12,8 @@ export default function EnglishTrackCard() {
       </div>
 
       <div className="flex flex-col">
-        {PROGRAMS.map((program) => (
+        {/* 2026-10-02 응급처치: "준비 중" 행은 숨기고 TrackSelector 아래 한 줄 안내로 대신한다. */}
+        {PROGRAMS.filter((program) => program.status === "live").map((program) => (
           <ProgramRow key={program.id} program={program} />
         ))}
       </div>
